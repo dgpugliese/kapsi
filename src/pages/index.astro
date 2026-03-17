@@ -1,442 +1,675 @@
 ---
 import Layout from '../layouts/Layout.astro';
+
+const programs = [
+  { icon: '🎯', name: 'Guide Right',       slug: 'guide-right',       stat: '500K+', statLabel: 'Youth Mentored',  desc: 'Our flagship service initiative providing educational and occupational guidance to youth across 400+ communities.' },
+  { icon: '⭐', name: 'Kappa League',      slug: 'kappa-league',      stat: '6–12',  statLabel: 'Grades Served',  desc: 'A structured leadership development program building the next generation of Black male leaders.' },
+  { icon: '🎓', name: 'Achievement Academy', slug: 'achievement-academy', stat: '700+', statLabel: 'Chapters Active', desc: 'Enhancing the collegiate experience through mentoring, coaching, and professional development.' },
+  { icon: '📚', name: 'Room To Read',      slug: 'room-to-read',      stat: '32K+',  statLabel: 'Books Donated',   desc: 'Bringing literacy resources to under-resourced schools in partnership with Room to Read.' },
+  { icon: '⚖️', name: 'Learn 2 Live',      slug: 'learn-2-live',      stat: '70K+',  statLabel: 'Students Trained', desc: 'Educating youth on constitutional rights and safe interactions with law enforcement.' },
+  { icon: '💚', name: 'Are You OK?',       slug: 'are-you-ok',        stat: 'J&J',   statLabel: 'Partnership',    desc: 'A national mental health initiative for Black men in partnership with Johnson & Johnson.' },
+];
+
+const events = [
+  { month: 'Jul', day: '6',  year: '2027', title: '88th Grand Chapter Meeting', location: 'Baltimore, Maryland' },
+  { month: 'Apr', day: '17', year: '2026', title: 'Southern Province Council',  location: 'Miami, Florida' },
+  { month: 'Apr', day: '22', year: '2026', title: 'North Central Province Council', location: 'TBD' },
+];
 ---
 
 <Layout title="Home — Kappa Alpha Psi® Fraternity, Inc.">
 
-  <!-- Hero -->
-  <section class="hero">
-    <div class="hero-overlay"></div>
-    <div class="container hero-content">
-      <div class="hero-badge">Founded January 5, 1911</div>
-      <h1>Kappa Alpha Psi<sup>®</sup> Fraternity, Inc.</h1>
-      <p class="hero-motto">Achievement in Every Field of Human Endeavor</p>
+<!-- ============================
+     HERO
+=============================== -->
+<section class="hero">
+  <div class="hero-bg" aria-hidden="true">
+    <div class="hero-pattern"></div>
+    <div class="hero-glow"></div>
+  </div>
+  <div class="container hero-inner">
+    <div class="hero-content">
+      <div class="hero-eyebrow">
+        <span class="hero-since">Founded January 5, 1911</span>
+        <span class="hero-sep" aria-hidden="true">·</span>
+        <span>Indiana University Bloomington</span>
+      </div>
+      <h1 class="hero-title">
+        Achievement<br />
+        <em>in Every Field</em><br />
+        of Human Endeavor
+      </h1>
       <p class="hero-desc">
-        A collegiate Greek-letter fraternity committed to developing leaders and serving communities
-        across the United States and 13 international territories.
+        A collegiate Greek-letter fraternity committed to developing leaders,
+        serving communities, and advancing achievement across the globe.
       </p>
       <div class="hero-actions">
-        <a href="/membership" class="btn btn--white">Learn About Membership</a>
+        <a href="/membership" class="btn btn--white">Explore Membership</a>
         <a href="/chapter-locator" class="btn btn--outline-white">Find a Chapter</a>
       </div>
     </div>
-  </section>
+    <div class="hero-greek" aria-hidden="true">ΚΑΨ</div>
+  </div>
+  <div class="hero-scroll-indicator" aria-hidden="true">
+    <div class="hero-scroll-line"></div>
+  </div>
+</section>
 
-  <!-- Stats -->
-  <section class="section section--crimson">
-    <div class="container">
-      <div class="stats-grid">
-        <div class="stat-item">
-          <h3>150,000+</h3>
-          <p>Members Initiated</p>
-        </div>
-        <div class="stat-item">
-          <h3>700+</h3>
-          <p>Active Chapters</p>
-        </div>
-        <div class="stat-item">
-          <h3>113</h3>
-          <p>Years of Achievement</p>
-        </div>
-        <div class="stat-item">
-          <h3>13</h3>
-          <p>International Territories</p>
-        </div>
+<!-- ============================
+     STATS BAR
+=============================== -->
+<section class="stats-bar">
+  <div class="container">
+    <div class="stats-bar-grid">
+      <div class="stats-bar-item reveal">
+        <span class="stat-num">150,000+</span>
+        <span class="stat-label">Members Initiated</span>
+      </div>
+      <div class="stats-bar-divider" aria-hidden="true"></div>
+      <div class="stats-bar-item reveal" style="transition-delay:0.1s">
+        <span class="stat-num">700+</span>
+        <span class="stat-label">Active Chapters</span>
+      </div>
+      <div class="stats-bar-divider" aria-hidden="true"></div>
+      <div class="stats-bar-item reveal" style="transition-delay:0.2s">
+        <span class="stat-num">114</span>
+        <span class="stat-label">Years of Achievement</span>
+      </div>
+      <div class="stats-bar-divider" aria-hidden="true"></div>
+      <div class="stats-bar-item reveal" style="transition-delay:0.3s">
+        <span class="stat-num">13</span>
+        <span class="stat-label">International Territories</span>
       </div>
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- Grand Polemarch Welcome -->
-  <section class="section">
-    <div class="container">
-      <div class="welcome-grid">
-        <div class="welcome-image">
-          <div class="welcome-img-placeholder">
-            <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
-              <circle cx="40" cy="30" r="20" fill="rgba(255,255,255,0.2)"/>
-              <path d="M10 70c0-16.6 13.4-30 30-30s30 13.4 30 30" fill="rgba(255,255,255,0.2)"/>
-            </svg>
-            <p>Grand Polemarch<br/>Jimmy McMikle Sr.</p>
-          </div>
+<!-- ============================
+     GRAND POLEMARCH MESSAGE
+=============================== -->
+<section class="section">
+  <div class="container">
+    <div class="message-grid">
+      <div class="message-photo reveal">
+        <div class="message-photo-frame">
+          <svg width="72" height="72" viewBox="0 0 72 72" fill="none" aria-hidden="true">
+            <circle cx="36" cy="28" r="18" fill="rgba(255,255,255,0.15)"/>
+            <path d="M8 64c0-15.46 12.54-28 28-28s28 12.54 28 28" fill="rgba(255,255,255,0.15)"/>
+          </svg>
+          <p>Grand Polemarch<br/>Jimmy McMikle Sr.</p>
         </div>
-        <div class="welcome-text">
-          <span class="badge badge--crimson">Grand Polemarch's Welcome</span>
-          <h2 style="margin-top:16px; margin-bottom:16px;">A Message from Our Grand Polemarch</h2>
-          <blockquote style="border-left:4px solid var(--crimson); padding:16px 24px; background:var(--cream); border-radius:0 8px 8px 0; font-style:italic; margin-bottom:24px;">
-            "It is my honor to serve as the Grand Polemarch of an organization comprised of a dynamic
-            collection of college educated men, a literal 'Who's Who' rolodex of the risk takers,
-            trailblazers and changemakers that exist in the world today."
-          </blockquote>
-          <p style="color:var(--gray-600); line-height:1.8; margin-bottom:24px;">
-            Since our founding in 1911, Kappa Alpha Psi® has been committed to serving communities
-            and developing future leaders. With nearly 700 chapters across 400+ communities, our
-            brotherhood continues to advance achievement in every field of human endeavor.
-          </p>
-          <a href="/leadership" class="btn btn--primary">Meet Our Leadership</a>
-        </div>
+        <div class="message-photo-accent"></div>
+      </div>
+      <div class="message-body reveal" style="transition-delay:0.15s">
+        <div class="section-label">Grand Polemarch's Welcome</div>
+        <div class="rule"></div>
+        <h2 class="section-title">A Message from<br/>Our Grand Polemarch</h2>
+        <blockquote class="message-quote">
+          "It is my honor to serve as the Grand Polemarch of an organization comprised of a dynamic
+          collection of college educated men — a literal 'Who's Who' of the risk takers, trailblazers,
+          and changemakers that exist in the world today."
+        </blockquote>
+        <p style="color:var(--gray-600); line-height:1.85; margin-bottom:28px; font-size:1.025rem;">
+          Since our founding in 1911, Kappa Alpha Psi® has been committed to serving communities
+          and developing future leaders. With nearly 700 chapters across 400+ communities, our
+          brotherhood continues to advance achievement in every field of human endeavor.
+        </p>
+        <a href="/leadership" class="btn btn--primary">Meet Our Leadership</a>
       </div>
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- Programs -->
-  <section class="section section--gray">
-    <div class="container">
-      <div style="text-align:center; margin-bottom:48px;">
-        <h2 class="section-title" style="display:inline-block;">Our Programs</h2>
-        <p class="section-subtitle">Serving communities through impactful initiatives</p>
+<!-- ============================
+     PROGRAMS
+=============================== -->
+<section class="section section--gray">
+  <div class="container">
+    <div class="programs-header reveal">
+      <div>
+        <div class="section-label">National Programs</div>
+        <div class="rule"></div>
+        <h2 class="section-title">Serving Communities<br/>Through Impactful Initiatives</h2>
       </div>
-      <div class="grid grid--3">
-
-        <a href="/programs/guide-right" class="program-card" style="text-decoration:none; color:inherit;">
-          <div class="program-card-header">
-            <div class="program-card-icon">🎯</div>
-            <h3>Guide Right</h3>
-          </div>
-          <div class="program-card-body">
-            <p>Our National Service Initiative providing educational and occupational guidance to youth. Over 500,000 young people mentored.</p>
-            <span class="btn btn--outline" style="font-size:0.85rem; padding:8px 16px;">Learn More</span>
-          </div>
-        </a>
-
-        <a href="/programs/kappa-league" class="program-card" style="text-decoration:none; color:inherit;">
-          <div class="program-card-header">
-            <div class="program-card-icon">⭐</div>
-            <h3>Kappa League</h3>
-          </div>
-          <div class="program-card-body">
-            <p>A leadership development program for male students in grades 6–12, helping young men grow and develop their leadership talents.</p>
-            <span class="btn btn--outline" style="font-size:0.85rem; padding:8px 16px;">Learn More</span>
-          </div>
-        </a>
-
-        <a href="/programs/achievement-academy" class="program-card" style="text-decoration:none; color:inherit;">
-          <div class="program-card-header">
-            <div class="program-card-icon">🎓</div>
-            <h3>Achievement Academy</h3>
-          </div>
-          <div class="program-card-body">
-            <p>Enhancing the social, professional, and leadership experiences of collegiate members through mentoring and coaching.</p>
-            <span class="btn btn--outline" style="font-size:0.85rem; padding:8px 16px;">Learn More</span>
-          </div>
-        </a>
-
-        <a href="/programs/room-to-read" class="program-card" style="text-decoration:none; color:inherit;">
-          <div class="program-card-header">
-            <div class="program-card-icon">📚</div>
-            <h3>Room To Read</h3>
-          </div>
-          <div class="program-card-body">
-            <p>Partnering with Room to Read to bring literacy resources to under-resourced schools. Over 32,000 books donated.</p>
-            <span class="btn btn--outline" style="font-size:0.85rem; padding:8px 16px;">Learn More</span>
-          </div>
-        </a>
-
-        <a href="/programs/learn-2-live" class="program-card" style="text-decoration:none; color:inherit;">
-          <div class="program-card-header">
-            <div class="program-card-icon">⚖️</div>
-            <h3>Learn 2 Live</h3>
-          </div>
-          <div class="program-card-body">
-            <p>Educating youth on constitutional rights and practical strategies for safe police interactions. 70,000+ students trained.</p>
-            <span class="btn btn--outline" style="font-size:0.85rem; padding:8px 16px;">Learn More</span>
-          </div>
-        </a>
-
-        <a href="/programs/are-you-ok" class="program-card" style="text-decoration:none; color:inherit;">
-          <div class="program-card-header">
-            <div class="program-card-icon">💚</div>
-            <h3>Are You OK?</h3>
-          </div>
-          <div class="program-card-body">
-            <p>A mental health initiative in partnership with Johnson &amp; Johnson addressing unique health challenges facing Black men.</p>
-            <span class="btn btn--outline" style="font-size:0.85rem; padding:8px 16px;">Learn More</span>
-          </div>
-        </a>
-
-        <a href="/programs/glad" class="program-card" style="text-decoration:none; color:inherit;">
-          <div class="program-card-header">
-            <div class="program-card-icon">💰</div>
-            <h3>G.L.A.D.</h3>
-          </div>
-          <div class="program-card-body">
-            <p>Greeks Learning to Avoid Debt — empowering tomorrow's leaders through financial literacy education and resources.</p>
-            <span class="btn btn--outline" style="font-size:0.85rem; padding:8px 16px;">Learn More</span>
-          </div>
-        </a>
-
-        <a href="/programs/undergraduate-leadership-institute" class="program-card" style="text-decoration:none; color:inherit;">
-          <div class="program-card-header">
-            <div class="program-card-icon">🏛️</div>
-            <h3>Undergraduate Leadership Institute</h3>
-          </div>
-          <div class="program-card-body">
-            <p>Developing the next generation of fraternal leaders through structured leadership training and capacity building.</p>
-            <span class="btn btn--outline" style="font-size:0.85rem; padding:8px 16px;">Learn More</span>
-          </div>
-        </a>
-
-        <a href="/programs/lead-kappa" class="program-card" style="text-decoration:none; color:inherit;">
-          <div class="program-card-header">
-            <div class="program-card-icon">🚀</div>
-            <h3>Lead Kappa</h3>
-          </div>
-          <div class="program-card-body">
-            <p>A highly-structured leadership experience held during the conclave year, training participants with capacity building skills.</p>
-            <span class="btn btn--outline" style="font-size:0.85rem; padding:8px 16px;">Learn More</span>
-          </div>
-        </a>
-
-      </div>
+      <a href="/programs/guide-right" class="btn btn--outline" style="align-self:flex-end;">View All Programs</a>
     </div>
-  </section>
-
-  <!-- Upcoming Events -->
-  <section class="section">
-    <div class="container">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:40px; flex-wrap:wrap; gap:16px;">
-        <h2 class="section-title" style="margin-bottom:0;">Upcoming Events</h2>
-        <a href="/calendar" class="btn btn--outline">View Full Calendar</a>
-      </div>
-      <div style="display:grid; gap:16px; max-width:800px;">
-        <div class="event-card">
-          <div class="event-date-badge">
-            <div class="month">Jul</div>
-            <div class="day">6</div>
+    <div class="programs-grid">
+      {programs.map((p, i) => (
+        <a href={`/programs/${p.slug}`} class="prog-card reveal" style={`transition-delay:${i * 0.07}s`}>
+          <div class="prog-card-top">
+            <span class="prog-icon" aria-hidden="true">{p.icon}</span>
+            <div class="prog-stat">
+              <div class="prog-stat-num">{p.stat}</div>
+              <div class="prog-stat-label">{p.statLabel}</div>
+            </div>
           </div>
-          <div class="event-info">
-            <h4>88th Grand Chapter Meeting</h4>
-            <p>July 6–11, 2027 &nbsp;|&nbsp; Baltimore, MD</p>
-          </div>
-        </div>
-        <div class="event-card">
-          <div class="event-date-badge">
-            <div class="month">Apr</div>
-            <div class="day">17</div>
-          </div>
-          <div class="event-info">
-            <h4>Southern Province Council</h4>
-            <p>April 17–20 &nbsp;|&nbsp; Miami, Florida</p>
-          </div>
-        </div>
-        <div class="event-card">
-          <div class="event-date-badge">
-            <div class="month">Apr</div>
-            <div class="day">22</div>
-          </div>
-          <div class="event-info">
-            <h4>North Central Province Council</h4>
-            <p>April 22–26</p>
-          </div>
-        </div>
-      </div>
+          <h3 class="prog-name">{p.name}</h3>
+          <p class="prog-desc">{p.desc}</p>
+          <div class="prog-cta">Learn More →</div>
+        </a>
+      ))}
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- Are You OK CTA -->
-  <section class="section section--crimson">
-    <div class="container">
-      <div class="are-you-ok-grid">
-        <div>
-          <span class="badge-gold">In Partnership with Johnson &amp; Johnson</span>
-          <h2 style="color:var(--white); font-size:2.5rem; margin:16px 0;">Are You OK?</h2>
-          <p style="color:rgba(255,255,255,0.85); line-height:1.8; font-size:1.05rem; margin-bottom:24px;">
-            It's time to have the conversation. Black and African American men face unique mental
-            health challenges. Despite 21% reporting mental illness, only 39% receive appropriate
-            services and care.
-          </p>
-          <a href="/programs/are-you-ok" class="btn btn--white">More Information</a>
-        </div>
-        <div class="stats-column">
-          <div class="stat-callout">
-            <div class="stat-callout-num">39%</div>
-            <p>of Black men with mental illness receive appropriate care</p>
-          </div>
-          <div class="stat-callout">
-            <div class="stat-callout-num">21%</div>
-            <p>of Black/African American men report mental illness</p>
-          </div>
-          <div class="stat-callout">
-            <div class="stat-callout-num">2×</div>
-            <p>more likely to die from prostate cancer than white men</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Sponsors -->
-  <section class="section section--gray">
-    <div class="container">
-      <div style="text-align:center; margin-bottom:40px;">
-        <h2 class="section-title" style="display:inline-block;">Community &amp; Corporate Sponsors</h2>
-        <p class="section-subtitle">Partnering with organizations committed to our mission</p>
-      </div>
-      <div class="sponsor-grid">
-        <div class="sponsor-logo">Regions Bank</div>
-        <div class="sponsor-logo">J.P. Morgan Chase &amp; Co.</div>
-        <div class="sponsor-logo">March of Dimes</div>
-        <div class="sponsor-logo">U.S. Army</div>
-        <div class="sponsor-logo">All of Us Research Program</div>
-        <div class="sponsor-logo">St. Jude Children's Research Hospital</div>
-        <div class="sponsor-logo">Room To Read</div>
-        <div class="sponsor-logo">Black Health Matters</div>
-        <div class="sponsor-logo">American Cancer Society</div>
-        <div class="sponsor-logo">AARP</div>
-        <div class="sponsor-logo">Eli Lilly</div>
-      </div>
-      <div style="text-align:center; margin-top:32px;">
-        <a href="/sponsors" class="btn btn--outline">Partner with Kappa</a>
-      </div>
-    </div>
-  </section>
-
-  <!-- Membership CTA -->
-  <section class="section" style="background:var(--cream);">
-    <div class="container" style="text-align:center; max-width:700px; margin:0 auto;">
-      <h2 class="section-title" style="display:inline-block;">Membership in Kappa Alpha Psi®</h2>
-      <p style="color:var(--gray-600); font-size:1.05rem; line-height:1.8; margin:16px 0 32px;">
-        "Membership is a solemn commitment. To this Fraternity, the maker of the commitment becomes
-        synonymous with the commitment itself."
+<!-- ============================
+     ARE YOU OK BANNER
+=============================== -->
+<section class="ayo-banner reveal">
+  <div class="ayo-bg" aria-hidden="true"></div>
+  <div class="container ayo-inner">
+    <div class="ayo-content">
+      <div class="ayo-partner">In Partnership with Johnson &amp; Johnson</div>
+      <h2 class="ayo-title">Are You OK?</h2>
+      <p class="ayo-body">
+        It's time to have the conversation. Black and African American men face unique mental health
+        challenges. Despite 21% reporting mental illness, only 39% receive appropriate services and care.
+        Kappa Alpha Psi® is committed to changing that.
       </p>
-      <div style="display:flex; gap:16px; justify-content:center; flex-wrap:wrap;">
-        <a href="/membership" class="btn btn--primary">Learn About Membership</a>
-        <a href="/chapter-locator" class="btn btn--outline">Find a Chapter Near You</a>
+      <a href="/programs/are-you-ok" class="btn btn--white">More Information</a>
+    </div>
+    <div class="ayo-stats">
+      <div class="ayo-stat">
+        <div class="ayo-stat-num">39%</div>
+        <p>of Black men with mental illness receive appropriate care</p>
+      </div>
+      <div class="ayo-stat">
+        <div class="ayo-stat-num">21%</div>
+        <p>of Black / African American men report mental illness</p>
+      </div>
+      <div class="ayo-stat">
+        <div class="ayo-stat-num">2×</div>
+        <p>more likely to die from prostate cancer than white men</p>
       </div>
     </div>
-  </section>
+  </div>
+</section>
+
+<!-- ============================
+     EVENTS
+=============================== -->
+<section class="section">
+  <div class="container">
+    <div class="events-header reveal">
+      <div>
+        <div class="section-label">What's Coming Up</div>
+        <div class="rule"></div>
+        <h2 class="section-title">Upcoming Events</h2>
+      </div>
+      <a href="/calendar" class="btn btn--outline" style="align-self:flex-end;">Full Calendar</a>
+    </div>
+    <div class="events-list reveal" style="transition-delay:0.1s">
+      {events.map(e => (
+        <div class="event-card">
+          <div class="event-date-badge">
+            <div class="month">{e.month}</div>
+            <div class="day">{e.day}</div>
+          </div>
+          <div class="event-info">
+            <h4>{e.title}</h4>
+            <p>{e.location} &nbsp;·&nbsp; {e.year}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
+
+<!-- ============================
+     PARTNERS
+=============================== -->
+<section class="section section--gray">
+  <div class="container">
+    <div class="text-center reveal" style="margin-bottom:40px;">
+      <div class="section-label">Community &amp; Corporate Partners</div>
+      <div class="rule rule--center"></div>
+      <h2 class="section-title">Organizations That Share Our Mission</h2>
+    </div>
+    <div class="sponsor-grid reveal" style="transition-delay:0.1s">
+      <div class="sponsor-logo">Regions Bank</div>
+      <div class="sponsor-logo">J.P. Morgan Chase</div>
+      <div class="sponsor-logo">Johnson &amp; Johnson</div>
+      <div class="sponsor-logo">U.S. Army</div>
+      <div class="sponsor-logo">Room To Read</div>
+      <div class="sponsor-logo">St. Jude Children's Research Hospital</div>
+      <div class="sponsor-logo">March of Dimes</div>
+      <div class="sponsor-logo">American Cancer Society</div>
+      <div class="sponsor-logo">AARP</div>
+      <div class="sponsor-logo">Eli Lilly</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================
+     MEMBERSHIP CTA
+=============================== -->
+<section class="membership-cta reveal">
+  <div class="container membership-cta-inner">
+    <div class="membership-cta-text">
+      <div class="section-label" style="color:var(--gold);">Join the Brotherhood</div>
+      <div class="rule" style="background:var(--gold);"></div>
+      <h2 style="color:var(--white); font-size:clamp(1.8rem, 4vw, 3rem); margin-bottom:16px;">
+        Membership in Kappa Alpha Psi®
+      </h2>
+      <p style="color:rgba(255,255,255,0.75); font-size:1.05rem; line-height:1.8; max-width:520px;">
+        "Membership is a solemn commitment. To this Fraternity, the maker of the commitment
+        becomes synonymous with the commitment itself."
+      </p>
+    </div>
+    <div class="membership-cta-actions">
+      <a href="/membership" class="btn btn--white">Learn About Membership</a>
+      <a href="/chapter-locator" class="btn btn--outline-white">Find a Chapter Near You</a>
+    </div>
+  </div>
+</section>
 
 </Layout>
 
 <style>
+/* ===== HERO ===== */
 .hero {
   position: relative;
-  background: linear-gradient(135deg, #6B0000 0%, #8B0000 40%, #A50000 100%);
-  min-height: 600px;
+  min-height: 100svh;
   display: flex;
   align-items: center;
+  background: var(--crimson-dark);
   overflow: hidden;
 }
-.hero::before {
-  content: '';
+.hero-bg {
   position: absolute;
   inset: 0;
-  background-image: repeating-linear-gradient(
-    45deg, transparent, transparent 40px,
-    rgba(255,255,255,0.02) 40px, rgba(255,255,255,0.02) 80px
-  );
+  z-index: 0;
 }
-.hero-overlay {
+.hero-pattern {
+  position: absolute; inset: 0;
+  background-image:
+    radial-gradient(circle at 20% 50%, rgba(201,168,76,0.08) 0%, transparent 60%),
+    radial-gradient(circle at 80% 20%, rgba(255,255,255,0.04) 0%, transparent 50%),
+    repeating-linear-gradient(
+      -45deg,
+      transparent, transparent 40px,
+      rgba(255,255,255,0.015) 40px, rgba(255,255,255,0.015) 41px
+    );
+}
+.hero-glow {
   position: absolute;
-  inset: 0;
-  background: rgba(0,0,0,0.2);
+  bottom: -200px; left: -200px;
+  width: 600px; height: 600px;
+  background: radial-gradient(circle, rgba(201,168,76,0.12) 0%, transparent 70%);
+  border-radius: 50%;
 }
-.hero-content {
-  position: relative;
-  z-index: 1;
-  color: #fff;
+
+.hero-inner {
+  position: relative; z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 48px;
   padding-top: 80px;
   padding-bottom: 80px;
-  max-width: 720px;
 }
-.hero-badge {
-  display: inline-block;
-  background: rgba(255,255,255,0.15);
-  border: 1px solid rgba(255,255,255,0.3);
-  padding: 6px 16px;
-  border-radius: 20px;
-  font-size: 0.85rem;
-  letter-spacing: 1px;
+.hero-content { max-width: 640px; }
+.hero-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: rgba(255,255,255,0.5);
+  letter-spacing: 1.5px;
   text-transform: uppercase;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
-.hero h1 {
-  font-size: 3.5rem;
-  color: #fff;
-  line-height: 1.1;
-  margin-bottom: 12px;
+.hero-since { color: var(--gold); font-weight: 600; }
+.hero-title {
+  font-family: var(--font-serif);
+  font-size: clamp(3rem, 7vw, 6rem);
+  font-weight: 700;
+  color: var(--white);
+  line-height: 1.05;
+  margin-bottom: 24px;
+  letter-spacing: -1px;
 }
-.hero h1 sup { font-size: 1.5rem; }
-.hero-motto {
-  font-size: 1.1rem;
+.hero-title em {
   font-style: italic;
-  color: #C9A84C;
-  margin-bottom: 20px;
-  letter-spacing: 0.5px;
+  color: var(--gold);
+  font-weight: 400;
 }
 .hero-desc {
+  font-family: var(--font-sans);
   font-size: 1.1rem;
-  color: rgba(255,255,255,0.85);
-  line-height: 1.7;
-  margin-bottom: 32px;
-  max-width: 560px;
+  color: rgba(255,255,255,0.7);
+  line-height: 1.75;
+  margin-bottom: 36px;
+  font-weight: 300;
+  max-width: 520px;
 }
-.hero-actions {
+.hero-actions { display: flex; gap: 14px; flex-wrap: wrap; }
+.hero-greek {
+  font-family: var(--font-serif);
+  font-size: clamp(6rem, 15vw, 16rem);
+  font-weight: 700;
+  color: rgba(255,255,255,0.04);
+  line-height: 1;
+  user-select: none;
+  flex-shrink: 0;
+  letter-spacing: -4px;
+}
+.hero-scroll-indicator {
+  position: absolute;
+  bottom: 32px; left: 50%;
+  transform: translateX(-50%);
+  display: flex; flex-direction: column; align-items: center;
+  gap: 6px;
+}
+.hero-scroll-line {
+  width: 1px; height: 56px;
+  background: linear-gradient(to bottom, rgba(255,255,255,0.4), transparent);
+  animation: scrollPulse 2s ease-in-out infinite;
+}
+@keyframes scrollPulse {
+  0%, 100% { opacity: 0.4; transform: scaleY(1); }
+  50% { opacity: 1; transform: scaleY(1.2); }
+}
+
+/* ===== STATS BAR ===== */
+.stats-bar {
+  background: var(--white);
+  border-bottom: 1px solid var(--gray-100);
+  padding: 48px 0;
+}
+.stats-bar-grid {
   display: flex;
-  gap: 16px;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
   flex-wrap: wrap;
 }
-.welcome-grid {
+.stats-bar-item {
+  text-align: center;
+  padding: 16px 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.stats-bar-divider {
+  width: 1px; height: 48px;
+  background: var(--gray-200);
+  flex-shrink: 0;
+}
+
+/* ===== MESSAGE GRID ===== */
+.message-grid {
   display: grid;
-  grid-template-columns: 1fr 2fr;
-  gap: 64px;
+  grid-template-columns: 340px 1fr;
+  gap: 80px;
   align-items: center;
 }
-.welcome-img-placeholder {
-  background: linear-gradient(135deg, var(--crimson), var(--crimson-dark));
+.message-photo { position: relative; }
+.message-photo-frame {
+  background: linear-gradient(160deg, var(--crimson-dark), var(--crimson));
   aspect-ratio: 3/4;
+  border-radius: var(--radius-xl);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: rgba(255,255,255,0.7);
+  color: rgba(255,255,255,0.6);
   text-align: center;
-  padding: 24px;
   font-size: 0.9rem;
-  line-height: 1.5;
-  border-radius: 8px;
-  gap: 16px;
+  line-height: 1.6;
+  gap: 12px;
+  position: relative;
+  z-index: 1;
 }
-.are-you-ok-grid {
+.message-photo-accent {
+  position: absolute;
+  top: 16px; right: -16px;
+  bottom: -16px; left: 16px;
+  border: 2px solid var(--gold);
+  border-radius: var(--radius-xl);
+  opacity: 0.3;
+  z-index: 0;
+}
+.message-quote {
+  font-family: var(--font-serif);
+  font-size: 1.2rem;
+  font-style: italic;
+  line-height: 1.75;
+  color: var(--gray-800);
+  border-left: 4px solid var(--crimson);
+  padding: 16px 24px;
+  background: var(--cream);
+  border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+  margin-bottom: 24px;
+}
+
+/* ===== PROGRAMS ===== */
+.programs-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 40px;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.programs-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+.prog-card {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--gray-100);
+  text-decoration: none;
+  color: inherit;
+  transition: all var(--transition);
+  position: relative;
+  overflow: hidden;
+}
+.prog-card::before {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(to right, var(--crimson), var(--gold));
+  transform: scaleX(0);
+  transition: transform var(--transition);
+  transform-origin: left;
+}
+.prog-card:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-xl);
+  border-color: transparent;
+}
+.prog-card:hover::before { transform: scaleX(1); }
+.prog-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+.prog-icon { font-size: 1.8rem; }
+.prog-stat { text-align: right; }
+.prog-stat-num {
+  font-family: var(--font-serif);
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--crimson);
+  line-height: 1;
+}
+.prog-stat-label {
+  font-size: 0.65rem;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--gray-400);
+  margin-top: 2px;
+}
+.prog-name {
+  font-family: var(--font-serif);
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin-bottom: 10px;
+  color: var(--black);
+}
+.prog-desc {
+  font-size: 0.875rem;
+  color: var(--gray-600);
+  line-height: 1.7;
+  flex: 1;
+  margin-bottom: 18px;
+}
+.prog-cta {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--crimson);
+  letter-spacing: 0.3px;
+  transition: letter-spacing var(--transition);
+  font-family: var(--font-sans);
+}
+.prog-card:hover .prog-cta { letter-spacing: 1px; }
+
+/* ===== ARE YOU OK BANNER ===== */
+.ayo-banner {
+  position: relative;
+  background: var(--crimson);
+  overflow: hidden;
+  padding: clamp(56px, 8vw, 100px) 0;
+}
+.ayo-bg {
+  position: absolute; inset: 0;
+  background-image: radial-gradient(circle at 70% 50%, rgba(201,168,76,0.12) 0%, transparent 60%),
+    radial-gradient(circle at 10% 80%, rgba(0,0,0,0.2) 0%, transparent 50%);
+}
+.ayo-inner {
+  position: relative; z-index: 1;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 64px;
   align-items: center;
 }
-.badge-gold {
+.ayo-partner {
   display: inline-block;
-  background: var(--gold);
-  color: var(--white);
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 0.75rem;
+  background: rgba(255,255,255,0.12);
+  color: var(--gold);
+  font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 1.5px;
+  padding: 5px 14px;
+  border-radius: 20px;
+  margin-bottom: 16px;
+  font-family: var(--font-sans);
+  border: 1px solid rgba(201,168,76,0.3);
 }
-.stats-column {
-  display: grid;
-  gap: 16px;
+.ayo-title {
+  font-family: var(--font-serif);
+  font-size: clamp(2.2rem, 5vw, 4rem);
+  color: var(--white);
+  font-weight: 700;
+  margin-bottom: 16px;
+  line-height: 1.1;
 }
-.stat-callout {
-  background: rgba(255,255,255,0.1);
-  border-radius: 8px;
-  padding: 20px;
+.ayo-body {
+  color: rgba(255,255,255,0.75);
+  line-height: 1.8;
+  font-size: 1.025rem;
+  margin-bottom: 28px;
+  font-family: var(--font-sans);
+  font-weight: 300;
+}
+.ayo-stats { display: flex; flex-direction: column; gap: 16px; }
+.ayo-stat {
+  background: rgba(255,255,255,0.08);
+  border-radius: var(--radius-lg);
+  padding: 20px 24px;
   border-left: 4px solid var(--gold);
 }
-.stat-callout-num {
-  font-size: 2rem;
-  font-weight: 800;
+.ayo-stat-num {
+  font-family: var(--font-serif);
+  font-size: 2.4rem;
+  font-weight: 700;
   color: var(--gold);
+  line-height: 1;
+  margin-bottom: 4px;
 }
-.stat-callout p {
-  color: rgba(255,255,255,0.8);
-  font-size: 0.9rem;
-  margin-top: 4px;
+.ayo-stat p {
+  font-size: 0.875rem;
+  color: rgba(255,255,255,0.7);
+  line-height: 1.5;
+  font-family: var(--font-sans);
+}
+
+/* ===== EVENTS ===== */
+.events-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 32px;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.events-list { display: flex; flex-direction: column; gap: 12px; max-width: 720px; }
+
+/* ===== MEMBERSHIP CTA ===== */
+.membership-cta {
+  background: var(--black);
+  padding: clamp(64px, 8vw, 100px) 0;
+  position: relative;
+  overflow: hidden;
+}
+.membership-cta::before {
+  content: '';
+  position: absolute;
+  right: -100px; top: -100px;
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, rgba(139,0,0,0.3) 0%, transparent 70%);
+  border-radius: 50%;
+}
+.membership-cta-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 48px;
+  flex-wrap: wrap;
+  position: relative;
+  z-index: 1;
+}
+.membership-cta-actions {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 1024px) {
+  .programs-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 900px) {
+  .hero-greek { display: none; }
+  .message-grid { grid-template-columns: 1fr; }
+  .message-photo { max-width: 300px; margin: 0 auto; }
+  .ayo-inner { grid-template-columns: 1fr; }
 }
 @media (max-width: 768px) {
-  .hero h1 { font-size: 2.2rem; }
-  .welcome-grid { grid-template-columns: 1fr; }
-  .welcome-image { display: none; }
-  .are-you-ok-grid { grid-template-columns: 1fr; }
+  .hero { min-height: 100svh; }
+  .stats-bar-divider { display: none; }
+  .stats-bar-item { padding: 12px 20px; }
+  .programs-grid { grid-template-columns: 1fr; }
+  .membership-cta-inner { flex-direction: column; }
+}
+@media (max-width: 640px) {
+  .hero-title { font-size: 2.8rem; }
+  .hero-actions { flex-direction: column; }
+  .hero-actions .btn { width: 100%; justify-content: center; }
 }
 </style>

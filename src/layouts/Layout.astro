@@ -13,7 +13,7 @@ const {
   image = "/og-image.jpg",
 } = Astro.props;
 
-const canonicalURL = new URL(Astro.url.pathname, Astro.site);
+const canonicalURL = new URL(Astro.url.pathname, Astro.site ?? 'https://kappaalphapsi1911.com');
 ---
 
 <!DOCTYPE html>
@@ -24,29 +24,21 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
     <link rel="canonical" href={canonicalURL} />
     <meta name="description" content={description} />
     <meta name="generator" content={Astro.generator} />
-
-    <!-- Open Graph -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content={canonicalURL} />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:image" content={image} />
-
-    <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@kapsi1911" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={image} />
-
-    <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-
     <title>{title}</title>
-
-    <style>
-      /* Mobile nav toggle script styles handled by global.css */
-    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   </head>
 
   <body>
@@ -55,38 +47,31 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
     <!-- Top Bar -->
     <div class="top-bar">
       <div class="container">
-        <span>ΚΑΨ &nbsp;|&nbsp; Founded January 5, 1911 &nbsp;|&nbsp; Indiana University Bloomington</span>
+        <span>ΚΑΨ &nbsp;·&nbsp; Founded January 5, 1911 &nbsp;·&nbsp; Indiana University Bloomington</span>
         <div class="top-bar-right">
-          <a href="/need-assistance">Need Assistance</a>
-          <a href="/member-login" style="font-weight:700;">Brothers Only Login</a>
+          <a href="/contact/need-assistance">Need Assistance</a>
+          <a href="/member-login" class="top-cta">Brothers Only Login</a>
         </div>
       </div>
     </div>
 
     <!-- Header -->
-    <header class="site-header">
+    <header class="site-header" id="site-header">
       <div class="container">
         <nav class="nav-main" aria-label="Main navigation">
-          <!-- Logo -->
+
           <a href="/" class="nav-logo" aria-label="Kappa Alpha Psi Home">
-            <svg width="44" height="44" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <circle cx="22" cy="22" r="22" fill="#8B0000"/>
-              <text x="22" y="28" text-anchor="middle" fill="#FFF8E1" font-size="16" font-weight="bold" font-family="Georgia, serif">ΚΑΨ</text>
-            </svg>
+            <div class="nav-logo-mark" aria-hidden="true">ΚΑΨ</div>
             <div class="nav-logo-text">
               Kappa Alpha Psi®
               <span>Fraternity, Inc.</span>
             </div>
           </a>
 
-          <!-- Desktop Nav Links -->
           <ul class="nav-links" role="list">
 
-            <!-- About Us -->
             <li class="nav-item">
-              <button aria-haspopup="true" aria-expanded="false">
-                About Us <span class="chevron" aria-hidden="true">▾</span>
-              </button>
+              <button aria-haspopup="true" aria-expanded="false">About Us <span class="chevron" aria-hidden="true">▾</span></button>
               <ul class="dropdown" role="list">
                 <li><a href="/history">Historical Brief</a></li>
                 <li><a href="/founders">Founders</a></li>
@@ -98,11 +83,8 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
               </ul>
             </li>
 
-            <!-- Leadership -->
             <li class="nav-item">
-              <button aria-haspopup="true" aria-expanded="false">
-                Leadership <span class="chevron" aria-hidden="true">▾</span>
-              </button>
+              <button aria-haspopup="true" aria-expanded="false">Leadership <span class="chevron" aria-hidden="true">▾</span></button>
               <ul class="dropdown" role="list">
                 <li><a href="/leadership">Grand Chapter Leadership</a></li>
                 <li><a href="/province-polemarchs">Province Polemarchs</a></li>
@@ -112,11 +94,8 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
               </ul>
             </li>
 
-            <!-- Programs -->
             <li class="nav-item">
-              <button aria-haspopup="true" aria-expanded="false">
-                Programs <span class="chevron" aria-hidden="true">▾</span>
-              </button>
+              <button aria-haspopup="true" aria-expanded="false">Programs <span class="chevron" aria-hidden="true">▾</span></button>
               <ul class="dropdown" role="list">
                 <li><a href="/programs/guide-right">Guide Right</a></li>
                 <li><a href="/programs/kappa-league">Kappa League</a></li>
@@ -130,11 +109,8 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
               </ul>
             </li>
 
-            <!-- Media -->
             <li class="nav-item">
-              <button aria-haspopup="true" aria-expanded="false">
-                Media <span class="chevron" aria-hidden="true">▾</span>
-              </button>
+              <button aria-haspopup="true" aria-expanded="false">Media <span class="chevron" aria-hidden="true">▾</span></button>
               <ul class="dropdown" role="list">
                 <li><a href="/media/journal">Kappa Alpha Psi® Journal</a></li>
                 <li><a href="/media/journal-submissions">Journal Submissions</a></li>
@@ -144,36 +120,22 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
               </ul>
             </li>
 
-            <!-- Member Services -->
             <li class="nav-item">
-              <button aria-haspopup="true" aria-expanded="false">
-                Member Services <span class="chevron" aria-hidden="true">▾</span>
-              </button>
+              <button aria-haspopup="true" aria-expanded="false">Members <span class="chevron" aria-hidden="true">▾</span></button>
               <ul class="dropdown" role="list">
                 <li><a href="/member-login">Brothers Only Login</a></li>
                 <li><a href="/dues-life-membership">Dues &amp; Life Membership</a></li>
                 <li><a href="/grand-chapter-petitions">Grand Chapter Award Petitions</a></li>
                 <li><a href="/senior-kappa-affairs">Senior Kappa Affairs</a></li>
                 <li><a href="/undergraduate-affairs">Undergraduate Affairs</a></li>
-                <li><a href="/kappa-archive-recovery">Kappa Archive Recovery Initiative</a></li>
               </ul>
             </li>
 
-            <!-- Philanthropy -->
-            <li class="nav-item">
-              <a href="/philanthropy">Philanthropy</a>
-            </li>
+            <li class="nav-item"><a href="/philanthropy">Philanthropy</a></li>
+            <li class="nav-item"><a href="/calendar">Calendar</a></li>
 
-            <!-- Calendar -->
             <li class="nav-item">
-              <a href="/calendar">Calendar</a>
-            </li>
-
-            <!-- Contact -->
-            <li class="nav-item">
-              <button aria-haspopup="true" aria-expanded="false">
-                Contact Us <span class="chevron" aria-hidden="true">▾</span>
-              </button>
+              <button aria-haspopup="true" aria-expanded="false">Contact <span class="chevron" aria-hidden="true">▾</span></button>
               <ul class="dropdown" role="list">
                 <li><a href="/contact/need-assistance">Need Assistance</a></li>
                 <li><a href="/contact/speaker-request">Speaker Request</a></li>
@@ -183,12 +145,11 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
 
           </ul>
 
-          <!-- Mobile toggle -->
           <button class="nav-toggle" id="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="3" y1="6" x2="21" y2="6"/>
-              <line x1="3" y1="12" x2="21" y2="12"/>
-              <line x1="3" y1="18" x2="21" y2="18"/>
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <line x1="2" y1="5.5" x2="20" y2="5.5"/>
+              <line x1="2" y1="11" x2="20" y2="11"/>
+              <line x1="2" y1="16.5" x2="20" y2="16.5"/>
             </svg>
           </button>
         </nav>
@@ -200,46 +161,31 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
         <a href="/history">Historical Brief</a>
         <a href="/founders">Founders</a>
         <a href="/membership">Membership</a>
-        <a href="/awardees">Grand Chapter Awardees</a>
         <a href="/chapter-locator">Chapter Locator</a>
-
         <div class="mobile-nav-section">Leadership</div>
         <a href="/leadership">Grand Chapter Leadership</a>
         <a href="/province-polemarchs">Province Polemarchs</a>
         <a href="/past-grand-polemarchs">Past Grand Polemarchs</a>
-
         <div class="mobile-nav-section">Programs</div>
         <a href="/programs/guide-right">Guide Right</a>
         <a href="/programs/kappa-league">Kappa League</a>
         <a href="/programs/achievement-academy">Achievement Academy</a>
         <a href="/programs/room-to-read">Room To Read</a>
         <a href="/programs/learn-2-live">Learn 2 Live</a>
-        <a href="/programs/undergraduate-leadership-institute">Undergraduate Leadership Institute</a>
-        <a href="/programs/lead-kappa">Lead Kappa</a>
         <a href="/programs/glad">G.L.A.D.</a>
         <a href="/programs/are-you-ok">Are You OK?</a>
-
         <div class="mobile-nav-section">Media</div>
         <a href="/media/journal">Journal</a>
         <a href="/media/news">News</a>
         <a href="/media/press-releases">Press Releases</a>
-        <a href="/media/photo-album">Photo Album</a>
-
-        <div class="mobile-nav-section">Member Services</div>
-        <a href="/member-login">Brothers Only Login</a>
-        <a href="/dues-life-membership">Dues &amp; Life Membership</a>
-        <a href="/senior-kappa-affairs">Senior Kappa Affairs</a>
-
         <div class="mobile-nav-section">More</div>
         <a href="/philanthropy">Philanthropy</a>
         <a href="/calendar">Calendar</a>
-        <a href="/contact/need-assistance">Need Assistance</a>
-        <a href="/contact/speaker-request">Speaker Request</a>
-        <a href="/contact/plan-a-visit">Plan a Visit to IHQ</a>
+        <a href="/member-login">Brothers Only Login</a>
+        <a href="/contact/need-assistance">Contact / Need Assistance</a>
       </nav>
     </header>
 
-    <!-- Main Content -->
     <main id="main">
       <slot />
     </main>
@@ -249,47 +195,38 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
       <div class="footer-main">
         <div class="container">
           <div class="footer-grid">
-            <!-- Brand -->
             <div class="footer-brand">
               <div class="footer-logo-text">
                 Kappa Alpha Psi® Fraternity, Inc.
                 <small>Achievement in Every Field of Human Endeavor</small>
               </div>
-              <p>
-                A collegiate Greek-letter fraternity founded January 5, 1911 at Indiana University Bloomington.
-                Over 150,000 initiated members with 700 undergraduate and alumni chapters across the
-                United States and 13 international territories.
-              </p>
+              <p>A collegiate Greek-letter fraternity founded January 5, 1911 at Indiana University Bloomington. Over 150,000 initiated members with 700+ chapters across the United States and 13 international territories.</p>
               <div class="footer-social">
                 <a href="https://facebook.com/kapsi1911/" aria-label="Facebook" target="_blank" rel="noopener">
-                  <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+                  <svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
                 </a>
                 <a href="https://twitter.com/kapsi1911" aria-label="Twitter / X" target="_blank" rel="noopener">
-                  <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"/></svg>
+                  <svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24"><path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"/></svg>
                 </a>
                 <a href="https://instagram.com/kapsi1911/" aria-label="Instagram" target="_blank" rel="noopener">
-                  <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+                  <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
                 </a>
                 <a href="https://youtube.com/user/OfficialKAPsi" aria-label="YouTube" target="_blank" rel="noopener">
-                  <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46a2.78 2.78 0 0 0-1.95 1.96A29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58A2.78 2.78 0 0 0 3.41 19.54C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.95-1.96A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z"/><polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02" fill="white"/></svg>
+                  <svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46a2.78 2.78 0 0 0-1.95 1.96A29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58A2.78 2.78 0 0 0 3.41 19.54C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.95-1.96A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z"/><polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02" fill="white"/></svg>
                 </a>
               </div>
             </div>
-
-            <!-- Quick Links -->
             <div class="footer-col">
               <h4>Quick Links</h4>
               <ul>
                 <li><a href="/member-login">Brothers Only</a></li>
-                <li><a href="/calendar">Calendar</a></li>
+                <li><a href="/calendar">Calendar of Events</a></li>
                 <li><a href="/dues-life-membership">Dues &amp; Life Membership</a></li>
                 <li><a href="/membership">Membership Info</a></li>
                 <li><a href="/chapter-locator">Chapter Locator</a></li>
                 <li><a href="/philanthropy">Philanthropy</a></li>
               </ul>
             </div>
-
-            <!-- Programs -->
             <div class="footer-col">
               <h4>Programs</h4>
               <ul>
@@ -301,27 +238,24 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
                 <li><a href="/programs/are-you-ok">Are You OK?</a></li>
               </ul>
             </div>
-
-            <!-- Contact -->
             <div class="footer-col">
               <h4>Contact</h4>
               <ul>
                 <li><a href="/contact/need-assistance">Need Assistance</a></li>
                 <li><a href="/contact/speaker-request">Speaker Request</a></li>
-                <li><a href="/contact/plan-a-visit">Plan a Visit to IHQ</a></li>
+                <li><a href="/contact/plan-a-visit">Plan a Visit</a></li>
                 <li><a href="/careers">Careers</a></li>
                 <li><a href="/sponsors">Sponsors</a></li>
               </ul>
-              <div style="margin-top:20px; font-size:0.85rem; color:rgba(255,255,255,0.6); line-height:1.8;">
+              <div style="margin-top:20px; font-size:0.82rem; color:rgba(255,255,255,0.4); line-height:1.9;">
                 2322-24 North Broad Street<br/>
-                Philadelphia, PA 19132-4590<br/>
-                <a href="tel:+12152287184" style="color:rgba(255,255,255,0.7);">(215) 228-7184</a>
+                Philadelphia, PA 19132<br/>
+                <a href="tel:+12152287184" style="color:rgba(255,255,255,0.5);">(215) 228-7184</a>
               </div>
             </div>
           </div>
         </div>
       </div>
-
       <div class="footer-bottom">
         <div class="container">
           <span>&copy; {new Date().getFullYear()} Kappa Alpha Psi® Fraternity, Inc. All rights reserved.</span>
@@ -334,16 +268,27 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
       </div>
     </footer>
 
-    <!-- Mobile Nav Script -->
     <script>
+      // Scroll shadow on header
+      const header = document.getElementById('site-header');
+      window.addEventListener('scroll', () => {
+        header?.classList.toggle('scrolled', window.scrollY > 10);
+      }, { passive: true });
+
+      // Mobile nav toggle
       const toggle = document.getElementById('nav-toggle');
       const mobileNav = document.getElementById('mobile-nav');
-      if (toggle && mobileNav) {
-        toggle.addEventListener('click', () => {
-          const isOpen = mobileNav.classList.toggle('is-open');
-          toggle.setAttribute('aria-expanded', String(isOpen));
-        });
-      }
+      toggle?.addEventListener('click', () => {
+        const isOpen = mobileNav?.classList.toggle('is-open');
+        toggle.setAttribute('aria-expanded', String(!!isOpen));
+      });
+
+      // Scroll reveal
+      const observer = new IntersectionObserver(
+        (entries) => entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); } }),
+        { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
+      );
+      document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
     </script>
   </body>
 </html>

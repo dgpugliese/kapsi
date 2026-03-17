@@ -1,0 +1,151 @@
+---
+import Layout from '../../layouts/Layout.astro';
+
+const cohorts = [
+  { icon: "💼", label: "Business" },
+  { icon: "🎓", label: "Education" },
+  { icon: "🏛️", label: "Government" },
+  { icon: "⚖️", label: "Law" },
+  { icon: "🏥", label: "Health" },
+  { icon: "🔬", label: "STEM" },
+  { icon: "🌐", label: "Social Science" },
+  { icon: "🎖️", label: "Military Science" },
+];
+---
+
+<Layout title="Achievement Academy — Kappa Alpha Psi® Fraternity, Inc.">
+
+  <div class="page-hero">
+    <div class="container">
+      <h1>Achievement Academy</h1>
+      <p>Enhancing collegiate member experiences through structured professional development</p>
+    </div>
+  </div>
+
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <div class="container">
+      <a href="/">Home</a> &rsaquo; <a href="/programs/guide-right">Programs</a> &rsaquo; Achievement Academy
+    </div>
+  </nav>
+
+  <!-- Overview -->
+  <section class="section section--cream">
+    <div class="container">
+      <div style="max-width:800px; margin:0 auto; text-align:center;">
+        <h2 class="section-title">About the Achievement Academy</h2>
+        <p style="font-size:1.1rem; line-height:1.8; color:var(--text-light); margin-bottom:1.5rem;">
+          The Achievement Academy is Kappa Alpha Psi's premier program for enhancing the collegiate member experience. It creates structured pathways for undergraduate brothers to connect their academic pursuits with real-world professional development, guided by accomplished alumni mentors in their field of study.
+        </p>
+        <p style="font-size:1rem; line-height:1.8; color:var(--text-light);">
+          Through the Academy, undergraduate brothers gain access to a network of accomplished alumni mentors, career resources, and professional development workshops — all organized around their chosen cohort area. Alumni members also benefit by serving in mentorship roles and contributing to the next generation of Kappa achievement.
+        </p>
+        <a href="https://kappaachievementacademy.org" target="_blank" rel="noopener" class="btn btn--primary" style="margin-top:1.5rem;">Visit kappaachievementacademy.org</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Cohort Areas -->
+  <section class="section">
+    <div class="container">
+      <h2 class="section-title">Cohort Areas</h2>
+      <p class="section-subtitle">Members are grouped into cohorts based on their academic and professional focus</p>
+      <div class="grid grid--4">
+        {cohorts.map((cohort) => (
+          <div style="text-align:center; padding:2rem 1rem; background:var(--cream); border-radius:12px; border-top:4px solid var(--crimson);">
+            <div style="font-size:2.5rem; margin-bottom:0.75rem;">{cohort.icon}</div>
+            <h3 style="font-family:var(--font-serif); color:var(--crimson); font-size:1rem; margin:0;">{cohort.label}</h3>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Benefits -->
+  <section class="section section--crimson">
+    <div class="container">
+      <h2 class="section-title" style="color:#FFF8E1;">Program Benefits</h2>
+      <div class="grid grid--2">
+        <div class="card">
+          <div class="card-body">
+            <h3 class="card-title" style="color:var(--crimson);">For Undergraduates</h3>
+            <ul style="line-height:2; color:var(--text-light);">
+              <li>Access to a national network of professional alumni mentors</li>
+              <li>Industry-specific workshops and panel discussions</li>
+              <li>Internship and career placement connections</li>
+              <li>Resume and interview preparation support</li>
+              <li>Leadership development opportunities within cohort</li>
+              <li>Annual Achievement Academy conference participation</li>
+            </ul>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <h3 class="card-title" style="color:var(--crimson);">For Alumni Mentors</h3>
+            <ul style="line-height:2; color:var(--text-light);">
+              <li>Opportunity to invest in the next generation of Kappa achievement</li>
+              <li>Structured mentoring framework with clear expectations</li>
+              <li>Access to talented, motivated undergraduate brothers</li>
+              <li>Continuing education and professional development content</li>
+              <li>Reconnection with the brotherhood through meaningful service</li>
+              <li>Recognition for mentoring contributions at Grand Chapter</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- How it Works -->
+  <section class="section section--cream">
+    <div class="container">
+      <div style="max-width:800px; margin:0 auto;">
+        <h2 class="section-title">How the Academy Works</h2>
+        <div class="timeline">
+          <div class="timeline-item">
+            <div class="timeline-date">Step 1</div>
+            <div class="timeline-content">
+              <h3>Select Your Cohort</h3>
+              <p>Undergraduate brothers select the cohort area that best aligns with their academic major and career aspirations from the eight available areas.</p>
+            </div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-date">Step 2</div>
+            <div class="timeline-content">
+              <h3>Get Matched with a Mentor</h3>
+              <p>The Achievement Academy matches each undergraduate participant with an accomplished alumni mentor who is active in the participant's chosen field.</p>
+            </div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-date">Step 3</div>
+            <div class="timeline-content">
+              <h3>Engage in the Program</h3>
+              <p>Participants attend cohort-specific workshops, complete structured mentoring sessions, and participate in professional development activities throughout the academic year.</p>
+            </div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-date">Step 4</div>
+            <div class="timeline-content">
+              <h3>Annual Conference</h3>
+              <p>The program culminates in an annual Achievement Academy conference bringing together participants, mentors, and distinguished Kappa professionals for a capstone experience.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="section">
+    <div class="container" style="text-align:center;">
+      <h2 class="section-title">Join the Achievement Academy</h2>
+      <p style="color:var(--text-light); max-width:600px; margin:0 auto 2rem;">
+        Ready to take your professional development to the next level? Visit the official Achievement Academy website to learn more and apply.
+      </p>
+      <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
+        <a href="https://kappaachievementacademy.org" target="_blank" rel="noopener" class="btn btn--primary">Apply Now</a>
+        <a href="/contact/need-assistance" class="btn btn--outline">Contact IHQ</a>
+      </div>
+    </div>
+  </section>
+
+</Layout>

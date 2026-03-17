@@ -1,0 +1,219 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const events = [
+  {
+    month: 'Mar', day: '27', year: '2026',
+    title: 'Western Province Council',
+    location: 'Las Vegas, Nevada',
+    type: 'Province Event',
+    desc: 'Annual council meeting for Western Province chapters.',
+  },
+  {
+    month: 'Apr', day: '17', year: '2026',
+    title: 'Southern Province Council',
+    location: 'Miami, Florida',
+    type: 'Province Event',
+    desc: 'Annual council meeting for Southern Province chapters.',
+  },
+  {
+    month: 'Apr', day: '22', year: '2026',
+    title: 'North Central Province Council',
+    location: 'TBD',
+    type: 'Province Event',
+    desc: 'Annual council meeting for North Central Province chapters.',
+  },
+  {
+    month: 'May', day: '1', year: '2026',
+    title: 'Eastern Province Council',
+    location: 'TBD',
+    type: 'Province Event',
+    desc: 'Annual council meeting for Eastern Province chapters.',
+  },
+  {
+    month: 'May', day: '15', year: '2026',
+    title: 'North Atlantic Province Council',
+    location: 'TBD',
+    type: 'Province Event',
+    desc: 'Annual council meeting for North Atlantic Province chapters.',
+  },
+  {
+    month: 'Jun', day: '5', year: '2026',
+    title: 'Southwestern Province Council',
+    location: 'TBD',
+    type: 'Province Event',
+    desc: 'Annual council meeting for Southwestern Province chapters.',
+  },
+  {
+    month: 'Jul', day: '6', year: '2027',
+    title: '88th Grand Chapter Meeting',
+    location: 'Baltimore, Maryland',
+    type: 'Grand Chapter',
+    desc: 'The biennial Grand Chapter Meeting — the highest governing assembly of Kappa Alpha Psi®. All provinces and chapters represented.',
+  },
+  {
+    month: 'Jan', day: '5', year: '2027',
+    title: '116th Founders\' Day',
+    location: 'Nationwide',
+    type: 'Founders\' Day',
+    desc: 'Annual celebration of the founding of Kappa Alpha Psi® on January 5, 1911 at Indiana University Bloomington.',
+  },
+];
+
+const typeColors: Record<string, string> = {
+  'Grand Chapter': 'var(--crimson)',
+  'Province Event': '#1565C0',
+  'Founders\' Day': '#C9A84C',
+};
+---
+
+<Layout
+  title="Calendar of Events — Kappa Alpha Psi® Fraternity, Inc."
+  description="Upcoming events, province councils, and the Grand Chapter Meeting schedule for Kappa Alpha Psi® Fraternity, Inc."
+>
+
+  <section class="page-hero">
+    <div class="container">
+      <nav class="breadcrumb" aria-label="Breadcrumb">
+        <a href="/">Home</a>
+        <span aria-hidden="true">›</span>
+        <span>Calendar of Events</span>
+      </nav>
+      <h1>Calendar of Events</h1>
+      <p>Upcoming province councils, grand chapter events, and national programs.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+
+      <!-- Legend -->
+      <div class="legend">
+        <div class="legend-item">
+          <div class="legend-dot" style="background:var(--crimson);"></div>
+          <span>Grand Chapter</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:#1565C0;"></div>
+          <span>Province Event</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:#C9A84C;"></div>
+          <span>Founders' Day</span>
+        </div>
+      </div>
+
+      <!-- Events -->
+      <div class="events-list">
+        {events.map(event => (
+          <div class="cal-event-card">
+            <div class="cal-date-badge" style={`background:${typeColors[event.type] || 'var(--crimson)'}`}>
+              <div class="cal-month">{event.month}</div>
+              <div class="cal-day">{event.day}</div>
+              <div class="cal-year">{event.year}</div>
+            </div>
+            <div class="cal-event-info">
+              <div class="cal-type" style={`color:${typeColors[event.type] || 'var(--crimson)'}`}>{event.type}</div>
+              <h3>{event.title}</h3>
+              <div class="cal-location">📍 {event.location}</div>
+              <p>{event.desc}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div class="callout" style="margin-top:40px;">
+        <strong>Chapter Officers & Province Polemarchs:</strong> Additional event details, registration
+        links, and hotel block information are available in the
+        <a href="/member-login">Brothers Only portal</a>. Contact
+        <a href="/contact/need-assistance">IHQ</a> for event inquiries.
+      </div>
+
+    </div>
+  </section>
+
+</Layout>
+
+<style>
+.legend {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 40px;
+  flex-wrap: wrap;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.legend-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.events-list {
+  display: grid;
+  gap: 16px;
+}
+.cal-event-card {
+  display: flex;
+  gap: 20px;
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: 20px;
+  border: 1px solid var(--gray-200);
+  align-items: flex-start;
+  transition: box-shadow var(--transition);
+}
+.cal-event-card:hover { box-shadow: var(--shadow-md); }
+.cal-date-badge {
+  flex-shrink: 0;
+  color: var(--white);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  text-align: center;
+  min-width: 64px;
+}
+.cal-month {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  opacity: 0.85;
+}
+.cal-day {
+  font-size: 1.8rem;
+  font-weight: 800;
+  line-height: 1;
+}
+.cal-year {
+  font-size: 0.65rem;
+  opacity: 0.75;
+  margin-top: 2px;
+}
+.cal-type {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+.cal-event-info h3 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.cal-location {
+  font-size: 0.8rem;
+  color: var(--gray-600);
+  margin-bottom: 6px;
+}
+.cal-event-info p {
+  font-size: 0.875rem;
+  color: var(--gray-600);
+  line-height: 1.6;
+}
+</style>

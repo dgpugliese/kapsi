@@ -48,7 +48,9 @@ const events = [
         <a href="/chapter-locator" class="btn btn--outline-white">Find a Chapter</a>
       </div>
     </div>
-    <div class="hero-greek" aria-hidden="true">ΚΑΨ</div>
+    <div class="hero-crest" aria-hidden="true">
+      <img src="/images/kap-crest.png" alt="" width="280" height="300" />
+    </div>
   </div>
   <div class="hero-scroll-indicator" aria-hidden="true">
     <div class="hero-scroll-line"></div>
@@ -92,11 +94,7 @@ const events = [
     <div class="message-grid">
       <div class="message-photo reveal">
         <div class="message-photo-frame">
-          <svg width="72" height="72" viewBox="0 0 72 72" fill="none" aria-hidden="true">
-            <circle cx="36" cy="28" r="18" fill="rgba(255,255,255,0.15)"/>
-            <path d="M8 64c0-15.46 12.54-28 28-28s28 12.54 28 28" fill="rgba(255,255,255,0.15)"/>
-          </svg>
-          <p>Grand Polemarch<br/>Jimmy McMikle Sr.</p>
+          <img src="/images/mcmickle.png" alt="Grand Polemarch Jimmy McMickle Sr." class="message-photo-img" />
         </div>
         <div class="message-photo-accent"></div>
       </div>
@@ -346,15 +344,15 @@ const events = [
   max-width: 520px;
 }
 .hero-actions { display: flex; gap: 14px; flex-wrap: wrap; }
-.hero-greek {
-  font-family: var(--font-serif);
-  font-size: clamp(6rem, 15vw, 16rem);
-  font-weight: 700;
-  color: rgba(255,255,255,0.04);
-  line-height: 1;
-  user-select: none;
+.hero-crest {
   flex-shrink: 0;
-  letter-spacing: -4px;
+  user-select: none;
+  opacity: 0.18;
+  filter: drop-shadow(0 0 40px rgba(201,168,76,0.3));
+}
+.hero-crest img {
+  width: clamp(180px, 20vw, 300px);
+  height: auto;
 }
 .hero-scroll-indicator {
   position: absolute;
@@ -409,20 +407,18 @@ const events = [
 }
 .message-photo { position: relative; }
 .message-photo-frame {
-  background: linear-gradient(160deg, var(--crimson-dark), var(--crimson));
   aspect-ratio: 3/4;
   border-radius: var(--radius-xl);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: rgba(255,255,255,0.6);
-  text-align: center;
-  font-size: 0.9rem;
-  line-height: 1.6;
-  gap: 12px;
+  overflow: hidden;
   position: relative;
   z-index: 1;
+}
+.message-photo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+  display: block;
 }
 .message-photo-accent {
   position: absolute;
@@ -655,7 +651,7 @@ const events = [
   .programs-grid { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 900px) {
-  .hero-greek { display: none; }
+  .hero-crest { display: none; }
   .message-grid { grid-template-columns: 1fr; }
   .message-photo { max-width: 300px; margin: 0 auto; }
   .ayo-inner { grid-template-columns: 1fr; }

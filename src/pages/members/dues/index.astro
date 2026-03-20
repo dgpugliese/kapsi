@@ -189,15 +189,13 @@ import PortalShell from '../../../components/PortalShell.astro';
   // Payments table
   const pBody = document.getElementById('payments-body')!;
   if (payments && payments.length > 0) {
-    pBody.innerHTML = payments.map((p: any) => `
-      <tr>
-        <td>${new Date(p.payment_date).toLocaleDateString('en-US', { year:'numeric', month:'short', day:'numeric' })}</td>
-        <td>${p.payment_type.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}</td>
-        <td>${p.fiscal_year ?? '—'}</td>
-        <td>$${Number(p.amount).toFixed(2)}</td>
-        <td><span class="status-chip status-chip--${p.status}">${p.status}</span></td>
-      </tr>
-    `).join('');
+    pBody.innerHTML = payments.map((p: any) => `<tr>
+        <td data-label="Date">${new Date(p.payment_date).toLocaleDateString('en-US', { year:'numeric', month:'short', day:'numeric' })}</td>
+        <td data-label="Type">${p.payment_type.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}</td>
+        <td data-label="Fiscal Year">${p.fiscal_year ?? '—'}</td>
+        <td data-label="Amount">$${Number(p.amount).toFixed(2)}</td>
+        <td data-label="Status"><span class="status-chip status-chip--${p.status}">${p.status}</span></td>
+      </tr>`).join('');
   } else {
     pBody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--gray-400);">No payment records found.</td></tr>';
   }

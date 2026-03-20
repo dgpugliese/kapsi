@@ -80,15 +80,13 @@ import PortalShell from '../../../components/PortalShell.astro';
   // All events table
   const eBody = document.getElementById('events-body')!;
   if (events && events.length > 0) {
-    eBody.innerHTML = events.map((ev: any) => `
-      <tr>
-        <td><strong>${ev.event_name}</strong></td>
-        <td>${ev.event_date ? new Date(ev.event_date).toLocaleDateString('en-US', { year:'numeric', month:'short', day:'numeric' }) : '—'}</td>
-        <td>${ev.event_location ?? '—'}</td>
-        <td>${new Date(ev.registration_date).toLocaleDateString('en-US', { year:'numeric', month:'short', day:'numeric' })}</td>
-        <td><span class="status-chip status-chip--${ev.status}">${ev.status}</span></td>
-      </tr>
-    `).join('');
+    eBody.innerHTML = events.map((ev: any) => `<tr>
+        <td data-label="Event"><strong>${ev.event_name}</strong></td>
+        <td data-label="Date">${ev.event_date ? new Date(ev.event_date).toLocaleDateString('en-US', { year:'numeric', month:'short', day:'numeric' }) : '—'}</td>
+        <td data-label="Location">${ev.event_location ?? '—'}</td>
+        <td data-label="Registered">${new Date(ev.registration_date).toLocaleDateString('en-US', { year:'numeric', month:'short', day:'numeric' })}</td>
+        <td data-label="Status"><span class="status-chip status-chip--${ev.status}">${ev.status}</span></td>
+      </tr>`).join('');
   } else {
     eBody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--gray-400);">No event registrations found.</td></tr>';
   }

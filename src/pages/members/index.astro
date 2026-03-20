@@ -1,309 +1,126 @@
 ---
 import Layout from '../../layouts/Layout.astro';
+import PortalShell from '../../components/PortalShell.astro';
 ---
 
 <Layout title="My Info — Brothers Only — Kappa Alpha Psi® Fraternity, Inc.">
+<PortalShell title="My Info" activePage="info">
 
-<div class="portal" id="portal">
-  <!-- Loading State -->
-  <div class="portal-loading" id="portal-loading">
-    <div class="portal-loading-inner">
-      <img src="/images/kap-crest.png" alt="" width="56" height="62" />
-      <p>Loading your profile...</p>
-    </div>
-  </div>
+  <Fragment slot="tabs">
+    <button class="portal-tab active" data-tab="profile">Profile</button>
+    <button class="portal-tab" data-tab="financial">Financial Status</button>
+    <button class="portal-tab" data-tab="membership">Membership</button>
+    <button class="portal-tab" data-tab="events">Events</button>
+  </Fragment>
 
-  <!-- Top Banner -->
-  <div class="portal-banner">
-    <div class="container portal-banner-inner">
-      <div class="portal-banner-left">
-        <img src="/images/kap-crest.png" alt="" width="36" height="40" />
-        <div>
-          <strong>Kappa Alpha Psi®</strong>
-          <span>Fraternity, Inc.</span>
-        </div>
-      </div>
-      <div class="portal-banner-right">
-        <span id="portal-user-name" class="portal-user-name"></span>
-        <button id="logout-btn" class="portal-logout-btn">Sign Out</button>
+  <!-- Profile Tab -->
+  <div class="portal-tab-content active" id="tab-profile">
+    <div class="portal-section">
+      <h2>Personal Information</h2>
+      <div class="info-grid">
+        <div class="info-item"><label>Full Name</label><span id="info-fullname">—</span></div>
+        <div class="info-item"><label>Email</label><span id="info-email">—</span></div>
+        <div class="info-item"><label>Phone</label><span id="info-phone">—</span></div>
+        <div class="info-item"><label>Member Number</label><span id="info-member-number">—</span></div>
       </div>
     </div>
-  </div>
-
-  <!-- Portal Content -->
-  <div class="portal-body">
-    <div class="container portal-grid">
-
-      <!-- Sidebar -->
-      <aside class="portal-sidebar">
-        <div class="portal-sidebar-photo" id="sidebar-photo">
-          <div class="portal-avatar" id="portal-avatar"></div>
-        </div>
-        <div class="portal-sidebar-name" id="sidebar-name"></div>
-        <nav class="portal-nav">
-          <a href="/members/" class="portal-nav-item active">My Info</a>
-          <a href="/members/dues/" class="portal-nav-item">Pay Grand Chapter Dues</a>
-          <a href="/members/card/" class="portal-nav-item">My Membership Card</a>
-          <a href="/members/events/" class="portal-nav-item">My Event Registrations</a>
-          <a href="/members/chapter/" class="portal-nav-item">My Primary Chapter</a>
-        </nav>
-      </aside>
-
-      <!-- Main Content -->
-      <main class="portal-main">
-        <!-- Page Header -->
-        <div class="portal-page-header">
-          <h1>My Info</h1>
-          <div class="portal-tabs">
-            <button class="portal-tab active" data-tab="profile">Profile</button>
-            <button class="portal-tab" data-tab="financial">Financial Status</button>
-            <button class="portal-tab" data-tab="membership">Membership Information</button>
-            <button class="portal-tab" data-tab="events">Event Registrations</button>
-          </div>
-        </div>
-
-        <!-- Profile Tab -->
-        <div class="portal-tab-content active" id="tab-profile">
-          <div class="portal-section">
-            <h2>Personal Information</h2>
-            <div class="info-grid">
-              <div class="info-item">
-                <label>Full Name</label>
-                <span id="info-fullname">—</span>
-              </div>
-              <div class="info-item">
-                <label>Email</label>
-                <span id="info-email">—</span>
-              </div>
-              <div class="info-item">
-                <label>Phone</label>
-                <span id="info-phone">—</span>
-              </div>
-              <div class="info-item">
-                <label>Member Number</label>
-                <span id="info-member-number">—</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="portal-section">
-            <h2>Address</h2>
-            <div class="info-grid">
-              <div class="info-item full">
-                <label>Street Address</label>
-                <span id="info-address">—</span>
-              </div>
-              <div class="info-item">
-                <label>City</label>
-                <span id="info-city">—</span>
-              </div>
-              <div class="info-item">
-                <label>State</label>
-                <span id="info-state">—</span>
-              </div>
-              <div class="info-item">
-                <label>ZIP Code</label>
-                <span id="info-zip">—</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="portal-section">
-            <h2>Professional</h2>
-            <div class="info-grid">
-              <div class="info-item">
-                <label>Education</label>
-                <span id="info-education">—</span>
-              </div>
-              <div class="info-item">
-                <label>Occupation</label>
-                <span id="info-occupation">—</span>
-              </div>
-              <div class="info-item">
-                <label>Employer</label>
-                <span id="info-employer">—</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Financial Tab -->
-        <div class="portal-tab-content" id="tab-financial">
-          <div class="portal-section">
-            <div class="financial-status-bar" id="financial-badge"></div>
-            <div class="info-grid" style="margin-top:20px;">
-              <div class="info-item">
-                <label>Member Status</label>
-                <span id="fin-status">—</span>
-              </div>
-              <div class="info-item">
-                <label>Financial Through</label>
-                <span id="fin-through">—</span>
-              </div>
-              <div class="info-item">
-                <label>Life Member</label>
-                <span id="fin-life">—</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="portal-section">
-            <h2>Payment History</h2>
-            <div class="table-responsive">
-              <table class="portal-table">
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Type</th>
-                    <th>Fiscal Year</th>
-                    <th>Amount</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody id="payments-body">
-                  <tr><td colspan="5" style="text-align:center; color:var(--gray-400);">Loading...</td></tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <!-- Membership Tab -->
-        <div class="portal-tab-content" id="tab-membership">
-          <div class="portal-section">
-            <h2>Membership Information</h2>
-            <div class="info-grid">
-              <div class="info-item">
-                <label>Scrolling Number</label>
-                <span id="mem-scroll">—</span>
-              </div>
-              <div class="info-item">
-                <label>Member Number</label>
-                <span id="mem-number">—</span>
-              </div>
-              <div class="info-item">
-                <label>Initiated Date</label>
-                <span id="mem-initiated">—</span>
-              </div>
-              <div class="info-item">
-                <label>Chapter of Initiation</label>
-                <span id="mem-init-chapter">—</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="portal-section">
-            <h2>Chapter Information</h2>
-            <div class="info-grid">
-              <div class="info-item">
-                <label>Primary Chapter</label>
-                <span id="mem-chapter">—</span>
-              </div>
-              <div class="info-item">
-                <label>Chapter Type</label>
-                <span id="mem-chapter-type">—</span>
-              </div>
-              <div class="info-item">
-                <label>Province</label>
-                <span id="mem-province">—</span>
-              </div>
-              <div class="info-item">
-                <label>Location</label>
-                <span id="mem-chapter-location">—</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Events Tab -->
-        <div class="portal-tab-content" id="tab-events">
-          <div class="portal-section">
-            <h2>My Event Registrations</h2>
-            <div class="table-responsive">
-              <table class="portal-table">
-                <thead>
-                  <tr>
-                    <th>Event</th>
-                    <th>Date</th>
-                    <th>Location</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody id="events-body">
-                  <tr><td colspan="4" style="text-align:center; color:var(--gray-400);">Loading...</td></tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-      </main>
+    <div class="portal-section">
+      <h2>Address</h2>
+      <div class="info-grid">
+        <div class="info-item full"><label>Street Address</label><span id="info-address">—</span></div>
+        <div class="info-item"><label>City</label><span id="info-city">—</span></div>
+        <div class="info-item"><label>State</label><span id="info-state">—</span></div>
+        <div class="info-item"><label>ZIP Code</label><span id="info-zip">—</span></div>
+      </div>
+    </div>
+    <div class="portal-section">
+      <h2>Professional</h2>
+      <div class="info-grid">
+        <div class="info-item"><label>Education</label><span id="info-education">—</span></div>
+        <div class="info-item"><label>Occupation</label><span id="info-occupation">—</span></div>
+        <div class="info-item"><label>Employer</label><span id="info-employer">—</span></div>
+      </div>
     </div>
   </div>
-</div>
 
+  <!-- Financial Tab -->
+  <div class="portal-tab-content" id="tab-financial">
+    <div class="portal-section">
+      <div class="financial-status-bar" id="financial-badge"></div>
+      <div class="info-grid" style="margin-top:20px;">
+        <div class="info-item"><label>Member Status</label><span id="fin-status">—</span></div>
+        <div class="info-item"><label>Financial Through</label><span id="fin-through">—</span></div>
+        <div class="info-item"><label>Life Member</label><span id="fin-life">—</span></div>
+      </div>
+    </div>
+    <div class="portal-section">
+      <h2>Payment History</h2>
+      <div class="table-responsive">
+        <table class="portal-table">
+          <thead><tr><th>Date</th><th>Type</th><th>Fiscal Year</th><th>Amount</th><th>Status</th></tr></thead>
+          <tbody id="payments-body"><tr><td colspan="5" style="text-align:center; color:var(--gray-400);">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Membership Tab -->
+  <div class="portal-tab-content" id="tab-membership">
+    <div class="portal-section">
+      <h2>Membership Information</h2>
+      <div class="info-grid">
+        <div class="info-item"><label>Scrolling Number</label><span id="mem-scroll">—</span></div>
+        <div class="info-item"><label>Member Number</label><span id="mem-number">—</span></div>
+        <div class="info-item"><label>Initiated Date</label><span id="mem-initiated">—</span></div>
+        <div class="info-item"><label>Chapter of Initiation</label><span id="mem-init-chapter">—</span></div>
+      </div>
+    </div>
+    <div class="portal-section">
+      <h2>Chapter Information</h2>
+      <div class="info-grid">
+        <div class="info-item"><label>Primary Chapter</label><span id="mem-chapter">—</span></div>
+        <div class="info-item"><label>Chapter Type</label><span id="mem-chapter-type">—</span></div>
+        <div class="info-item"><label>Province</label><span id="mem-province">—</span></div>
+        <div class="info-item"><label>Location</label><span id="mem-chapter-location">—</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Events Tab -->
+  <div class="portal-tab-content" id="tab-events">
+    <div class="portal-section">
+      <h2>My Event Registrations</h2>
+      <div class="table-responsive">
+        <table class="portal-table">
+          <thead><tr><th>Event</th><th>Date</th><th>Location</th><th>Status</th></tr></thead>
+          <tbody id="events-body"><tr><td colspan="4" style="text-align:center; color:var(--gray-400);">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</PortalShell>
 </Layout>
 
 <script>
   import { supabase } from '../../lib/supabase';
 
-  // Check auth
   const { data: { session } } = await supabase.auth.getSession();
-  if (!session) {
-    window.location.href = '/member-login';
-  }
-
+  if (!session) window.location.href = '/member-login';
   const userId = session!.user.id;
 
-  // Fetch member data with chapter and province
   const { data: member } = await supabase
     .from('members')
-    .select(`
-      *,
-      chapter:primary_chapter_id (
-        name, designation, chapter_type, city, state, university,
-        province:province_id ( name, abbreviation )
-      )
-    `)
-    .eq('id', userId)
-    .single();
+    .select(`*, chapter:primary_chapter_id ( name, designation, chapter_type, city, state, university, province:province_id ( name, abbreviation ) )`)
+    .eq('id', userId).single();
 
-  const { data: payments } = await supabase
-    .from('dues_payments')
-    .select('*')
-    .eq('member_id', userId)
-    .order('payment_date', { ascending: false });
+  const { data: payments } = await supabase.from('dues_payments').select('*').eq('member_id', userId).order('payment_date', { ascending: false });
+  const { data: events } = await supabase.from('event_registrations').select('*').eq('member_id', userId).order('event_date', { ascending: true });
 
-  const { data: events } = await supabase
-    .from('event_registrations')
-    .select('*')
-    .eq('member_id', userId)
-    .order('event_date', { ascending: true });
+  if (member) {
+    const fullName = [member.first_name, member.middle_name, member.last_name, member.suffix].filter(Boolean).join(' ');
 
-  // Hide loading, show portal
-  document.getElementById('portal-loading')!.style.display = 'none';
-
-  if (!member) {
-    document.querySelector('.portal-main')!.innerHTML =
-      '<div class="portal-section"><h2>Profile Not Found</h2><p>Your member profile has not been set up yet. Please contact IHQ for assistance.</p></div>';
-  } else {
-    const fullName = [member.first_name, member.middle_name, member.last_name, member.suffix]
-      .filter(Boolean).join(' ');
-    const initials = (member.first_name?.[0] ?? '') + (member.last_name?.[0] ?? '');
-
-    // Banner
-    document.getElementById('portal-user-name')!.textContent = fullName;
-
-    // Sidebar
-    const avatarEl = document.getElementById('portal-avatar')!;
-    if (member.photo_url) {
-      avatarEl.innerHTML = `<img src="${member.photo_url}" alt="${fullName}" class="portal-avatar-img" />`;
-    } else {
-      avatarEl.textContent = initials;
-    }
-    document.getElementById('sidebar-name')!.textContent = fullName;
-
-    // Profile tab
+    // Profile
     document.getElementById('info-fullname')!.textContent = fullName;
     document.getElementById('info-email')!.textContent = member.email ?? '—';
     document.getElementById('info-phone')!.textContent = member.phone ?? '—';
@@ -316,20 +133,18 @@ import Layout from '../../layouts/Layout.astro';
     document.getElementById('info-occupation')!.textContent = member.occupation ?? '—';
     document.getElementById('info-employer')!.textContent = member.employer ?? '—';
 
-    // Financial tab
+    // Financial
     const isFinancial = member.member_status === 'financial' || member.member_status === 'life_member';
-    const badge = document.getElementById('financial-badge')!;
-    badge.innerHTML = `<span class="financial-badge ${isFinancial ? 'financial-badge--good' : 'financial-badge--warn'}">${isFinancial ? 'FINANCIAL' : 'NON-FINANCIAL'}</span>`;
+    document.getElementById('financial-badge')!.innerHTML = `<span class="financial-badge ${isFinancial ? 'financial-badge--good' : 'financial-badge--warn'}">${isFinancial ? 'FINANCIAL' : 'NON-FINANCIAL'}</span>`;
     document.getElementById('fin-status')!.textContent = member.member_status?.replace('_', ' ').replace(/\b\w/g, (c: string) => c.toUpperCase()) ?? '—';
     document.getElementById('fin-through')!.textContent = member.financial_through ? new Date(member.financial_through).toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' }) : '—';
     document.getElementById('fin-life')!.textContent = member.life_member ? 'Yes' : 'No';
 
-    // Membership tab
+    // Membership
     document.getElementById('mem-scroll')!.textContent = member.scrolling_number ?? '—';
     document.getElementById('mem-number')!.textContent = member.member_number ?? '—';
     document.getElementById('mem-initiated')!.textContent = member.initiated_date ? new Date(member.initiated_date).toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' }) : '—';
     document.getElementById('mem-init-chapter')!.textContent = member.chapter_of_initiation ?? '—';
-
     const ch = member.chapter as any;
     if (ch) {
       document.getElementById('mem-chapter')!.textContent = `${ch.name} (${ch.designation})`;
@@ -341,15 +156,13 @@ import Layout from '../../layouts/Layout.astro';
     // Payments table
     const pBody = document.getElementById('payments-body')!;
     if (payments && payments.length > 0) {
-      pBody.innerHTML = payments.map((p: any) => `
-        <tr>
-          <td>${new Date(p.payment_date).toLocaleDateString('en-US', { year:'numeric', month:'short', day:'numeric' })}</td>
-          <td>${p.payment_type.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}</td>
-          <td>${p.fiscal_year ?? '—'}</td>
-          <td>$${Number(p.amount).toFixed(2)}</td>
-          <td><span class="status-chip status-chip--${p.status}">${p.status}</span></td>
-        </tr>
-      `).join('');
+      pBody.innerHTML = payments.map((p: any) => `<tr>
+        <td data-label="Date">${new Date(p.payment_date).toLocaleDateString('en-US', { year:'numeric', month:'short', day:'numeric' })}</td>
+        <td data-label="Type">${p.payment_type.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}</td>
+        <td data-label="Fiscal Year">${p.fiscal_year ?? '—'}</td>
+        <td data-label="Amount">$${Number(p.amount).toFixed(2)}</td>
+        <td data-label="Status"><span class="status-chip status-chip--${p.status}">${p.status}</span></td>
+      </tr>`).join('');
     } else {
       pBody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--gray-400);">No payment records found.</td></tr>';
     }
@@ -357,14 +170,12 @@ import Layout from '../../layouts/Layout.astro';
     // Events table
     const eBody = document.getElementById('events-body')!;
     if (events && events.length > 0) {
-      eBody.innerHTML = events.map((ev: any) => `
-        <tr>
-          <td><strong>${ev.event_name}</strong></td>
-          <td>${ev.event_date ? new Date(ev.event_date).toLocaleDateString('en-US', { year:'numeric', month:'short', day:'numeric' }) : '—'}</td>
-          <td>${ev.event_location ?? '—'}</td>
-          <td><span class="status-chip status-chip--${ev.status}">${ev.status}</span></td>
-        </tr>
-      `).join('');
+      eBody.innerHTML = events.map((ev: any) => `<tr>
+        <td data-label="Event"><strong>${ev.event_name}</strong></td>
+        <td data-label="Date">${ev.event_date ? new Date(ev.event_date).toLocaleDateString('en-US', { year:'numeric', month:'short', day:'numeric' }) : '—'}</td>
+        <td data-label="Location">${ev.event_location ?? '—'}</td>
+        <td data-label="Status"><span class="status-chip status-chip--${ev.status}">${ev.status}</span></td>
+      </tr>`).join('');
     } else {
       eBody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--gray-400);">No event registrations found.</td></tr>';
     }
@@ -376,45 +187,12 @@ import Layout from '../../layouts/Layout.astro';
       document.querySelectorAll('.portal-tab').forEach(t => t.classList.remove('active'));
       document.querySelectorAll('.portal-tab-content').forEach(c => c.classList.remove('active'));
       tab.classList.add('active');
-      const target = (tab as HTMLElement).dataset.tab;
-      document.getElementById(`tab-${target}`)?.classList.add('active');
+      document.getElementById(`tab-${(tab as HTMLElement).dataset.tab}`)?.classList.add('active');
     });
-  });
-
-  // Logout
-  document.getElementById('logout-btn')?.addEventListener('click', async () => {
-    await supabase.auth.signOut();
-    window.location.href = '/member-login';
   });
 </script>
 
 <style>
-/* Tabs */
-.portal-tabs {
-  display: flex;
-  gap: 0;
-  overflow-x: auto;
-}
-.portal-tab {
-  padding: 10px 20px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--gray-600);
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  cursor: pointer;
-  font-family: var(--font-sans);
-  white-space: nowrap;
-  transition: all var(--transition);
-}
-.portal-tab:hover { color: var(--crimson); }
-.portal-tab.active {
-  color: var(--crimson);
-  border-bottom-color: var(--crimson);
-}
-
-/* Tab Content */
 .portal-tab-content { display: none; padding: 32px; }
 .portal-tab-content.active { display: block; }
 @media (max-width: 640px) {

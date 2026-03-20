@@ -295,7 +295,12 @@ import Layout from '../../layouts/Layout.astro';
     document.getElementById('portal-user-name')!.textContent = fullName;
 
     // Sidebar
-    document.getElementById('portal-avatar')!.textContent = initials;
+    const avatarEl = document.getElementById('portal-avatar')!;
+    if (member.photo_url) {
+      avatarEl.innerHTML = `<img src="${member.photo_url}" alt="${fullName}" class="portal-avatar-img" />`;
+    } else {
+      avatarEl.textContent = initials;
+    }
     document.getElementById('sidebar-name')!.textContent = fullName;
 
     // Profile tab

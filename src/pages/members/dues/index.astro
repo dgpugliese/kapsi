@@ -22,23 +22,23 @@ import PortalShell from '../../../components/PortalShell.astro';
       <div class="dues-breakdown">
         <div class="dues-line">
           <span>Grand Chapter Per Capita Assessment</span>
-          <span class="dues-amount">$100.00</span>
+          <span class="dues-amount">$130.00</span>
         </div>
         <div class="dues-line">
           <span>Province Per Capita Assessment</span>
-          <span class="dues-amount">$25.00</span>
+          <span class="dues-amount">$35.00</span>
         </div>
         <div class="dues-line">
           <span>Journal Subscription</span>
-          <span class="dues-amount">$15.00</span>
+          <span class="dues-amount">$20.00</span>
         </div>
         <div class="dues-line">
           <span>Technology Fee</span>
-          <span class="dues-amount">$10.00</span>
+          <span class="dues-amount">$15.00</span>
         </div>
         <div class="dues-line dues-line--total">
           <span>Total Annual Dues</span>
-          <span class="dues-amount">$150.00</span>
+          <span class="dues-amount">$200.00</span>
         </div>
       </div>
     </div>
@@ -52,23 +52,23 @@ import PortalShell from '../../../components/PortalShell.astro';
             <input type="radio" name="payment_type" value="annual_dues" checked />
             <div class="payment-option-card">
               <div class="payment-option-title">Annual Dues</div>
-              <div class="payment-option-amount">$150.00</div>
+              <div class="payment-option-amount">$200.00</div>
               <div class="payment-option-desc">Standard annual per capita assessment</div>
             </div>
           </label>
           <label class="payment-option">
-            <input type="radio" name="payment_type" value="special_assessment" />
+            <input type="radio" name="payment_type" value="subscribing_life" />
             <div class="payment-option-card">
-              <div class="payment-option-title">Special Assessment</div>
-              <div class="payment-option-amount">$50.00</div>
-              <div class="payment-option-desc">Grand Chapter special assessment</div>
+              <div class="payment-option-title">Subscribing Life</div>
+              <div class="payment-option-amount">$1,250.00</div>
+              <div class="payment-option-desc">Installment plan — 4 payments of $1,250</div>
             </div>
           </label>
           <label class="payment-option">
             <input type="radio" name="payment_type" value="life_membership" />
             <div class="payment-option-card">
               <div class="payment-option-title">Life Membership</div>
-              <div class="payment-option-amount">$2,500.00</div>
+              <div class="payment-option-amount">$3,500.00</div>
               <div class="payment-option-desc">One-time payment for lifetime financial status</div>
             </div>
           </label>
@@ -107,7 +107,7 @@ import PortalShell from '../../../components/PortalShell.astro';
         <div class="payment-summary">
           <div class="payment-summary-line">
             <span>Payment Amount</span>
-            <span id="payment-total" class="payment-summary-amount">$150.00</span>
+            <span id="payment-total" class="payment-summary-amount">$200.00</span>
           </div>
           <div class="payment-summary-line payment-summary-line--sub">
             <span>Fiscal Year</span>
@@ -116,7 +116,7 @@ import PortalShell from '../../../components/PortalShell.astro';
         </div>
 
         <button type="submit" class="btn btn--primary dues-submit-btn" id="submit-payment">
-          <span id="pay-btn-text">Submit Payment — $150.00</span>
+          <span id="pay-btn-text">Submit Payment — $200.00</span>
           <span id="pay-btn-loading" style="display:none;">Processing...</span>
         </button>
 
@@ -204,9 +204,9 @@ import PortalShell from '../../../components/PortalShell.astro';
 
   // Payment option switching
   const amounts: Record<string, { amount: string; fy: string }> = {
-    annual_dues: { amount: '$150.00', fy: '2026-2027' },
-    special_assessment: { amount: '$50.00', fy: '2026-2027' },
-    life_membership: { amount: '$2,500.00', fy: 'N/A — Lifetime' },
+    annual_dues: { amount: '$200.00', fy: '2026-2027' },
+    subscribing_life: { amount: '$1,250.00', fy: '2026-2027 (1 of 4)' },
+    life_membership: { amount: '$3,500.00', fy: 'N/A — Lifetime' },
   };
 
   document.querySelectorAll('input[name="payment_type"]').forEach(radio => {
@@ -244,8 +244,8 @@ import PortalShell from '../../../components/PortalShell.astro';
     btnLoad.style.display = 'inline';
 
     const selectedType = (document.querySelector('input[name="payment_type"]:checked') as HTMLInputElement).value;
-    const amountMap: Record<string, number> = { annual_dues: 150, special_assessment: 50, life_membership: 2500 };
-    const fyMap: Record<string, string> = { annual_dues: '2026-2027', special_assessment: '2026-2027', life_membership: 'Lifetime' };
+    const amountMap: Record<string, number> = { annual_dues: 200, subscribing_life: 1250, life_membership: 3500 };
+    const fyMap: Record<string, string> = { annual_dues: '2026-2027', subscribing_life: '2026-2027 (1 of 4)', life_membership: 'Lifetime' };
 
     // Insert payment record
     const { error } = await supabase.from('dues_payments').insert({

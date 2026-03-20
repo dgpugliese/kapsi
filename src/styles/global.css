@@ -462,19 +462,6 @@ h3 { font-size: clamp(1.2rem, 2.5vw, 1.75rem); }
   box-shadow: var(--shadow-xl);
 }
 
-/* Breadcrumb */
-.breadcrumb {
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-  font-size: 0.8rem;
-  margin-bottom: 18px;
-  opacity: 0.7;
-  font-family: var(--font-sans);
-}
-.breadcrumb a { color: rgba(255,255,255,0.8); }
-.breadcrumb a:hover { color: var(--white); }
-.breadcrumb span { color: rgba(255,255,255,0.4); }
 
 /* ===== SECTION TITLES ===== */
 .section-label {

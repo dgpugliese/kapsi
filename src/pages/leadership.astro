@@ -34,12 +34,6 @@ const undergradBoard = [
     </div>
   </div>
 
-  <nav class="breadcrumb" aria-label="Breadcrumb">
-    <div class="container">
-      <a href="/">Home</a> &rsaquo; Leadership &rsaquo; Grand Chapter Leadership
-    </div>
-  </nav>
-
   <!-- Grand Polemarch Feature -->
   <section class="section section--cream">
     <div class="container">
@@ -160,11 +154,12 @@ const undergradBoard = [
 
 <style>
 .person-card-img {
-  width: 72px; height: 72px; border-radius: 50%; overflow: hidden;
-  flex-shrink: 0; background: var(--gray-100);
+  width: 100%; height: 200px; overflow: hidden;
+  background: linear-gradient(160deg, var(--crimson-dark), var(--crimson));
+  display: flex; align-items: center; justify-content: center;
 }
 .person-card-img img {
-  width: 100%; height: 100%; object-fit: cover;
+  width: 100%; height: 100%; object-fit: cover; object-position: top center;
 }
 @media (max-width: 768px) {
   .grid.grid--2 { grid-template-columns: 1fr !important; }

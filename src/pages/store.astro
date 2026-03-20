@@ -1,0 +1,324 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const categories = [
+  { id: 'all', label: 'All Products' },
+  { id: 'pins', label: 'Pins & Badges' },
+  { id: 'life', label: 'Life Membership' },
+  { id: 'apparel', label: 'Apparel & Accessories' },
+  { id: 'books', label: 'Books & Publications' },
+];
+
+const products = [
+  // Life Membership
+  { name: 'Life Membership Pin', price: 85, image: '/images/store/life-pin.jpg', category: 'life', badge: '' },
+  { name: 'Diamond Life Membership Pin', price: 195, image: '/images/store/diamond-life-pin.jpg', category: 'life', badge: 'Popular' },
+  { name: 'Life Membership Jacket', price: 250, image: '/images/store/life-jacket.jpg', category: 'life', badge: '' },
+  { name: 'Diamond Life Membership Jacket', price: 375, image: '/images/store/diamond-life-jacket.jpg', category: 'life', badge: 'Premium' },
+  { name: 'Life Membership Plaque', price: 150, image: '/images/store/life-plaque.jpg', category: 'life', badge: '' },
+
+  // Anniversary Pins
+  { name: '25 Year Pin', price: 45, image: '/images/store/25-year-pin.jpg', category: 'pins', badge: '' },
+  { name: '50 Year Gold Pin (No Diamonds)', price: 65, image: '/images/store/50-year-gold-pin.jpg', category: 'pins', badge: '' },
+  { name: '50 Year Gold Pin with Diamonds', price: 135, image: '/images/store/50-year-gold-diamond-pin.jpg', category: 'pins', badge: '' },
+  { name: '50 Year Red Pin', price: 55, image: '/images/store/50-year-red-pin.jpg', category: 'pins', badge: '' },
+  { name: '75 Year Pin with Jewels', price: 175, image: '/images/store/75-year-pin-jewels.jpg', category: 'pins', badge: '' },
+  { name: '75 Year Pin (No Jewels)', price: 95, image: '/images/store/75-year-pin-plain.jpg', category: 'pins', badge: '' },
+
+  // Chapter Polemarch Badges
+  { name: 'Polemarch Badge — 10K Gold, Diamonds', price: 425, image: '/images/store/polemarch-badge-10k-diamond.jpg', category: 'pins', badge: 'Premium' },
+  { name: 'Polemarch Badge — 10K Gold, Synthetic', price: 275, image: '/images/store/polemarch-badge-10k-synthetic.jpg', category: 'pins', badge: '' },
+  { name: 'Polemarch Badge — Gold Plated, Diamonds', price: 225, image: '/images/store/polemarch-badge-gold-plated-diamond.jpg', category: 'pins', badge: '' },
+  { name: 'Polemarch Badge — Gold Plated, Synthetic', price: 145, image: '/images/store/polemarch-badge-gold-plated-synthetic.jpg', category: 'pins', badge: '' },
+
+  // Sweetheart Pins
+  { name: 'Crown Pearl Sweetheart Pin', price: 75, image: '/images/store/crown-pearl-sweetheart-pin.jpg', category: 'pins', badge: '' },
+  { name: 'Plain Sweetheart Pin', price: 45, image: '/images/store/plain-sweetheart-pin.jpg', category: 'pins', badge: '' },
+
+  // Number Badges & Insignia
+  { name: '#1 Badge', price: 35, image: '/images/store/number-1-badge.jpg', category: 'pins', badge: '' },
+  { name: '#3 Badge', price: 35, image: '/images/store/number-3-badge.jpg', category: 'pins', badge: '' },
+  { name: 'Officer Insignia', price: 55, image: '/images/store/officer-insignia.jpg', category: 'pins', badge: '' },
+
+  // Apparel & Accessories
+  { name: 'Kappa Alpha Psi® Bag', price: 65, image: '/images/store/kap-bag.jpg', category: 'apparel', badge: '' },
+
+  // Books
+  { name: 'The Story of Kappa Alpha Psi — 6th Edition', price: 60, image: '/images/store/story-of-kap.jpg', category: 'books', badge: 'New Edition' },
+  { name: 'Protocol & Etiquette Manual', price: 25, image: '/images/store/protocol-manual.jpg', category: 'books', badge: '' },
+];
+---
+
+<Layout title="Kappa Store — Kappa Alpha Psi® Fraternity, Inc.">
+
+<!-- Store Hero -->
+<section class="store-hero">
+  <div class="store-hero-bg" aria-hidden="true"></div>
+  <div class="container store-hero-inner">
+    <div class="section-label" style="color:var(--gold);">Official Merchandise</div>
+    <div class="rule" style="background:var(--gold);"></div>
+    <h1>The Kappa Store</h1>
+    <p>Pins, badges, apparel, and publications — exclusively for members of Kappa Alpha Psi® Fraternity, Inc.</p>
+  </div>
+</section>
+
+<!-- Store Content -->
+<section class="section">
+  <div class="container">
+    <!-- Category Filter -->
+    <div class="store-filters" id="store-filters">
+      {categories.map(cat => (
+        <button class={`store-filter-btn ${cat.id === 'all' ? 'active' : ''}`} data-category={cat.id}>
+          {cat.label}
+        </button>
+      ))}
+    </div>
+
+    <!-- Product Count -->
+    <div class="store-count" id="store-count">{products.length} products</div>
+
+    <!-- Product Grid -->
+    <div class="store-grid" id="store-grid">
+      {products.map(product => (
+        <div class="store-card" data-category={product.category}>
+          <div class="store-card-img">
+            <img src={product.image} alt={product.name} loading="lazy" />
+            {product.badge && <span class="store-card-badge">{product.badge}</span>}
+          </div>
+          <div class="store-card-body">
+            <h3 class="store-card-name">{product.name}</h3>
+            <div class="store-card-price">${product.price.toFixed(2)}</div>
+            <button class="store-card-btn">Add to Cart</button>
+          </div>
+        </div>
+      ))}
+    </div>
+
+    <!-- Store Notice -->
+    <div class="store-notice">
+      <p><strong>Ordering Information:</strong> All store purchases require an active membership. Items are shipped to the address on file at IHQ. For bulk orders or chapter purchases, contact <a href="mailto:store@kappaalphapsi1911.com">store@kappaalphapsi1911.com</a>.</p>
+    </div>
+  </div>
+</section>
+
+</Layout>
+
+<script>
+  // Category filtering
+  const filterBtns = document.querySelectorAll('.store-filter-btn');
+  const cards = document.querySelectorAll('.store-card');
+  const countEl = document.getElementById('store-count')!;
+
+  filterBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      filterBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const cat = (btn as HTMLElement).dataset.category;
+      let visible = 0;
+      cards.forEach(card => {
+        const match = cat === 'all' || (card as HTMLElement).dataset.category === cat;
+        (card as HTMLElement).style.display = match ? '' : 'none';
+        if (match) visible++;
+      });
+      countEl.textContent = `${visible} product${visible !== 1 ? 's' : ''}`;
+    });
+  });
+
+  // Add to cart (demo)
+  document.querySelectorAll('.store-card-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const el = btn as HTMLButtonElement;
+      el.textContent = 'Added ✓';
+      el.classList.add('store-card-btn--added');
+      setTimeout(() => {
+        el.textContent = 'Add to Cart';
+        el.classList.remove('store-card-btn--added');
+      }, 2000);
+    });
+  });
+</script>
+
+<style>
+/* Store Hero */
+.store-hero {
+  position: relative;
+  padding: clamp(80px, 10vw, 140px) 0 clamp(60px, 8vw, 100px);
+  background: var(--black);
+  overflow: hidden;
+  text-align: center;
+}
+.store-hero-bg {
+  position: absolute; inset: 0;
+  background-image:
+    radial-gradient(circle at 50% 50%, rgba(139,0,0,0.25) 0%, transparent 60%),
+    radial-gradient(circle at 80% 20%, rgba(201,168,76,0.1) 0%, transparent 40%);
+}
+.store-hero-inner { position: relative; z-index: 1; }
+.store-hero h1 {
+  font-family: var(--font-serif);
+  font-size: clamp(2.5rem, 6vw, 4.5rem);
+  color: var(--white);
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+.store-hero p {
+  color: rgba(255,255,255,0.6);
+  font-size: 1.05rem;
+  max-width: 560px;
+  margin: 0 auto;
+  line-height: 1.7;
+}
+
+/* Filters */
+.store-filters {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.store-filters::-webkit-scrollbar { display: none; }
+.store-filter-btn {
+  padding: 10px 20px;
+  border: 1px solid var(--gray-200);
+  border-radius: 24px;
+  background: var(--white);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--gray-600);
+  cursor: pointer;
+  white-space: nowrap;
+  font-family: var(--font-sans);
+  transition: all var(--transition);
+  min-height: 40px;
+}
+.store-filter-btn:hover { border-color: var(--crimson); color: var(--crimson); }
+.store-filter-btn.active {
+  background: var(--crimson);
+  border-color: var(--crimson);
+  color: var(--white);
+}
+
+.store-count {
+  font-size: 0.82rem;
+  color: var(--gray-400);
+  margin-bottom: 24px;
+  font-family: var(--font-sans);
+}
+
+/* Product Grid */
+.store-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  margin-bottom: 48px;
+}
+.store-card {
+  background: var(--white);
+  border: 1px solid var(--gray-100);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  transition: all var(--transition);
+  display: flex;
+  flex-direction: column;
+}
+.store-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+  border-color: transparent;
+}
+.store-card-img {
+  position: relative;
+  aspect-ratio: 1;
+  overflow: hidden;
+  background: var(--gray-50);
+}
+.store-card-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+.store-card:hover .store-card-img img { transform: scale(1.05); }
+.store-card-badge {
+  position: absolute;
+  top: 12px; left: 12px;
+  background: var(--crimson);
+  color: var(--white);
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-family: var(--font-sans);
+}
+.store-card-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+.store-card-name {
+  font-family: var(--font-serif);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--gray-800);
+  margin-bottom: 8px;
+  line-height: 1.3;
+  flex: 1;
+}
+.store-card-price {
+  font-family: var(--font-sans);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--crimson);
+  margin-bottom: 14px;
+}
+.store-card-btn {
+  width: 100%;
+  padding: 10px;
+  background: var(--black);
+  color: var(--white);
+  border: none;
+  border-radius: var(--radius);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  transition: all var(--transition);
+}
+.store-card-btn:hover { background: var(--crimson); }
+.store-card-btn--added {
+  background: #065F46 !important;
+}
+
+/* Store Notice */
+.store-notice {
+  background: var(--cream);
+  border: 1px solid var(--cream-dark);
+  border-radius: var(--radius-lg);
+  padding: 20px 24px;
+  font-size: 0.875rem;
+  color: var(--gray-600);
+  line-height: 1.7;
+}
+.store-notice a { color: var(--crimson); font-weight: 600; }
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .store-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 768px) {
+  .store-grid { grid-template-columns: repeat(2, 1fr); gap: 14px; }
+  .store-card-body { padding: 14px; }
+  .store-card-name { font-size: 0.9rem; }
+}
+@media (max-width: 480px) {
+  .store-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .store-card-body { padding: 12px; }
+  .store-card-price { font-size: 1rem; margin-bottom: 10px; }
+}
+</style>

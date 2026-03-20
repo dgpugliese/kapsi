@@ -221,6 +221,17 @@ h3 { font-size: clamp(1.2rem, 2.5vw, 1.75rem); }
   color: var(--gray-400);
 }
 .nav-item:hover .chevron { transform: rotate(180deg); color: var(--crimson); }
+.nav-item--highlight > a {
+  background: var(--crimson) !important;
+  color: var(--white) !important;
+  border-radius: var(--radius);
+  font-weight: 700 !important;
+  letter-spacing: 0.3px;
+}
+.nav-item--highlight > a:hover {
+  background: var(--crimson-dark) !important;
+  color: var(--white) !important;
+}
 
 /* Dropdown */
 .dropdown {
@@ -319,6 +330,16 @@ h3 { font-size: clamp(1.2rem, 2.5vw, 1.75rem); }
   background: var(--cream);
   color: var(--crimson);
   border-left-color: var(--crimson);
+}
+.mobile-nav-highlight {
+  background: var(--crimson) !important;
+  color: var(--white) !important;
+  font-weight: 700 !important;
+  border-left-color: var(--gold) !important;
+}
+.mobile-nav-highlight:hover {
+  background: var(--crimson-dark) !important;
+  color: var(--white) !important;
 }
 
 /* ===== BUTTONS ===== */

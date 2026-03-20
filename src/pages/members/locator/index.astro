@@ -1,10 +1,19 @@
 ---
+export const prerender = false;
 import Layout from '../../../layouts/Layout.astro';
 import PortalShell from '../../../components/PortalShell.astro';
+
+const { data: chapters } = await Astro.locals.supabase
+  .from('chapters')
+  .select('*, province:province_id ( name )')
+  .order('name');
+
+const chapterList = chapters ?? [];
+const chaptersJson = JSON.stringify(chapterList);
 ---
 
 <Layout title="Chapter Locator — Kappa Alpha Psi®">
-<PortalShell title="Chapter Locator" activePage="locator">
+<PortalShell title="Chapter Locator" activePage="locator" member={Astro.locals.member}>
 
   <!-- Search -->
   <div class="loc-search">
@@ -25,25 +34,32 @@ import PortalShell from '../../../components/PortalShell.astro';
     </div>
   </div>
 
-  <div class="dir-results-info" id="loc-info"></div>
+  <div class="dir-results-info" id="loc-info">{chapterList.length} chapter{chapterList.length !== 1 ? 's' : ''} found</div>
   <div id="loc-results">
-    <p id="loc-loading" style="text-align:center; color:var(--gray-400); padding:32px 0;">Loading all chapters...</p>
+    {chapterList.map((ch: any) => (
+      <div class="loc-card" data-state={ch.state} data-type={ch.chapter_type}>
+        <div class="loc-card-badge">{ch.designation}</div>
+        <div class="loc-card-info">
+          <h3>{ch.name}</h3>
+          <p class="dir-card-chapter">{ch.chapter_type === 'alumni' ? 'Alumni Chapter' : 'Undergraduate Chapter'}{ch.university ? ` · ${ch.university}` : ''}</p>
+          <p class="dir-card-location">{ch.city}, {ch.state} · {ch.province?.name ?? ''}</p>
+        </div>
+        <div class="loc-card-status">
+          <span class={`status-chip status-chip--${ch.status === 'active' ? 'completed' : 'pending'}`}>{ch.status}</span>
+        </div>
+      </div>
+    ))}
   </div>
 
 </PortalShell>
 </Layout>
 
+<script define:vars={{ chaptersJson }}>
+  window.__chaptersData = JSON.parse(chaptersJson);
+</script>
+
 <script>
-  import { supabase } from '../../../lib/supabase';
-
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) window.location.href = '/member-login';
-
-  const { data: chapters } = await supabase
-    .from('chapters')
-    .select('*, province:province_id ( name )')
-    .order('name');
-
+  const chapters = (window as any).__chaptersData as any[];
   const resultsEl = document.getElementById('loc-results')!;
   const infoEl = document.getElementById('loc-info')!;
 
@@ -54,7 +70,7 @@ import PortalShell from '../../../components/PortalShell.astro';
       return;
     }
     resultsEl.innerHTML = list.map((ch: any) => `
-      <div class="loc-card">
+      <div class="loc-card" data-state="${ch.state}" data-type="${ch.chapter_type}">
         <div class="loc-card-badge">${ch.designation}</div>
         <div class="loc-card-info">
           <h3>${ch.name}</h3>
@@ -68,14 +84,11 @@ import PortalShell from '../../../components/PortalShell.astro';
     `).join('');
   }
 
-  // Initial render
-  if (chapters) renderChapters(chapters);
-
-  // Search
+  // Search / filter
   document.getElementById('loc-search-btn')?.addEventListener('click', () => {
     const state = (document.getElementById('loc-state') as HTMLInputElement).value.trim().toUpperCase();
     const type = (document.getElementById('loc-type') as HTMLSelectElement).value;
-    let filtered = chapters ?? [];
+    let filtered = chapters;
     if (state) filtered = filtered.filter((ch: any) => ch.state.toUpperCase() === state);
     if (type) filtered = filtered.filter((ch: any) => ch.chapter_type === type);
     renderChapters(filtered);

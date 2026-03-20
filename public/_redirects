@@ -1,5 +1,2 @@
 # Redirect /need-assistance → canonical contact page
 /need-assistance  /contact/need-assistance  301
-
-# 404 fallback
-/*  /404  404

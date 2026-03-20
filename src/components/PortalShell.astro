@@ -2,19 +2,26 @@
 export interface Props {
   title: string;
   activePage: string;
+  member?: {
+    first_name: string;
+    middle_name?: string;
+    last_name: string;
+    suffix?: string;
+    photo_url?: string;
+  } | null;
 }
-const { title, activePage } = Astro.props;
+const { title, activePage, member } = Astro.props;
 const hasTabs = Astro.slots.has('tabs');
+
+const fullName = member
+  ? [member.first_name, member.middle_name, member.last_name, member.suffix].filter(Boolean).join(' ')
+  : '';
+const initials = member
+  ? (member.first_name?.[0] ?? '') + (member.last_name?.[0] ?? '')
+  : '';
 ---
 
 <div class="portal" id="portal">
-  <!-- Loading State -->
-  <div class="portal-loading" id="portal-loading">
-    <div class="portal-loading-inner">
-      <img src="/images/kap-crest.png" alt="" width="56" height="62" />
-      <p>Loading...</p>
-    </div>
-  </div>
 
   <!-- Mobile Overlay -->
   <div class="portal-overlay" id="portal-overlay"></div>
@@ -33,7 +40,7 @@ const hasTabs = Astro.slots.has('tabs');
         </div>
       </div>
       <div class="portal-banner-right">
-        <span id="portal-user-name" class="portal-user-name"></span>
+        <span class="portal-user-name">{fullName}</span>
         <button id="logout-btn" class="portal-logout-btn">Sign Out</button>
       </div>
     </div>
@@ -46,9 +53,14 @@ const hasTabs = Astro.slots.has('tabs');
       <!-- Sidebar -->
       <aside class="portal-sidebar" id="portal-sidebar">
         <div class="portal-sidebar-photo">
-          <div class="portal-avatar" id="portal-avatar"></div>
+          <div class="portal-avatar">
+            {member?.photo_url
+              ? <img src={member.photo_url} alt={fullName} class="portal-avatar-img" />
+              : initials
+            }
+          </div>
         </div>
-        <div class="portal-sidebar-name" id="sidebar-name"></div>
+        <div class="portal-sidebar-name">{fullName}</div>
         <nav class="portal-nav">
           <a href="/members/" class={`portal-nav-item ${activePage === 'info' ? 'active' : ''}`}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg>
@@ -103,33 +115,6 @@ const hasTabs = Astro.slots.has('tabs');
 <script>
   import { supabase } from '../lib/supabase';
 
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) {
-    window.location.href = '/member-login';
-  } else {
-    const { data: member } = await supabase
-      .from('members')
-      .select('first_name, middle_name, last_name, suffix, photo_url')
-      .eq('id', session.user.id)
-      .single();
-
-    document.getElementById('portal-loading')!.style.display = 'none';
-
-    if (member) {
-      const fullName = [member.first_name, member.middle_name, member.last_name, member.suffix].filter(Boolean).join(' ');
-      const initials = (member.first_name?.[0] ?? '') + (member.last_name?.[0] ?? '');
-      document.getElementById('portal-user-name')!.textContent = fullName;
-      document.getElementById('sidebar-name')!.textContent = fullName;
-
-      const avatarEl = document.getElementById('portal-avatar')!;
-      if (member.photo_url) {
-        avatarEl.innerHTML = `<img src="${member.photo_url}" alt="${fullName}" class="portal-avatar-img" />`;
-      } else {
-        avatarEl.textContent = initials;
-      }
-    }
-  }
-
   // Logout
   document.getElementById('logout-btn')?.addEventListener('click', async () => {
     await supabase.auth.signOut();
@@ -159,8 +144,6 @@ const hasTabs = Astro.slots.has('tabs');
   });
   overlay?.addEventListener('click', closeSidebar);
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSidebar(); });
-
-  // Close sidebar on nav click (mobile)
   document.querySelectorAll('.portal-nav-item').forEach(link => {
     link.addEventListener('click', closeSidebar);
   });

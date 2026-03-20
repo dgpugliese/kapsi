@@ -1,19 +1,54 @@
 ---
+export const prerender = false;
 import Layout from '../../../layouts/Layout.astro';
 import PortalShell from '../../../components/PortalShell.astro';
+
+const { supabase, session, member: portalMember } = Astro.locals;
+
+const { data: member } = await supabase
+  .from('members')
+  .select(`
+    primary_chapter_id,
+    chapter:primary_chapter_id (
+      name, designation, chapter_type, university, city, state, charter_date, status,
+      province:province_id ( name, abbreviation, region, polemarch )
+    )
+  `)
+  .eq('id', session!.user.id)
+  .single();
+
+const ch = member?.chapter as any;
+const prov = ch?.province as any;
+
+const chapterName = ch?.name ?? '—';
+const chapterDesignation = ch?.designation ?? '—';
+const chapterTypeLabel = ch?.chapter_type === 'alumni' ? 'Alumni Chapter' : 'Undergraduate Chapter';
+const heroSubtitle = ch ? `${chapterTypeLabel} · ${ch.city}, ${ch.state}` : '—';
+const charterDate = ch?.charter_date
+  ? new Date(ch.charter_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+  : '—';
+const chapterCity = ch?.city ?? '—';
+const chapterState = ch?.state ?? '—';
+const chapterStatus = ch?.status === 'active' ? 'Active' : 'Inactive';
+const chapterUniversity = ch?.university ?? 'N/A — Alumni Chapter';
+
+const provName = prov?.name ?? '—';
+const provAbbr = prov?.abbreviation ?? '—';
+const provRegion = prov?.region ?? '—';
+const provPolemarch = prov?.polemarch ?? '—';
 ---
 
 <Layout title="My Primary Chapter — Kappa Alpha Psi®">
-<PortalShell title="My Primary Chapter" activePage="chapter">
+<PortalShell title="My Primary Chapter" activePage="chapter" member={portalMember}>
 
   <div id="chapter-page">
     <!-- Chapter Info -->
     <div class="portal-section">
-      <div class="chapter-hero" id="chapter-hero">
-        <div class="chapter-hero-badge" id="chapter-badge"></div>
+      <div class="chapter-hero">
+        <div class="chapter-hero-badge">{chapterDesignation}</div>
         <div>
-          <h2 id="chapter-name" style="margin:0; font-family:var(--font-serif); color:var(--crimson);">—</h2>
-          <p id="chapter-designation" style="color:var(--gray-600); font-size:0.9rem; margin-top:4px;">—</p>
+          <h2 style="margin:0; font-family:var(--font-serif); color:var(--crimson);">{chapterName}</h2>
+          <p style="color:var(--gray-600); font-size:0.9rem; margin-top:4px;">{heroSubtitle}</p>
         </div>
       </div>
     </div>
@@ -23,35 +58,35 @@ import PortalShell from '../../../components/PortalShell.astro';
       <div class="info-grid">
         <div class="info-item">
           <label>Chapter Name</label>
-          <span id="ch-name">—</span>
+          <span>{chapterName}</span>
         </div>
         <div class="info-item">
           <label>Designation</label>
-          <span id="ch-designation">—</span>
+          <span>{chapterDesignation}</span>
         </div>
         <div class="info-item">
           <label>Chapter Type</label>
-          <span id="ch-type">—</span>
+          <span>{chapterTypeLabel}</span>
         </div>
         <div class="info-item">
           <label>Charter Date</label>
-          <span id="ch-charter">—</span>
+          <span>{charterDate}</span>
         </div>
         <div class="info-item">
           <label>City</label>
-          <span id="ch-city">—</span>
+          <span>{chapterCity}</span>
         </div>
         <div class="info-item">
           <label>State</label>
-          <span id="ch-state">—</span>
+          <span>{chapterState}</span>
         </div>
         <div class="info-item">
           <label>Status</label>
-          <span id="ch-status">—</span>
+          <span>{chapterStatus}</span>
         </div>
         <div class="info-item">
           <label>University</label>
-          <span id="ch-university">—</span>
+          <span>{chapterUniversity}</span>
         </div>
       </div>
     </div>
@@ -61,19 +96,19 @@ import PortalShell from '../../../components/PortalShell.astro';
       <div class="info-grid">
         <div class="info-item">
           <label>Province</label>
-          <span id="prov-name">—</span>
+          <span>{provName}</span>
         </div>
         <div class="info-item">
           <label>Abbreviation</label>
-          <span id="prov-abbr">—</span>
+          <span>{provAbbr}</span>
         </div>
         <div class="info-item">
           <label>Region</label>
-          <span id="prov-region">—</span>
+          <span>{provRegion}</span>
         </div>
         <div class="info-item">
           <label>Province Polemarch</label>
-          <span id="prov-polemarch">—</span>
+          <span>{provPolemarch}</span>
         </div>
       </div>
     </div>
@@ -81,56 +116,6 @@ import PortalShell from '../../../components/PortalShell.astro';
 
 </PortalShell>
 </Layout>
-
-<script>
-  import { supabase } from '../../../lib/supabase';
-
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) window.location.href = '/member-login';
-
-  const { data: member } = await supabase
-    .from('members')
-    .select(`
-      primary_chapter_id,
-      chapter:primary_chapter_id (
-        name, designation, chapter_type, university, city, state, charter_date, status,
-        province:province_id ( name, abbreviation, region, polemarch )
-      )
-    `)
-    .eq('id', session!.user.id)
-    .single();
-
-  if (member?.chapter) {
-    const ch = member.chapter as any;
-    const prov = ch.province as any;
-
-    // Hero
-    document.getElementById('chapter-badge')!.textContent = ch.designation;
-    document.getElementById('chapter-name')!.textContent = ch.name;
-    document.getElementById('chapter-designation')!.textContent =
-      `${ch.chapter_type === 'alumni' ? 'Alumni Chapter' : 'Undergraduate Chapter'} · ${ch.city}, ${ch.state}`;
-
-    // Details
-    document.getElementById('ch-name')!.textContent = ch.name;
-    document.getElementById('ch-designation')!.textContent = ch.designation;
-    document.getElementById('ch-type')!.textContent = ch.chapter_type === 'alumni' ? 'Alumni Chapter' : 'Undergraduate Chapter';
-    document.getElementById('ch-charter')!.textContent = ch.charter_date
-      ? new Date(ch.charter_date).toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' })
-      : '—';
-    document.getElementById('ch-city')!.textContent = ch.city;
-    document.getElementById('ch-state')!.textContent = ch.state;
-    document.getElementById('ch-status')!.textContent = ch.status === 'active' ? 'Active' : 'Inactive';
-    document.getElementById('ch-university')!.textContent = ch.university ?? 'N/A — Alumni Chapter';
-
-    // Province
-    if (prov) {
-      document.getElementById('prov-name')!.textContent = prov.name;
-      document.getElementById('prov-abbr')!.textContent = prov.abbreviation;
-      document.getElementById('prov-region')!.textContent = prov.region;
-      document.getElementById('prov-polemarch')!.textContent = prov.polemarch ?? '—';
-    }
-  }
-</script>
 
 <style>
 .chapter-hero {

@@ -1,21 +1,55 @@
 ---
+export const prerender = false;
 import Layout from '../../../layouts/Layout.astro';
 import PortalShell from '../../../components/PortalShell.astro';
+
+const { supabase, session, member: portalMember } = Astro.locals;
+
+const { data: events } = await supabase
+  .from('event_registrations')
+  .select('*')
+  .eq('member_id', session!.user.id)
+  .order('event_date', { ascending: true });
+
+const now = new Date();
+const allEvents = events ?? [];
+const upcoming = allEvents.filter((e: any) => new Date(e.event_date) >= now);
+
+function formatDate(dateStr: string) {
+  return new Date(dateStr).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+}
 ---
 
 <Layout title="My Event Registrations — Kappa Alpha Psi®">
-<PortalShell title="My Event Registrations" activePage="events">
+<PortalShell title="My Event Registrations" activePage="events" member={portalMember}>
 
   <div id="events-page">
     <!-- Upcoming Events -->
     <div class="portal-section">
       <h2>Upcoming Events</h2>
-      <div id="upcoming-events">
-        <p style="color:var(--gray-400); font-size:0.9rem;">Loading...</p>
-      </div>
+      {upcoming.length > 0 ? (
+        <div class="event-cards">
+          {upcoming.map((ev: any) => (
+            <div class="event-card-portal">
+              <div class="event-card-date">
+                <div class="event-card-month">{new Date(ev.event_date).toLocaleDateString('en-US', { month: 'short' })}</div>
+                <div class="event-card-day">{new Date(ev.event_date).getDate()}</div>
+                <div class="event-card-year">{new Date(ev.event_date).getFullYear()}</div>
+              </div>
+              <div class="event-card-info">
+                <h3>{ev.event_name}</h3>
+                <p>{ev.event_location ?? ''}</p>
+                <span class={`status-chip status-chip--${ev.status}`}>{ev.status}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p style="color:var(--gray-400); font-size:0.9rem;">No upcoming events.</p>
+      )}
     </div>
 
-    <!-- Past Events -->
+    <!-- All Registrations -->
     <div class="portal-section">
       <h2>All Registrations</h2>
       <div class="table-responsive">
@@ -29,8 +63,20 @@ import PortalShell from '../../../components/PortalShell.astro';
               <th>Status</th>
             </tr>
           </thead>
-          <tbody id="events-body">
-            <tr><td colspan="5" style="text-align:center; color:var(--gray-400);">Loading...</td></tr>
+          <tbody>
+            {allEvents.length > 0 ? (
+              allEvents.map((ev: any) => (
+                <tr>
+                  <td data-label="Event"><strong>{ev.event_name}</strong></td>
+                  <td data-label="Date">{ev.event_date ? formatDate(ev.event_date) : '—'}</td>
+                  <td data-label="Location">{ev.event_location ?? '—'}</td>
+                  <td data-label="Registered">{formatDate(ev.registration_date)}</td>
+                  <td data-label="Status"><span class={`status-chip status-chip--${ev.status}`}>{ev.status}</span></td>
+                </tr>
+              ))
+            ) : (
+              <tr><td colspan="5" style="text-align:center; color:var(--gray-400);">No event registrations found.</td></tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -39,58 +85,6 @@ import PortalShell from '../../../components/PortalShell.astro';
 
 </PortalShell>
 </Layout>
-
-<script>
-  import { supabase } from '../../../lib/supabase';
-
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) window.location.href = '/member-login';
-
-  const { data: events } = await supabase
-    .from('event_registrations')
-    .select('*')
-    .eq('member_id', session!.user.id)
-    .order('event_date', { ascending: true });
-
-  const now = new Date();
-
-  // Upcoming events cards
-  const upcomingEl = document.getElementById('upcoming-events')!;
-  const upcoming = events?.filter((e: any) => new Date(e.event_date) >= now) ?? [];
-
-  if (upcoming.length > 0) {
-    upcomingEl.innerHTML = `<div class="event-cards">${upcoming.map((ev: any) => `
-      <div class="event-card-portal">
-        <div class="event-card-date">
-          <div class="event-card-month">${new Date(ev.event_date).toLocaleDateString('en-US', { month: 'short' })}</div>
-          <div class="event-card-day">${new Date(ev.event_date).getDate()}</div>
-          <div class="event-card-year">${new Date(ev.event_date).getFullYear()}</div>
-        </div>
-        <div class="event-card-info">
-          <h3>${ev.event_name}</h3>
-          <p>${ev.event_location ?? ''}</p>
-          <span class="status-chip status-chip--${ev.status}">${ev.status}</span>
-        </div>
-      </div>
-    `).join('')}</div>`;
-  } else {
-    upcomingEl.innerHTML = '<p style="color:var(--gray-400); font-size:0.9rem;">No upcoming events.</p>';
-  }
-
-  // All events table
-  const eBody = document.getElementById('events-body')!;
-  if (events && events.length > 0) {
-    eBody.innerHTML = events.map((ev: any) => `<tr>
-        <td data-label="Event"><strong>${ev.event_name}</strong></td>
-        <td data-label="Date">${ev.event_date ? new Date(ev.event_date).toLocaleDateString('en-US', { year:'numeric', month:'short', day:'numeric' }) : '—'}</td>
-        <td data-label="Location">${ev.event_location ?? '—'}</td>
-        <td data-label="Registered">${new Date(ev.registration_date).toLocaleDateString('en-US', { year:'numeric', month:'short', day:'numeric' })}</td>
-        <td data-label="Status"><span class="status-chip status-chip--${ev.status}">${ev.status}</span></td>
-      </tr>`).join('');
-  } else {
-    eBody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--gray-400);">No event registrations found.</td></tr>';
-  }
-</script>
 
 <style>
 .event-cards {

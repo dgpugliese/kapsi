@@ -1,10 +1,35 @@
 ---
+export const prerender = false;
 import Layout from '../../../layouts/Layout.astro';
 import PortalShell from '../../../components/PortalShell.astro';
+
+const { supabase, session, member: portalMember } = Astro.locals;
+
+const { data: member } = await supabase
+  .from('members')
+  .select('*, chapter:primary_chapter_id ( name, designation )')
+  .eq('id', session!.user.id)
+  .single();
+
+const fullName = member
+  ? [member.first_name, member.middle_name, member.last_name, member.suffix].filter(Boolean).join(' ')
+  : '—';
+const memberNumber = member?.member_number ?? '—';
+const ch = member?.chapter as any;
+const chapterDisplay = ch ? `${ch.name} (${ch.designation})` : '—';
+const isFinancial = member?.member_status === 'financial' || member?.member_status === 'life_member';
+const statusText = isFinancial ? 'Financial' : 'Non-Financial';
+const statusColor = isFinancial ? '#A7F3D0' : '#FCD34D';
+const initiatedDate = member?.initiated_date
+  ? new Date(member.initiated_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+  : '—';
+const validThrough = member?.financial_through
+  ? `Valid through ${new Date(member.financial_through).toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}`
+  : '';
 ---
 
 <Layout title="My Membership Card — Kappa Alpha Psi®">
-<PortalShell title="My Membership Card" activePage="card">
+<PortalShell title="My Membership Card" activePage="card" member={portalMember}>
 
   <div id="card-page">
     <!-- Digital Card -->
@@ -19,28 +44,28 @@ import PortalShell from '../../../components/PortalShell.astro';
               <div class="kap-card-sub">Fraternity, Inc.</div>
             </div>
           </div>
-          <div class="kap-card-name" id="card-name">—</div>
+          <div class="kap-card-name">{fullName}</div>
           <div class="kap-card-details">
             <div>
               <span class="kap-card-label">Member No.</span>
-              <span class="kap-card-value" id="card-number">—</span>
+              <span class="kap-card-value">{memberNumber}</span>
             </div>
             <div>
               <span class="kap-card-label">Chapter</span>
-              <span class="kap-card-value" id="card-chapter">—</span>
+              <span class="kap-card-value">{chapterDisplay}</span>
             </div>
             <div>
               <span class="kap-card-label">Status</span>
-              <span class="kap-card-value" id="card-status">—</span>
+              <span class="kap-card-value" style={`color: ${statusColor}`}>{statusText}</span>
             </div>
             <div>
               <span class="kap-card-label">Initiated</span>
-              <span class="kap-card-value" id="card-initiated">—</span>
+              <span class="kap-card-value">{initiatedDate}</span>
             </div>
           </div>
           <div class="kap-card-footer">
             <span class="kap-card-motto">Achievement in Every Field of Human Endeavor</span>
-            <span class="kap-card-valid" id="card-valid"></span>
+            <span class="kap-card-valid">{validThrough}</span>
           </div>
         </div>
       </div>
@@ -59,38 +84,6 @@ import PortalShell from '../../../components/PortalShell.astro';
 </Layout>
 
 <script>
-  import { supabase } from '../../../lib/supabase';
-
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) window.location.href = '/member-login';
-
-  const { data: member } = await supabase
-    .from('members')
-    .select('*, chapter:primary_chapter_id ( name, designation )')
-    .eq('id', session!.user.id)
-    .single();
-
-  if (member) {
-    const fullName = [member.first_name, member.middle_name, member.last_name, member.suffix].filter(Boolean).join(' ');
-    document.getElementById('card-name')!.textContent = fullName;
-    document.getElementById('card-number')!.textContent = member.member_number ?? '—';
-    const ch = member.chapter as any;
-    document.getElementById('card-chapter')!.textContent = ch ? `${ch.name} (${ch.designation})` : '—';
-
-    const isFinancial = member.member_status === 'financial' || member.member_status === 'life_member';
-    const statusEl = document.getElementById('card-status')!;
-    statusEl.textContent = isFinancial ? 'Financial' : 'Non-Financial';
-    statusEl.style.color = isFinancial ? '#A7F3D0' : '#FCD34D';
-
-    document.getElementById('card-initiated')!.textContent = member.initiated_date
-      ? new Date(member.initiated_date).toLocaleDateString('en-US', { year:'numeric', month:'short', day:'numeric' })
-      : '—';
-
-    document.getElementById('card-valid')!.textContent = member.financial_through
-      ? `Valid through ${new Date(member.financial_through).toLocaleDateString('en-US', { year:'numeric', month:'long' })}`
-      : '';
-  }
-
   document.getElementById('print-card')?.addEventListener('click', () => {
     window.print();
   });

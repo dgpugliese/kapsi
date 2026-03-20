@@ -1,18 +1,53 @@
 ---
+export const prerender = false;
 import Layout from '../../../layouts/Layout.astro';
 import PortalShell from '../../../components/PortalShell.astro';
+
+const { supabase, session, member: portalMember } = Astro.locals;
+
+function fmtDate(d: string | null, opts?: Intl.DateTimeFormatOptions) {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString('en-US', opts ?? { year:'numeric', month:'long', day:'numeric' });
+}
+
+const { data: member } = await supabase
+  .from('members')
+  .select('member_status, financial_through, life_member, first_name, last_name')
+  .eq('id', session!.user.id)
+  .single();
+
+const { data: payments } = await supabase
+  .from('dues_payments')
+  .select('*')
+  .eq('member_id', session!.user.id)
+  .order('payment_date', { ascending: false });
+
+const isFinancial = member?.member_status === 'financial' || member?.member_status === 'life_member';
+const statusClass = isFinancial ? 'dues-status--good' : 'dues-status--warn';
+const statusIcon = isFinancial ? '&#10003;' : '&#9888;';
+const statusLabel = isFinancial ? 'You are currently financial' : 'You are not currently financial';
+const statusDetail = member?.life_member
+  ? 'Life Member — No annual dues required'
+  : member?.financial_through
+    ? `Financial through ${fmtDate(member.financial_through)}`
+    : '';
+const cardNameDefault = member ? `${member.first_name} ${member.last_name}` : '';
+
+function fmtPaymentType(t: string) {
+  return t.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
+}
 ---
 
 <Layout title="Pay Grand Chapter Dues — Kappa Alpha Psi®">
-<PortalShell title="Pay Grand Chapter Dues" activePage="dues">
+<PortalShell title="Pay Grand Chapter Dues" activePage="dues" member={portalMember}>
 
   <div class="dues-page" id="dues-page">
     <!-- Status Banner -->
-    <div class="dues-status" id="dues-status">
-      <div class="dues-status-icon" id="dues-status-icon"></div>
+    <div class={`dues-status ${statusClass}`}>
+      <div class="dues-status-icon" set:html={statusIcon} />
       <div class="dues-status-info">
-        <div class="dues-status-label" id="dues-status-label">Loading...</div>
-        <div class="dues-status-detail" id="dues-status-detail"></div>
+        <div class="dues-status-label">{statusLabel}</div>
+        {statusDetail && <div class="dues-status-detail">{statusDetail}</div>}
       </div>
     </div>
 
@@ -79,7 +114,7 @@ import PortalShell from '../../../components/PortalShell.astro';
           <div class="form-row">
             <div class="form-group">
               <label for="card-name">Name on Card</label>
-              <input type="text" id="card-name" placeholder="Full name as shown on card" required />
+              <input type="text" id="card-name" placeholder="Full name as shown on card" value={cardNameDefault} required />
             </div>
           </div>
           <div class="form-row">
@@ -142,7 +177,19 @@ import PortalShell from '../../../components/PortalShell.astro';
             </tr>
           </thead>
           <tbody id="payments-body">
-            <tr><td colspan="5" style="text-align:center; color:var(--gray-400);">Loading...</td></tr>
+            {payments && payments.length > 0 ? (
+              payments.map((p: any) => (
+                <tr>
+                  <td data-label="Date">{fmtDate(p.payment_date, { year:'numeric', month:'short', day:'numeric' })}</td>
+                  <td data-label="Type">{fmtPaymentType(p.payment_type)}</td>
+                  <td data-label="Fiscal Year">{p.fiscal_year ?? '—'}</td>
+                  <td data-label="Amount">${Number(p.amount).toFixed(2)}</td>
+                  <td data-label="Status"><span class={`status-chip status-chip--${p.status}`}>{p.status}</span></td>
+                </tr>
+              ))
+            ) : (
+              <tr><td colspan="5" style="text-align:center; color:var(--gray-400);">No payment records found.</td></tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -154,51 +201,6 @@ import PortalShell from '../../../components/PortalShell.astro';
 
 <script>
   import { supabase } from '../../../lib/supabase';
-
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) window.location.href = '/member-login';
-  const userId = session!.user.id;
-
-  // Fetch member + payments
-  const { data: member } = await supabase.from('members').select('member_status, financial_through, life_member, first_name, last_name').eq('id', userId).single();
-  const { data: payments } = await supabase.from('dues_payments').select('*').eq('member_id', userId).order('payment_date', { ascending: false });
-
-  // Status banner
-  const statusEl = document.getElementById('dues-status')!;
-  const iconEl = document.getElementById('dues-status-icon')!;
-  const labelEl = document.getElementById('dues-status-label')!;
-  const detailEl = document.getElementById('dues-status-detail')!;
-
-  if (member) {
-    const isFinancial = member.member_status === 'financial' || member.member_status === 'life_member';
-    statusEl.classList.add(isFinancial ? 'dues-status--good' : 'dues-status--warn');
-    iconEl.innerHTML = isFinancial ? '&#10003;' : '&#9888;';
-    labelEl.textContent = isFinancial ? 'You are currently financial' : 'You are not currently financial';
-    if (member.financial_through) {
-      detailEl.textContent = `Financial through ${new Date(member.financial_through).toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' })}`;
-    }
-    if (member.life_member) {
-      detailEl.textContent = 'Life Member — No annual dues required';
-    }
-
-    // Pre-fill card name
-    const cardName = document.getElementById('card-name') as HTMLInputElement;
-    cardName.value = `${member.first_name} ${member.last_name}`;
-  }
-
-  // Payments table
-  const pBody = document.getElementById('payments-body')!;
-  if (payments && payments.length > 0) {
-    pBody.innerHTML = payments.map((p: any) => `<tr>
-        <td data-label="Date">${new Date(p.payment_date).toLocaleDateString('en-US', { year:'numeric', month:'short', day:'numeric' })}</td>
-        <td data-label="Type">${p.payment_type.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}</td>
-        <td data-label="Fiscal Year">${p.fiscal_year ?? '—'}</td>
-        <td data-label="Amount">$${Number(p.amount).toFixed(2)}</td>
-        <td data-label="Status"><span class="status-chip status-chip--${p.status}">${p.status}</span></td>
-      </tr>`).join('');
-  } else {
-    pBody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--gray-400);">No payment records found.</td></tr>';
-  }
 
   // Payment option switching
   const amounts: Record<string, { amount: string; fy: string }> = {
@@ -240,6 +242,9 @@ import PortalShell from '../../../components/PortalShell.astro';
     btn.disabled = true;
     btnText.style.display = 'none';
     btnLoad.style.display = 'inline';
+
+    const { data: { session } } = await supabase.auth.getSession();
+    const userId = session?.user.id;
 
     const selectedType = (document.querySelector('input[name="payment_type"]:checked') as HTMLInputElement).value;
     const amountMap: Record<string, number> = { annual_dues: 200, subscribing_life: 1250, life_membership: 3500 };

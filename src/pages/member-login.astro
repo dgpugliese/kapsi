@@ -1,4 +1,5 @@
 ---
+export const prerender = false;
 import Layout from '../layouts/Layout.astro';
 ---
 
@@ -43,12 +44,6 @@ import Layout from '../layouts/Layout.astro';
 
 <script>
   import { supabase } from '../lib/supabase';
-
-  // Redirect if already logged in
-  const { data: { session } } = await supabase.auth.getSession();
-  if (session) {
-    window.location.href = '/members/';
-  }
 
   const form = document.getElementById('login-form') as HTMLFormElement;
   const errorEl = document.getElementById('login-error') as HTMLDivElement;

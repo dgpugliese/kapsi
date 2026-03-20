@@ -1,5 +1,28 @@
 ---
 import Layout from '../layouts/Layout.astro';
+
+const officers = [
+  { name: 'Robert L. Jenkins, Jr., Esq.', title: 'Senior Grand Vice Polemarch', img: '/images/leadership/jenkins.jpg' },
+  { name: 'Victor L. Mattison', title: 'Junior Grand Vice Polemarch', img: '/images/leadership/mattison.png' },
+  { name: 'Kevin D. Kyles', title: 'Grand Keeper of Records', img: '/images/leadership/kyles.jpg' },
+  { name: 'Rhen C. Bass, Sr., CPA', title: 'Grand Keeper of Exchequer', img: '/images/leadership/bass.jpg' },
+  { name: 'Lorenza A. Russell, Jr.', title: 'Grand Strategus', img: '/images/leadership/russell.png' },
+  { name: 'Justin I. Alexis', title: 'Grand Lieutenant Strategus', img: '/images/leadership/alexis.png' },
+  { name: 'Kevin P. Scott', title: 'Grand Historian', img: '/images/leadership/scott.jpg' },
+  { name: 'Michael F. Brown', title: 'Grand Chapter Nominating Committee Chairman', img: '/images/leadership/brown.jpg' },
+];
+
+const alumniBoard = [
+  { name: 'Damon O. Barry, Esq.', img: '/images/leadership/barry.jpg' },
+  { name: 'Dr. Leonard E. Clemons', img: '/images/leadership/clemons.jpg' },
+  { name: 'Jwyanza B. Watt', img: '/images/leadership/watt.jpg' },
+];
+
+const undergradBoard = [
+  { name: 'Cameron D. Morgan', img: '/images/leadership/morgan.png' },
+  { name: 'Isaiah M. Robinson', img: '/images/leadership/robinson.png' },
+  { name: 'Jaden G. York', img: '/images/leadership/york.png' },
+];
 ---
 
 <Layout title="Grand Chapter Leadership — Kappa Alpha Psi® Fraternity, Inc.">
@@ -21,13 +44,13 @@ import Layout from '../layouts/Layout.astro';
   <section class="section section--cream">
     <div class="container">
       <div style="max-width:800px; margin:0 auto; text-align:center;">
-        <img src="/images/mcmickle.png" alt="Grand Polemarch Jimmy McMickle Sr." style="width:240px; height:auto; border-radius:var(--radius-xl); margin-bottom:1.5rem; box-shadow:var(--shadow-xl);" />
+        <img src="/images/leadership/mcmickle.jpg" alt="Grand Polemarch Jimmy McMickle" style="width:240px; height:auto; border-radius:var(--radius-xl); margin-bottom:1.5rem; box-shadow:var(--shadow-xl);" />
         <span class="badge badge--crimson" style="margin-bottom:1rem; display:inline-block;">35th Grand Polemarch</span>
-        <h2 style="font-family:var(--font-serif); font-size:2.2rem; color:var(--crimson); margin-bottom:0.25rem;">Jimmy McMickle Sr.</h2>
+        <h2 style="font-family:var(--font-serif); font-size:2.2rem; color:var(--crimson); margin-bottom:0.25rem;">Jimmy McMickle</h2>
         <p style="font-size:1.1rem; color:var(--gold); font-weight:700; margin-bottom:1.5rem;">Grand Polemarch</p>
         <div class="divider"></div>
         <p style="line-height:1.8; color:var(--text-light); margin-top:1.5rem;">
-          Jimmy McMickle Sr. serves as the 35th Grand Polemarch of Kappa Alpha Psi® Fraternity, Inc. As the fraternity's chief executive officer, the Grand Polemarch presides over all Grand Chapter affairs, provides strategic direction for the international organization, and serves as the primary ambassador of the fraternity's mission and values to the broader community.
+          Jimmy McMickle serves as the 35th Grand Polemarch of Kappa Alpha Psi® Fraternity, Inc. A Spring 1991 initiate of the Alpha Chapter at Indiana University, he is a life member of both the Grand Chapter and Northeastern Province. As the fraternity's chief executive officer, the Grand Polemarch presides over all Grand Chapter affairs, provides strategic direction for the international organization, and serves as the primary ambassador of the fraternity's mission and values.
         </p>
       </div>
     </div>
@@ -39,71 +62,17 @@ import Layout from '../layouts/Layout.astro';
       <h2 class="section-title">Grand Chapter Officers</h2>
       <p class="section-subtitle">Elected officers of the International Fraternity</p>
       <div class="grid grid--2">
-
-        <div class="person-card">
-          <div class="person-card-img-placeholder" aria-hidden="true">RJ</div>
-          <div class="person-card-body">
-            <div class="person-card-name">Robert L. Jenkins, Jr., Esq.</div>
-            <div class="person-card-title">Senior Grand Vice Polemarch</div>
+        {officers.map(o => (
+          <div class="person-card">
+            <div class="person-card-img">
+              <img src={o.img} alt={o.name} loading="lazy" />
+            </div>
+            <div class="person-card-body">
+              <div class="person-card-name">{o.name}</div>
+              <div class="person-card-title">{o.title}</div>
+            </div>
           </div>
-        </div>
-
-        <div class="person-card">
-          <div class="person-card-img-placeholder" aria-hidden="true">VM</div>
-          <div class="person-card-body">
-            <div class="person-card-name">Victor L. Mattison</div>
-            <div class="person-card-title">Junior Grand Vice Polemarch</div>
-          </div>
-        </div>
-
-        <div class="person-card">
-          <div class="person-card-img-placeholder" aria-hidden="true">KK</div>
-          <div class="person-card-body">
-            <div class="person-card-name">Kevin D. Kyles</div>
-            <div class="person-card-title">Grand Keeper of Records</div>
-          </div>
-        </div>
-
-        <div class="person-card">
-          <div class="person-card-img-placeholder" aria-hidden="true">RB</div>
-          <div class="person-card-body">
-            <div class="person-card-name">Rhen C. Bass, Sr., CPA</div>
-            <div class="person-card-title">Grand Keeper of Exchequer</div>
-          </div>
-        </div>
-
-        <div class="person-card">
-          <div class="person-card-img-placeholder" aria-hidden="true">LR</div>
-          <div class="person-card-body">
-            <div class="person-card-name">Lorenza A. Russell, Jr.</div>
-            <div class="person-card-title">Grand Strategus</div>
-          </div>
-        </div>
-
-        <div class="person-card">
-          <div class="person-card-img-placeholder" aria-hidden="true">JA</div>
-          <div class="person-card-body">
-            <div class="person-card-name">Justin I. Alexis</div>
-            <div class="person-card-title">Grand Lieutenant Strategus</div>
-          </div>
-        </div>
-
-        <div class="person-card">
-          <div class="person-card-img-placeholder" aria-hidden="true">KS</div>
-          <div class="person-card-body">
-            <div class="person-card-name">Kevin P. Scott</div>
-            <div class="person-card-title">Grand Historian</div>
-          </div>
-        </div>
-
-        <div class="person-card">
-          <div class="person-card-img-placeholder" aria-hidden="true">MB</div>
-          <div class="person-card-body">
-            <div class="person-card-name">Michael F. Brown</div>
-            <div class="person-card-title">Grand Chapter Nominating Committee Chairman</div>
-          </div>
-        </div>
-
+        ))}
       </div>
     </div>
   </section>
@@ -112,56 +81,34 @@ import Layout from '../layouts/Layout.astro';
   <section class="section section--cream">
     <div class="container">
       <h2 class="section-title">Grand Board of Directors</h2>
-
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:2rem; margin-bottom:2rem;">
         <div>
           <h3 style="color:var(--crimson); font-family:var(--font-serif); margin-bottom:1rem; border-bottom:2px solid var(--gold); padding-bottom:0.5rem;">Alumni Members</h3>
-          <div class="person-card" style="margin-bottom:1rem;">
-            <div class="person-card-img-placeholder" aria-hidden="true">DB</div>
-            <div class="person-card-body">
-              <div class="person-card-name">Damon O. Barry, Esq.</div>
-              <div class="person-card-title">Alumni Grand Board Member</div>
+          {alumniBoard.map(m => (
+            <div class="person-card" style="margin-bottom:1rem;">
+              <div class="person-card-img">
+                <img src={m.img} alt={m.name} loading="lazy" />
+              </div>
+              <div class="person-card-body">
+                <div class="person-card-name">{m.name}</div>
+                <div class="person-card-title">Alumni Grand Board Member</div>
+              </div>
             </div>
-          </div>
-          <div class="person-card" style="margin-bottom:1rem;">
-            <div class="person-card-img-placeholder" aria-hidden="true">LC</div>
-            <div class="person-card-body">
-              <div class="person-card-name">Dr. Leonard E. Clemons</div>
-              <div class="person-card-title">Alumni Grand Board Member</div>
-            </div>
-          </div>
-          <div class="person-card">
-            <div class="person-card-img-placeholder" aria-hidden="true">JW</div>
-            <div class="person-card-body">
-              <div class="person-card-name">Jwyanza B. Watt</div>
-              <div class="person-card-title">Alumni Grand Board Member</div>
-            </div>
-          </div>
+          ))}
         </div>
-
         <div>
           <h3 style="color:var(--crimson); font-family:var(--font-serif); margin-bottom:1rem; border-bottom:2px solid var(--gold); padding-bottom:0.5rem;">Undergraduate Members</h3>
-          <div class="person-card" style="margin-bottom:1rem;">
-            <div class="person-card-img-placeholder" aria-hidden="true">CM</div>
-            <div class="person-card-body">
-              <div class="person-card-name">Cameron D. Morgan</div>
-              <div class="person-card-title">Undergraduate Grand Board Member</div>
+          {undergradBoard.map(m => (
+            <div class="person-card" style="margin-bottom:1rem;">
+              <div class="person-card-img">
+                <img src={m.img} alt={m.name} loading="lazy" />
+              </div>
+              <div class="person-card-body">
+                <div class="person-card-name">{m.name}</div>
+                <div class="person-card-title">Undergraduate Grand Board Member</div>
+              </div>
             </div>
-          </div>
-          <div class="person-card" style="margin-bottom:1rem;">
-            <div class="person-card-img-placeholder" aria-hidden="true">IR</div>
-            <div class="person-card-body">
-              <div class="person-card-name">Isaiah M. Robinson</div>
-              <div class="person-card-title">Undergraduate Grand Board Member</div>
-            </div>
-          </div>
-          <div class="person-card">
-            <div class="person-card-img-placeholder" aria-hidden="true">JY</div>
-            <div class="person-card-body">
-              <div class="person-card-name">Jaden G. York</div>
-              <div class="person-card-title">Undergraduate Grand Board Member</div>
-            </div>
-          </div>
+          ))}
         </div>
       </div>
     </div>
@@ -170,38 +117,16 @@ import Layout from '../layouts/Layout.astro';
   <!-- Administrative Staff -->
   <section class="section">
     <div class="container">
-      <h2 class="section-title">Administrative Staff</h2>
-      <p class="section-subtitle">International Headquarters professional staff</p>
-
+      <h2 class="section-title">Grand Polemarch's Administrative Staff</h2>
       <div class="table-responsive">
         <table>
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Title</th>
-            </tr>
-          </thead>
+          <thead><tr><th>Name</th><th>Title</th></tr></thead>
           <tbody>
-            <tr>
-              <td><strong>Craig C. Chisholm</strong></td>
-              <td>Chief of Staff</td>
-            </tr>
-            <tr>
-              <td><strong>Britton L. Smith</strong></td>
-              <td>Deputy Chief of Staff</td>
-            </tr>
-            <tr>
-              <td><strong>Charles E. Exum, Jr.</strong></td>
-              <td>Chief Administrative Officer</td>
-            </tr>
-            <tr>
-              <td><strong>Steven Chatman</strong></td>
-              <td>National Director of Organizational Effectiveness</td>
-            </tr>
-            <tr>
-              <td><strong>Donald L. Woolridge, Sr.</strong></td>
-              <td>Liaison to Executive Committee &amp; IHQ</td>
-            </tr>
+            <tr><td><strong>Craig C. Chisholm</strong></td><td>Chief of Staff</td></tr>
+            <tr><td><strong>Britton L. Smith</strong></td><td>Deputy Chief of Staff</td></tr>
+            <tr><td><strong>Charles E. Exum, Jr.</strong></td><td>Chief Administrative Officer</td></tr>
+            <tr><td><strong>Steven Chatman</strong></td><td>National Director of Organizational Effectiveness</td></tr>
+            <tr><td><strong>Donald L. Woolridge, Sr.</strong></td><td>Liaison to Executive Committee &amp; IHQ</td></tr>
           </tbody>
         </table>
       </div>
@@ -224,7 +149,7 @@ import Layout from '../layouts/Layout.astro';
           <div class="card-body">
             <h3 class="card-title">Cleveland Ferguson III, Esq.</h3>
             <p class="card-text"><span class="badge badge--crimson">Journal Editor</span></p>
-            <p class="card-text">Oversees the editorial direction and content of the <em>Kappa Alpha Psi® Journal</em>, the fraternity's official publication. Contact: <a href="mailto:cferguson@kappaalphapsi.com">cferguson@kappaalphapsi.com</a></p>
+            <p class="card-text">Oversees the editorial direction and content of the <em>Kappa Alpha Psi® Journal</em>, the fraternity's official publication.</p>
           </div>
         </div>
       </div>
@@ -232,3 +157,17 @@ import Layout from '../layouts/Layout.astro';
   </section>
 
 </Layout>
+
+<style>
+.person-card-img {
+  width: 72px; height: 72px; border-radius: 50%; overflow: hidden;
+  flex-shrink: 0; background: var(--gray-100);
+}
+.person-card-img img {
+  width: 100%; height: 100%; object-fit: cover;
+}
+@media (max-width: 768px) {
+  .grid.grid--2 { grid-template-columns: 1fr !important; }
+  div[style*="grid-template-columns:1fr 1fr"] { grid-template-columns: 1fr !important; }
+}
+</style>

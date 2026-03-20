@@ -1,5 +1,6 @@
 ---
-import Layout from '../layouts/Layout.astro';
+import Layout from '../../../layouts/Layout.astro';
+import PortalShell from '../../../components/PortalShell.astro';
 
 const categories = [
   { id: 'all', label: 'All Products' },
@@ -49,22 +50,8 @@ const products = [
 ];
 ---
 
-<Layout title="Kappa Store — Kappa Alpha Psi® Fraternity, Inc.">
-
-<!-- Store Hero -->
-<section class="store-hero">
-  <div class="store-hero-bg" aria-hidden="true"></div>
-  <div class="container store-hero-inner">
-    <div class="section-label" style="color:var(--gold);">Official Merchandise</div>
-    <div class="rule" style="background:var(--gold);"></div>
-    <h1>The Kappa Store</h1>
-    <p>Pins, badges, apparel, and publications — exclusively for members of Kappa Alpha Psi® Fraternity, Inc.</p>
-  </div>
-</section>
-
-<!-- Store Content -->
-<section class="section">
-  <div class="container">
+<Layout title="Kappa Store — Kappa Alpha Psi®">
+<PortalShell title="Kappa Store" activePage="store">
     <!-- Category Filter -->
     <div class="store-filters" id="store-filters">
       {categories.map(cat => (
@@ -98,9 +85,8 @@ const products = [
     <div class="store-notice">
       <p><strong>Ordering Information:</strong> All store purchases require an active membership. Items are shipped to the address on file at IHQ. For bulk orders or chapter purchases, contact <a href="mailto:store@kappaalphapsi1911.com">store@kappaalphapsi1911.com</a>.</p>
     </div>
-  </div>
-</section>
 
+</PortalShell>
 </Layout>
 
 <script>
@@ -139,36 +125,6 @@ const products = [
 </script>
 
 <style>
-/* Store Hero */
-.store-hero {
-  position: relative;
-  padding: clamp(80px, 10vw, 140px) 0 clamp(60px, 8vw, 100px);
-  background: var(--black);
-  overflow: hidden;
-  text-align: center;
-}
-.store-hero-bg {
-  position: absolute; inset: 0;
-  background-image:
-    radial-gradient(circle at 50% 50%, rgba(139,0,0,0.25) 0%, transparent 60%),
-    radial-gradient(circle at 80% 20%, rgba(201,168,76,0.1) 0%, transparent 40%);
-}
-.store-hero-inner { position: relative; z-index: 1; }
-.store-hero h1 {
-  font-family: var(--font-serif);
-  font-size: clamp(2.5rem, 6vw, 4.5rem);
-  color: var(--white);
-  font-weight: 700;
-  margin-bottom: 16px;
-}
-.store-hero p {
-  color: rgba(255,255,255,0.6);
-  font-size: 1.05rem;
-  max-width: 560px;
-  margin: 0 auto;
-  line-height: 1.7;
-}
-
 /* Filters */
 .store-filters {
   display: flex;
@@ -211,7 +167,7 @@ const products = [
 /* Product Grid */
 .store-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 20px;
   margin-bottom: 48px;
 }
@@ -308,9 +264,6 @@ const products = [
 .store-notice a { color: var(--crimson); font-weight: 600; }
 
 /* Responsive */
-@media (max-width: 1024px) {
-  .store-grid { grid-template-columns: repeat(3, 1fr); }
-}
 @media (max-width: 768px) {
   .store-grid { grid-template-columns: repeat(2, 1fr); gap: 14px; }
   .store-card-body { padding: 14px; }

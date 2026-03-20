@@ -1,0 +1,145 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const executiveTeam = [
+  { name: 'John F. Burrell', title: 'Executive Director', ext: '123', email: 'jburrell@kappaalphapsi1911.com', desc: 'Supervises day-to-day operations of IHQ, publishes confidential bulletins, and supports the Executive Committee and Grand Board.' },
+  { name: 'Daren K. Brantley, Sr.', title: 'Deputy Executive Director', ext: '133', email: 'dbrantley@kappaalphapsi1911.com', desc: 'Coordinates administrative strategies, IHQ policies, and human resource requirements.' },
+  { name: 'Jason A. Hall, Sr.', title: 'Director of Risk Management', ext: '120', email: 'jhall@kappaalphapsi1911.com', desc: 'Manages electronic certification, verifies chapter insurance, and provides risk management education.' },
+  { name: 'Kevin B. Hankins, Jr.', title: 'Director of MTA/Membership Services', ext: '113', email: 'khankins@kappaalphapsi1911.com', desc: 'MTA liaison, KappaOrg.com coordinator, and manages member services.' },
+  { name: 'Gershom D. Davis', title: 'Director of Finance', ext: '126', email: 'gdavis@kappaalphapsi1911.com', desc: 'Facilitates annual budget, conducts audits, and manages financial reporting.' },
+];
+
+const staff = [
+  { name: 'Donna M. Smith', title: 'Administrative Manager', ext: '132' },
+  { name: 'David Pugliese', title: 'Director of Information Technology', ext: '111' },
+  { name: 'Jahmatis K. Rainey', title: 'Deputy Director of Finance', ext: '110' },
+  { name: 'Marylin L. Brock', title: 'Administrative Manager', ext: '127' },
+  { name: 'Gloria W. Walker', title: 'Business Support Analyst I', ext: '122' },
+  { name: 'Jacquelyn Saunders', title: 'Business Support Analyst II', ext: '136' },
+  { name: 'Anesshia Melvin', title: 'Accounts Payable', ext: '121' },
+  { name: 'Daniel I. Nixon', title: 'Interim Director of Undergraduate & University Affairs', ext: '110' },
+  { name: 'Keenan E.Y. Harris', title: 'Senior Accountant', ext: '116' },
+  { name: 'Rasheedah Johnson', title: 'Executive Administrator to Executive Director', ext: '125' },
+  { name: 'David Coleman', title: 'Staff Accountant', ext: '142' },
+  { name: 'Tamara Sabine', title: 'Grant Writer', ext: '139' },
+  { name: 'Crystal Nesmith', title: 'Technical Support Specialist', ext: '144' },
+];
+
+const holidays = [
+  "New Year's Day", 'Martin Luther King Jr. Day', 'Good Friday', 'Memorial Day',
+  'Juneteenth', 'Independence Day', 'Labor Day', 'Election Day',
+  "Veterans Day", 'Thanksgiving', 'Christmas Day'
+];
+---
+
+<Layout title="International Headquarters — Kappa Alpha Psi® Fraternity, Inc.">
+
+<div class="page-hero">
+  <div class="container">
+    <h1>International Headquarters</h1>
+    <p>The administrative home of Kappa Alpha Psi® Fraternity, Inc.</p>
+  </div>
+</div>
+
+<nav class="breadcrumb" aria-label="Breadcrumb">
+  <div class="container">
+    <a href="/">Home</a> &rsaquo; <a href="/leadership">Leadership</a> &rsaquo; IHQ
+  </div>
+</nav>
+
+<!-- Contact & Location -->
+<section class="section section--cream">
+  <div class="container">
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:48px; align-items:center;">
+      <div>
+        <div class="section-label">Contact Information</div>
+        <div class="rule"></div>
+        <h2 class="section-title">Visit or Contact IHQ</h2>
+        <div style="line-height:2; color:var(--gray-600); margin-top:20px;">
+          <p><strong style="color:var(--gray-800);">Address:</strong><br/>
+          2322-24 North Broad Street<br/>
+          Philadelphia, PA 19132-4590</p>
+          <p style="margin-top:16px;"><strong style="color:var(--gray-800);">Phone:</strong> <a href="tel:+12152287184" style="color:var(--crimson);">(215) 228-7184</a></p>
+          <p style="margin-top:8px;"><strong style="color:var(--gray-800);">Hours:</strong> Monday – Friday, 9:00 AM – 5:00 PM EST</p>
+        </div>
+        <div style="margin-top:24px;">
+          <a href="/contact/plan-a-visit" class="btn btn--primary">Plan a Visit</a>
+          <a href="/contact/need-assistance" class="btn btn--outline" style="margin-left:10px;">Need Assistance</a>
+        </div>
+      </div>
+      <div style="background:var(--gray-200); border-radius:var(--radius-xl); height:300px; display:flex; align-items:center; justify-content:center; color:var(--gray-400); font-size:0.9rem;">
+        <iframe
+          src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3057.2!2d-75.1555!3d39.9882!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x89c6c8837c0e3b0d%3A0x0!2s2322+N+Broad+St+Philadelphia+PA!5e0!3m2!1sen!2sus!4v1"
+          width="100%" height="300" style="border:0; border-radius:var(--radius-xl);" allowfullscreen="" loading="lazy"
+          referrerpolicy="no-referrer-when-downgrade"></iframe>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Executive Leadership -->
+<section class="section">
+  <div class="container">
+    <div class="section-label">IHQ Leadership</div>
+    <div class="rule"></div>
+    <h2 class="section-title">Executive Team</h2>
+    <div class="grid grid--2" style="margin-top:24px;">
+      {executiveTeam.map(person => (
+        <div class="card">
+          <div class="card-body">
+            <h3 class="card-title">{person.name}</h3>
+            <p class="card-text"><span class="badge badge--crimson">{person.title}</span></p>
+            <p class="card-text" style="font-size:0.88rem; color:var(--gray-600); line-height:1.7;">{person.desc}</p>
+            <p class="card-text" style="font-size:0.82rem; color:var(--gray-400); margin-top:8px;">
+              Ext. {person.ext} &nbsp;·&nbsp; <a href={`mailto:${person.email}`} style="color:var(--crimson);">{person.email}</a>
+            </p>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
+
+<!-- Administrative Staff -->
+<section class="section section--cream">
+  <div class="container">
+    <div class="section-label">Administrative Team</div>
+    <div class="rule"></div>
+    <h2 class="section-title">IHQ Staff Directory</h2>
+    <div class="table-responsive" style="margin-top:24px;">
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Title</th>
+            <th>Extension</th>
+          </tr>
+        </thead>
+        <tbody>
+          {staff.map(person => (
+            <tr>
+              <td><strong>{person.name}</strong></td>
+              <td>{person.title}</td>
+              <td>Ext. {person.ext}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- Holidays -->
+<section class="section">
+  <div class="container">
+    <h2 class="section-title">Observed Holidays</h2>
+    <p class="section-subtitle">IHQ is closed on the following holidays</p>
+    <div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:20px;">
+      {holidays.map(day => (
+        <span class="badge badge--crimson" style="font-size:0.82rem; padding:8px 16px;">{day}</span>
+      ))}
+    </div>
+  </div>
+</section>
+
+</Layout>

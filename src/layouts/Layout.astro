@@ -75,11 +75,6 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site ?? 'https://kappaalp
 
           <ul class="nav-links" role="list">
 
-            <li class="nav-item nav-item--highlight"><a href="/store">Store</a></li>
-
-            <li class="nav-item"><a href="/chapter-locator">Chapter Locator</a></li>
-            <li class="nav-item"><a href="/member-directory">Member Directory</a></li>
-
             <li class="nav-item">
               <button aria-haspopup="true" aria-expanded="false">About Us <span class="chevron" aria-hidden="true">▾</span></button>
               <ul class="dropdown" role="list">
@@ -133,7 +128,6 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site ?? 'https://kappaalp
               <button aria-haspopup="true" aria-expanded="false">Members <span class="chevron" aria-hidden="true">▾</span></button>
               <ul class="dropdown" role="list">
                 <li><a href="/member-login">Brothers Only Login</a></li>
-                <li><a href="/member-directory">Member Directory</a></li>
                 <li><a href="/dues-life-membership">Dues &amp; Life Membership</a></li>
                 <li><a href="/grand-chapter-petitions">Grand Chapter Award Petitions</a></li>
                 <li><a href="/senior-kappa-affairs">Senior Kappa Affairs</a></li>
@@ -167,9 +161,6 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site ?? 'https://kappaalp
 
       <!-- Mobile Nav -->
       <nav class="mobile-nav" id="mobile-nav" aria-label="Mobile navigation">
-        <a href="/store" class="mobile-nav-highlight">Kappa Store</a>
-        <a href="/chapter-locator">Chapter Locator</a>
-        <a href="/member-directory">Member Directory</a>
         <div class="mobile-nav-section">About Us</div>
         <a href="/history">Historical Brief</a>
         <a href="/founders">Founders</a>

@@ -1,0 +1,112 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import PortalShell from '../../../components/PortalShell.astro';
+---
+
+<Layout title="Chapter Locator — Kappa Alpha Psi®">
+<PortalShell title="Chapter Locator" activePage="locator">
+
+  <!-- Search -->
+  <div class="loc-search">
+    <div class="loc-search-row">
+      <div class="dir-search-field">
+        <label for="loc-state">State</label>
+        <input type="text" id="loc-state" placeholder="e.g. PA, GA, TX..." />
+      </div>
+      <div class="dir-search-field">
+        <label for="loc-type">Chapter Type</label>
+        <select id="loc-type">
+          <option value="">All Types</option>
+          <option value="undergraduate">Undergraduate</option>
+          <option value="alumni">Alumni</option>
+        </select>
+      </div>
+      <button class="btn btn--primary dir-search-btn" id="loc-search-btn">Search</button>
+    </div>
+  </div>
+
+  <div class="dir-results-info" id="loc-info"></div>
+  <div id="loc-results">
+    <p id="loc-loading" style="text-align:center; color:var(--gray-400); padding:32px 0;">Loading all chapters...</p>
+  </div>
+
+</PortalShell>
+</Layout>
+
+<script>
+  import { supabase } from '../../../lib/supabase';
+
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) window.location.href = '/member-login';
+
+  const { data: chapters } = await supabase
+    .from('chapters')
+    .select('*, province:province_id ( name )')
+    .order('name');
+
+  const resultsEl = document.getElementById('loc-results')!;
+  const infoEl = document.getElementById('loc-info')!;
+
+  function renderChapters(list: any[]) {
+    infoEl.textContent = `${list.length} chapter${list.length !== 1 ? 's' : ''} found`;
+    if (list.length === 0) {
+      resultsEl.innerHTML = '<p style="text-align:center; color:var(--gray-400); padding:32px 0;">No chapters found matching your criteria.</p>';
+      return;
+    }
+    resultsEl.innerHTML = list.map((ch: any) => `
+      <div class="loc-card">
+        <div class="loc-card-badge">${ch.designation}</div>
+        <div class="loc-card-info">
+          <h3>${ch.name}</h3>
+          <p class="dir-card-chapter">${ch.chapter_type === 'alumni' ? 'Alumni Chapter' : 'Undergraduate Chapter'}${ch.university ? ` · ${ch.university}` : ''}</p>
+          <p class="dir-card-location">${ch.city}, ${ch.state} · ${ch.province?.name ?? ''}</p>
+        </div>
+        <div class="loc-card-status">
+          <span class="status-chip status-chip--${ch.status === 'active' ? 'completed' : 'pending'}">${ch.status}</span>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // Initial render
+  if (chapters) renderChapters(chapters);
+
+  // Search
+  document.getElementById('loc-search-btn')?.addEventListener('click', () => {
+    const state = (document.getElementById('loc-state') as HTMLInputElement).value.trim().toUpperCase();
+    const type = (document.getElementById('loc-type') as HTMLSelectElement).value;
+    let filtered = chapters ?? [];
+    if (state) filtered = filtered.filter((ch: any) => ch.state.toUpperCase() === state);
+    if (type) filtered = filtered.filter((ch: any) => ch.chapter_type === type);
+    renderChapters(filtered);
+  });
+</script>
+
+<style>
+.loc-search {
+  background: var(--gray-50); border: 1px solid var(--gray-100);
+  border-radius: var(--radius-lg); padding: 20px; margin-bottom: 24px;
+}
+.loc-search-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 12px; align-items: end; }
+.loc-card {
+  display: flex; align-items: center; gap: 16px;
+  padding: 16px 20px; background: var(--gray-50); border: 1px solid var(--gray-100);
+  border-radius: var(--radius-lg); margin-bottom: 8px; transition: all var(--transition);
+}
+.loc-card:hover { border-color: var(--gray-200); box-shadow: var(--shadow-sm); }
+.loc-card-badge {
+  width: 52px; height: 52px; border-radius: 50%;
+  background: var(--crimson); color: var(--white);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-serif); font-size: 0.75rem; font-weight: 700;
+  flex-shrink: 0; text-align: center; line-height: 1.1;
+}
+.loc-card-info { flex: 1; }
+.loc-card-info h3 { font-family: var(--font-serif); font-size: 1.05rem; color: var(--gray-800); margin-bottom: 2px; }
+.loc-card-status { flex-shrink: 0; }
+@media (max-width: 768px) {
+  .loc-search-row { grid-template-columns: 1fr; }
+  .loc-card { flex-wrap: wrap; }
+  .loc-card-status { width: 100%; }
+}
+</style>

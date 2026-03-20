@@ -938,6 +938,9 @@ tr:nth-child(even) td { background: var(--gray-50); }
   font-weight: 700; color: var(--gray-800);
 }
 .portal-nav { padding: 8px 0 16px; display: flex; flex-direction: column; }
+.portal-nav-divider {
+  height: 1px; background: var(--gray-100); margin: 8px 24px;
+}
 .portal-nav-item {
   display: flex; align-items: center; gap: 10px;
   padding: 12px 24px; font-size: 0.85rem; min-height: 44px;

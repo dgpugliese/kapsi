@@ -1,0 +1,159 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import PortalShell from '../../../components/PortalShell.astro';
+---
+
+<Layout title="My Primary Chapter — Kappa Alpha Psi®">
+<PortalShell title="My Primary Chapter" activePage="chapter">
+
+  <div id="chapter-page">
+    <!-- Chapter Info -->
+    <div class="portal-section">
+      <div class="chapter-hero" id="chapter-hero">
+        <div class="chapter-hero-badge" id="chapter-badge"></div>
+        <div>
+          <h2 id="chapter-name" style="margin:0; font-family:var(--font-serif); color:var(--crimson);">—</h2>
+          <p id="chapter-designation" style="color:var(--gray-600); font-size:0.9rem; margin-top:4px;">—</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="portal-section">
+      <h2>Chapter Details</h2>
+      <div class="info-grid">
+        <div class="info-item">
+          <label>Chapter Name</label>
+          <span id="ch-name">—</span>
+        </div>
+        <div class="info-item">
+          <label>Designation</label>
+          <span id="ch-designation">—</span>
+        </div>
+        <div class="info-item">
+          <label>Chapter Type</label>
+          <span id="ch-type">—</span>
+        </div>
+        <div class="info-item">
+          <label>Charter Date</label>
+          <span id="ch-charter">—</span>
+        </div>
+        <div class="info-item">
+          <label>City</label>
+          <span id="ch-city">—</span>
+        </div>
+        <div class="info-item">
+          <label>State</label>
+          <span id="ch-state">—</span>
+        </div>
+        <div class="info-item">
+          <label>Status</label>
+          <span id="ch-status">—</span>
+        </div>
+        <div class="info-item">
+          <label>University</label>
+          <span id="ch-university">—</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="portal-section">
+      <h2>Province Information</h2>
+      <div class="info-grid">
+        <div class="info-item">
+          <label>Province</label>
+          <span id="prov-name">—</span>
+        </div>
+        <div class="info-item">
+          <label>Abbreviation</label>
+          <span id="prov-abbr">—</span>
+        </div>
+        <div class="info-item">
+          <label>Region</label>
+          <span id="prov-region">—</span>
+        </div>
+        <div class="info-item">
+          <label>Province Polemarch</label>
+          <span id="prov-polemarch">—</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</PortalShell>
+</Layout>
+
+<script>
+  import { supabase } from '../../../lib/supabase';
+
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) window.location.href = '/member-login';
+
+  const { data: member } = await supabase
+    .from('members')
+    .select(`
+      primary_chapter_id,
+      chapter:primary_chapter_id (
+        name, designation, chapter_type, university, city, state, charter_date, status,
+        province:province_id ( name, abbreviation, region, polemarch )
+      )
+    `)
+    .eq('id', session!.user.id)
+    .single();
+
+  if (member?.chapter) {
+    const ch = member.chapter as any;
+    const prov = ch.province as any;
+
+    // Hero
+    document.getElementById('chapter-badge')!.textContent = ch.designation;
+    document.getElementById('chapter-name')!.textContent = ch.name;
+    document.getElementById('chapter-designation')!.textContent =
+      `${ch.chapter_type === 'alumni' ? 'Alumni Chapter' : 'Undergraduate Chapter'} · ${ch.city}, ${ch.state}`;
+
+    // Details
+    document.getElementById('ch-name')!.textContent = ch.name;
+    document.getElementById('ch-designation')!.textContent = ch.designation;
+    document.getElementById('ch-type')!.textContent = ch.chapter_type === 'alumni' ? 'Alumni Chapter' : 'Undergraduate Chapter';
+    document.getElementById('ch-charter')!.textContent = ch.charter_date
+      ? new Date(ch.charter_date).toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' })
+      : '—';
+    document.getElementById('ch-city')!.textContent = ch.city;
+    document.getElementById('ch-state')!.textContent = ch.state;
+    document.getElementById('ch-status')!.textContent = ch.status === 'active' ? 'Active' : 'Inactive';
+    document.getElementById('ch-university')!.textContent = ch.university ?? 'N/A — Alumni Chapter';
+
+    // Province
+    if (prov) {
+      document.getElementById('prov-name')!.textContent = prov.name;
+      document.getElementById('prov-abbr')!.textContent = prov.abbreviation;
+      document.getElementById('prov-region')!.textContent = prov.region;
+      document.getElementById('prov-polemarch')!.textContent = prov.polemarch ?? '—';
+    }
+  }
+</script>
+
+<style>
+.chapter-hero {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 24px;
+  background: var(--cream);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--cream-dark);
+}
+.chapter-hero-badge {
+  width: 64px; height: 64px;
+  background: var(--crimson);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-serif);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--white);
+  flex-shrink: 0;
+  letter-spacing: -0.3px;
+}
+</style>

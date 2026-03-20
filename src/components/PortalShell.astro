@@ -1,0 +1,96 @@
+---
+export interface Props {
+  title: string;
+  activePage: string;
+}
+const { title, activePage } = Astro.props;
+---
+
+<div class="portal" id="portal">
+  <!-- Loading State -->
+  <div class="portal-loading" id="portal-loading">
+    <div class="portal-loading-inner">
+      <img src="/images/kap-crest.png" alt="" width="56" height="62" />
+      <p>Loading...</p>
+    </div>
+  </div>
+
+  <!-- Top Banner -->
+  <div class="portal-banner">
+    <div class="container portal-banner-inner">
+      <div class="portal-banner-left">
+        <img src="/images/kap-crest.png" alt="" width="36" height="40" />
+        <div>
+          <strong>Kappa Alpha Psi®</strong>
+          <span>Fraternity, Inc.</span>
+        </div>
+      </div>
+      <div class="portal-banner-right">
+        <span id="portal-user-name" class="portal-user-name"></span>
+        <button id="logout-btn" class="portal-logout-btn">Sign Out</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Portal Content -->
+  <div class="portal-body">
+    <div class="container portal-grid">
+
+      <!-- Sidebar -->
+      <aside class="portal-sidebar">
+        <div class="portal-sidebar-photo">
+          <div class="portal-avatar" id="portal-avatar"></div>
+        </div>
+        <div class="portal-sidebar-name" id="sidebar-name"></div>
+        <nav class="portal-nav">
+          <a href="/members/" class={`portal-nav-item ${activePage === 'info' ? 'active' : ''}`}>My Info</a>
+          <a href="/members/dues/" class={`portal-nav-item ${activePage === 'dues' ? 'active' : ''}`}>Pay Grand Chapter Dues</a>
+          <a href="/members/card/" class={`portal-nav-item ${activePage === 'card' ? 'active' : ''}`}>My Membership Card</a>
+          <a href="/members/events/" class={`portal-nav-item ${activePage === 'events' ? 'active' : ''}`}>My Event Registrations</a>
+          <a href="/members/chapter/" class={`portal-nav-item ${activePage === 'chapter' ? 'active' : ''}`}>My Primary Chapter</a>
+        </nav>
+      </aside>
+
+      <!-- Main Content -->
+      <main class="portal-main">
+        <div class="portal-page-header">
+          <h1>{title}</h1>
+        </div>
+        <div class="portal-content">
+          <slot />
+        </div>
+      </main>
+    </div>
+  </div>
+</div>
+
+<script>
+  import { supabase } from '../lib/supabase';
+
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
+    window.location.href = '/member-login';
+  } else {
+    // Fetch basic member info for sidebar/banner
+    const { data: member } = await supabase
+      .from('members')
+      .select('first_name, middle_name, last_name, suffix')
+      .eq('id', session.user.id)
+      .single();
+
+    document.getElementById('portal-loading')!.style.display = 'none';
+
+    if (member) {
+      const fullName = [member.first_name, member.middle_name, member.last_name, member.suffix].filter(Boolean).join(' ');
+      const initials = (member.first_name?.[0] ?? '') + (member.last_name?.[0] ?? '');
+      document.getElementById('portal-user-name')!.textContent = fullName;
+      document.getElementById('portal-avatar')!.textContent = initials;
+      document.getElementById('sidebar-name')!.textContent = fullName;
+    }
+  }
+
+  document.getElementById('logout-btn')?.addEventListener('click', async () => {
+    await supabase.auth.signOut();
+    window.location.href = '/member-login';
+  });
+</script>

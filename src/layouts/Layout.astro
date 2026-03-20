@@ -5,13 +5,17 @@ export interface Props {
   title: string;
   description?: string;
   image?: string;
+  hideChrome?: boolean;
 }
 
 const {
   title,
   description = "Kappa Alpha Psi® Fraternity, Inc. — Achievement in every field of human endeavor. Founded January 5, 1911 at Indiana University Bloomington.",
   image = "/og-image.jpg",
+  hideChrome = false,
 } = Astro.props;
+
+const isPortal = Astro.url.pathname.startsWith('/members') || Astro.url.pathname === '/member-login';
 
 const canonicalURL = new URL(Astro.url.pathname, Astro.site ?? 'https://kappaalphapsi1911.com');
 ---
@@ -44,6 +48,7 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site ?? 'https://kappaalp
   <body>
     <a href="#main" class="skip-link">Skip to main content</a>
 
+    {!isPortal && <>
     <!-- Top Bar -->
     <div class="top-bar">
       <div class="container">
@@ -185,18 +190,20 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site ?? 'https://kappaalp
         <a href="/contact/need-assistance">Contact / Need Assistance</a>
       </nav>
     </header>
+    </>}
 
     <main id="main">
       <slot />
     </main>
 
+    {!isPortal && <>
     <!-- Footer -->
     <footer class="site-footer">
       <div class="footer-main">
         <div class="container">
           <div class="footer-grid">
             <div class="footer-brand">
-              <img src="/images/kap-crest-tagline.png" alt="Kappa Alpha Psi Coat of Arms" class="footer-logo-img" width="80" height="90" />
+              <img src="/images/kap-crest.png" alt="Kappa Alpha Psi Coat of Arms" class="footer-logo-img" width="80" height="88" />
             <div class="footer-logo-text">
                 Kappa Alpha Psi® Fraternity, Inc.
                 <small>Achievement in Every Field of Human Endeavor</small>
@@ -268,6 +275,7 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site ?? 'https://kappaalp
         </div>
       </div>
     </footer>
+    </>}
 
     <script>
       // Scroll shadow on header

@@ -1,0 +1,198 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Brothers Only Login — Kappa Alpha Psi® Fraternity, Inc.">
+
+<div class="login-page">
+  <div class="login-bg" aria-hidden="true"></div>
+  <div class="login-container">
+    <div class="login-card">
+      <div class="login-header">
+        <img src="/images/kap-crest.png" alt="" width="64" height="70" class="login-crest" />
+        <h1>Brothers Only</h1>
+        <p>Sign in to your member portal</p>
+      </div>
+
+      <div id="login-error" class="login-error" style="display:none;"></div>
+
+      <form id="login-form" class="login-form">
+        <div class="form-group">
+          <label for="email">Email Address</label>
+          <input type="email" id="email" name="email" required autocomplete="email" placeholder="brother@email.com" />
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" required autocomplete="current-password" placeholder="Enter your password" />
+        </div>
+        <button type="submit" class="btn btn--primary login-btn" id="login-btn">
+          <span class="login-btn-text">Sign In</span>
+          <span class="login-btn-loading" style="display:none;">Signing in...</span>
+        </button>
+      </form>
+
+      <div class="login-footer">
+        <p>Access is restricted to initiated members of Kappa Alpha Psi® Fraternity, Inc.</p>
+        <a href="/contact/need-assistance">Need assistance with your account?</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+</Layout>
+
+<script>
+  import { supabase } from '../lib/supabase';
+
+  // Redirect if already logged in
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session) {
+    window.location.href = '/members/';
+  }
+
+  const form = document.getElementById('login-form') as HTMLFormElement;
+  const errorEl = document.getElementById('login-error') as HTMLDivElement;
+  const btn = document.getElementById('login-btn') as HTMLButtonElement;
+  const btnText = btn.querySelector('.login-btn-text') as HTMLSpanElement;
+  const btnLoading = btn.querySelector('.login-btn-loading') as HTMLSpanElement;
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    errorEl.style.display = 'none';
+    btn.disabled = true;
+    btnText.style.display = 'none';
+    btnLoading.style.display = 'inline';
+
+    const email = (document.getElementById('email') as HTMLInputElement).value;
+    const password = (document.getElementById('password') as HTMLInputElement).value;
+
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+    if (error) {
+      errorEl.textContent = error.message;
+      errorEl.style.display = 'block';
+      btn.disabled = false;
+      btnText.style.display = 'inline';
+      btnLoading.style.display = 'none';
+    } else {
+      window.location.href = '/members/';
+    }
+  });
+</script>
+
+<style>
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  background: var(--crimson-dark);
+  overflow: hidden;
+}
+.login-bg {
+  position: absolute; inset: 0;
+  background-image:
+    radial-gradient(circle at 30% 50%, rgba(201,168,76,0.1) 0%, transparent 60%),
+    radial-gradient(circle at 70% 20%, rgba(255,255,255,0.03) 0%, transparent 50%),
+    repeating-linear-gradient(-45deg, transparent, transparent 40px, rgba(255,255,255,0.01) 40px, rgba(255,255,255,0.01) 41px);
+}
+.login-container {
+  position: relative; z-index: 1;
+  width: 100%;
+  max-width: 440px;
+  padding: 24px;
+}
+.login-card {
+  background: var(--white);
+  border-radius: var(--radius-xl);
+  padding: 48px 40px;
+  box-shadow: var(--shadow-xl);
+}
+.login-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+.login-crest {
+  margin-bottom: 16px;
+}
+.login-header h1 {
+  font-family: var(--font-serif);
+  font-size: 1.8rem;
+  color: var(--crimson);
+  margin-bottom: 4px;
+}
+.login-header p {
+  font-size: 0.9rem;
+  color: var(--gray-600);
+}
+.login-error {
+  background: #FEF2F2;
+  border: 1px solid #FECACA;
+  color: #991B1B;
+  padding: 12px 16px;
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+  margin-bottom: 20px;
+}
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.form-group label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--gray-800);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-family: var(--font-sans);
+}
+.form-group input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius);
+  font-size: 0.95rem;
+  font-family: var(--font-sans);
+  transition: border-color var(--transition), box-shadow var(--transition);
+  background: var(--gray-50);
+  box-sizing: border-box;
+}
+.form-group input:focus {
+  outline: none;
+  border-color: var(--crimson);
+  box-shadow: 0 0 0 3px rgba(139,0,0,0.1);
+  background: var(--white);
+}
+.login-btn {
+  width: 100%;
+  justify-content: center;
+  padding: 14px;
+  font-size: 1rem;
+  margin-top: 4px;
+}
+.login-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+.login-footer {
+  text-align: center;
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid var(--gray-100);
+}
+.login-footer p {
+  font-size: 0.78rem;
+  color: var(--gray-400);
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+.login-footer a {
+  font-size: 0.82rem;
+  color: var(--crimson);
+  font-weight: 600;
+}
+</style>

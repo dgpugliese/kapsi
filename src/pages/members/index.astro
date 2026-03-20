@@ -1,0 +1,694 @@
+---
+import Layout from '../../layouts/Layout.astro';
+---
+
+<Layout title="My Info — Brothers Only — Kappa Alpha Psi® Fraternity, Inc.">
+
+<div class="portal" id="portal">
+  <!-- Loading State -->
+  <div class="portal-loading" id="portal-loading">
+    <div class="portal-loading-inner">
+      <img src="/images/kap-crest.png" alt="" width="56" height="62" />
+      <p>Loading your profile...</p>
+    </div>
+  </div>
+
+  <!-- Top Banner -->
+  <div class="portal-banner">
+    <div class="container portal-banner-inner">
+      <div class="portal-banner-left">
+        <img src="/images/kap-crest.png" alt="" width="36" height="40" />
+        <div>
+          <strong>Kappa Alpha Psi®</strong>
+          <span>Fraternity, Inc.</span>
+        </div>
+      </div>
+      <div class="portal-banner-right">
+        <span id="portal-user-name" class="portal-user-name"></span>
+        <button id="logout-btn" class="portal-logout-btn">Sign Out</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Portal Content -->
+  <div class="portal-body">
+    <div class="container portal-grid">
+
+      <!-- Sidebar -->
+      <aside class="portal-sidebar">
+        <div class="portal-sidebar-photo" id="sidebar-photo">
+          <div class="portal-avatar" id="portal-avatar"></div>
+        </div>
+        <div class="portal-sidebar-name" id="sidebar-name"></div>
+        <nav class="portal-nav">
+          <a href="/members/" class="portal-nav-item active">My Info</a>
+          <a href="/members/dues/" class="portal-nav-item">Pay Grand Chapter Dues</a>
+          <a href="/members/card/" class="portal-nav-item">My Membership Card</a>
+          <a href="/members/events/" class="portal-nav-item">My Event Registrations</a>
+          <a href="/members/chapter/" class="portal-nav-item">My Primary Chapter</a>
+        </nav>
+      </aside>
+
+      <!-- Main Content -->
+      <main class="portal-main">
+        <!-- Page Header -->
+        <div class="portal-page-header">
+          <h1>My Info</h1>
+          <div class="portal-tabs">
+            <button class="portal-tab active" data-tab="profile">Profile</button>
+            <button class="portal-tab" data-tab="financial">Financial Status</button>
+            <button class="portal-tab" data-tab="membership">Membership Information</button>
+            <button class="portal-tab" data-tab="events">Event Registrations</button>
+          </div>
+        </div>
+
+        <!-- Profile Tab -->
+        <div class="portal-tab-content active" id="tab-profile">
+          <div class="portal-section">
+            <h2>Personal Information</h2>
+            <div class="info-grid">
+              <div class="info-item">
+                <label>Full Name</label>
+                <span id="info-fullname">—</span>
+              </div>
+              <div class="info-item">
+                <label>Email</label>
+                <span id="info-email">—</span>
+              </div>
+              <div class="info-item">
+                <label>Phone</label>
+                <span id="info-phone">—</span>
+              </div>
+              <div class="info-item">
+                <label>Member Number</label>
+                <span id="info-member-number">—</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="portal-section">
+            <h2>Address</h2>
+            <div class="info-grid">
+              <div class="info-item full">
+                <label>Street Address</label>
+                <span id="info-address">—</span>
+              </div>
+              <div class="info-item">
+                <label>City</label>
+                <span id="info-city">—</span>
+              </div>
+              <div class="info-item">
+                <label>State</label>
+                <span id="info-state">—</span>
+              </div>
+              <div class="info-item">
+                <label>ZIP Code</label>
+                <span id="info-zip">—</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="portal-section">
+            <h2>Professional</h2>
+            <div class="info-grid">
+              <div class="info-item">
+                <label>Education</label>
+                <span id="info-education">—</span>
+              </div>
+              <div class="info-item">
+                <label>Occupation</label>
+                <span id="info-occupation">—</span>
+              </div>
+              <div class="info-item">
+                <label>Employer</label>
+                <span id="info-employer">—</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Financial Tab -->
+        <div class="portal-tab-content" id="tab-financial">
+          <div class="portal-section">
+            <h2>Financial Status</h2>
+            <div class="financial-status-bar" id="financial-badge"></div>
+            <div class="info-grid" style="margin-top:20px;">
+              <div class="info-item">
+                <label>Member Status</label>
+                <span id="fin-status">—</span>
+              </div>
+              <div class="info-item">
+                <label>Financial Through</label>
+                <span id="fin-through">—</span>
+              </div>
+              <div class="info-item">
+                <label>Life Member</label>
+                <span id="fin-life">—</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="portal-section">
+            <h2>Payment History</h2>
+            <div class="table-responsive">
+              <table class="portal-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Type</th>
+                    <th>Fiscal Year</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="payments-body">
+                  <tr><td colspan="5" style="text-align:center; color:var(--gray-400);">Loading...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Membership Tab -->
+        <div class="portal-tab-content" id="tab-membership">
+          <div class="portal-section">
+            <h2>Membership Information</h2>
+            <div class="info-grid">
+              <div class="info-item">
+                <label>Scrolling Number</label>
+                <span id="mem-scroll">—</span>
+              </div>
+              <div class="info-item">
+                <label>Member Number</label>
+                <span id="mem-number">—</span>
+              </div>
+              <div class="info-item">
+                <label>Initiated Date</label>
+                <span id="mem-initiated">—</span>
+              </div>
+              <div class="info-item">
+                <label>Chapter of Initiation</label>
+                <span id="mem-init-chapter">—</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="portal-section">
+            <h2>Chapter Information</h2>
+            <div class="info-grid">
+              <div class="info-item">
+                <label>Primary Chapter</label>
+                <span id="mem-chapter">—</span>
+              </div>
+              <div class="info-item">
+                <label>Chapter Type</label>
+                <span id="mem-chapter-type">—</span>
+              </div>
+              <div class="info-item">
+                <label>Province</label>
+                <span id="mem-province">—</span>
+              </div>
+              <div class="info-item">
+                <label>Location</label>
+                <span id="mem-chapter-location">—</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Events Tab -->
+        <div class="portal-tab-content" id="tab-events">
+          <div class="portal-section">
+            <h2>My Event Registrations</h2>
+            <div class="table-responsive">
+              <table class="portal-table">
+                <thead>
+                  <tr>
+                    <th>Event</th>
+                    <th>Date</th>
+                    <th>Location</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="events-body">
+                  <tr><td colspan="4" style="text-align:center; color:var(--gray-400);">Loading...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+</div>
+
+</Layout>
+
+<script>
+  import { supabase } from '../../lib/supabase';
+
+  // Check auth
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
+    window.location.href = '/member-login';
+  }
+
+  const userId = session!.user.id;
+
+  // Fetch member data with chapter and province
+  const { data: member } = await supabase
+    .from('members')
+    .select(`
+      *,
+      chapter:primary_chapter_id (
+        name, designation, chapter_type, city, state, university,
+        province:province_id ( name, abbreviation )
+      )
+    `)
+    .eq('id', userId)
+    .single();
+
+  const { data: payments } = await supabase
+    .from('dues_payments')
+    .select('*')
+    .eq('member_id', userId)
+    .order('payment_date', { ascending: false });
+
+  const { data: events } = await supabase
+    .from('event_registrations')
+    .select('*')
+    .eq('member_id', userId)
+    .order('event_date', { ascending: true });
+
+  // Hide loading, show portal
+  document.getElementById('portal-loading')!.style.display = 'none';
+
+  if (!member) {
+    document.querySelector('.portal-main')!.innerHTML =
+      '<div class="portal-section"><h2>Profile Not Found</h2><p>Your member profile has not been set up yet. Please contact IHQ for assistance.</p></div>';
+  } else {
+    const fullName = [member.first_name, member.middle_name, member.last_name, member.suffix]
+      .filter(Boolean).join(' ');
+    const initials = (member.first_name?.[0] ?? '') + (member.last_name?.[0] ?? '');
+
+    // Banner
+    document.getElementById('portal-user-name')!.textContent = fullName;
+
+    // Sidebar
+    document.getElementById('portal-avatar')!.textContent = initials;
+    document.getElementById('sidebar-name')!.textContent = fullName;
+
+    // Profile tab
+    document.getElementById('info-fullname')!.textContent = fullName;
+    document.getElementById('info-email')!.textContent = member.email ?? '—';
+    document.getElementById('info-phone')!.textContent = member.phone ?? '—';
+    document.getElementById('info-member-number')!.textContent = member.member_number ?? '—';
+    document.getElementById('info-address')!.textContent = [member.address_line1, member.address_line2].filter(Boolean).join(', ') || '—';
+    document.getElementById('info-city')!.textContent = member.city ?? '—';
+    document.getElementById('info-state')!.textContent = member.state ?? '—';
+    document.getElementById('info-zip')!.textContent = member.zip ?? '—';
+    document.getElementById('info-education')!.textContent = member.education_level ?? '—';
+    document.getElementById('info-occupation')!.textContent = member.occupation ?? '—';
+    document.getElementById('info-employer')!.textContent = member.employer ?? '—';
+
+    // Financial tab
+    const isFinancial = member.member_status === 'financial' || member.member_status === 'life_member';
+    const badge = document.getElementById('financial-badge')!;
+    badge.innerHTML = `<span class="financial-badge ${isFinancial ? 'financial-badge--good' : 'financial-badge--warn'}">${isFinancial ? 'FINANCIAL' : 'NON-FINANCIAL'}</span>`;
+    document.getElementById('fin-status')!.textContent = member.member_status?.replace('_', ' ').replace(/\b\w/g, (c: string) => c.toUpperCase()) ?? '—';
+    document.getElementById('fin-through')!.textContent = member.financial_through ? new Date(member.financial_through).toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' }) : '—';
+    document.getElementById('fin-life')!.textContent = member.life_member ? 'Yes' : 'No';
+
+    // Membership tab
+    document.getElementById('mem-scroll')!.textContent = member.scrolling_number ?? '—';
+    document.getElementById('mem-number')!.textContent = member.member_number ?? '—';
+    document.getElementById('mem-initiated')!.textContent = member.initiated_date ? new Date(member.initiated_date).toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' }) : '—';
+    document.getElementById('mem-init-chapter')!.textContent = member.chapter_of_initiation ?? '—';
+
+    const ch = member.chapter as any;
+    if (ch) {
+      document.getElementById('mem-chapter')!.textContent = `${ch.name} (${ch.designation})`;
+      document.getElementById('mem-chapter-type')!.textContent = ch.chapter_type === 'alumni' ? 'Alumni Chapter' : 'Undergraduate Chapter';
+      document.getElementById('mem-province')!.textContent = ch.province?.name ?? '—';
+      document.getElementById('mem-chapter-location')!.textContent = `${ch.city}, ${ch.state}`;
+    }
+
+    // Payments table
+    const pBody = document.getElementById('payments-body')!;
+    if (payments && payments.length > 0) {
+      pBody.innerHTML = payments.map((p: any) => `
+        <tr>
+          <td>${new Date(p.payment_date).toLocaleDateString('en-US', { year:'numeric', month:'short', day:'numeric' })}</td>
+          <td>${p.payment_type.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}</td>
+          <td>${p.fiscal_year ?? '—'}</td>
+          <td>$${Number(p.amount).toFixed(2)}</td>
+          <td><span class="status-chip status-chip--${p.status}">${p.status}</span></td>
+        </tr>
+      `).join('');
+    } else {
+      pBody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--gray-400);">No payment records found.</td></tr>';
+    }
+
+    // Events table
+    const eBody = document.getElementById('events-body')!;
+    if (events && events.length > 0) {
+      eBody.innerHTML = events.map((ev: any) => `
+        <tr>
+          <td><strong>${ev.event_name}</strong></td>
+          <td>${ev.event_date ? new Date(ev.event_date).toLocaleDateString('en-US', { year:'numeric', month:'short', day:'numeric' }) : '—'}</td>
+          <td>${ev.event_location ?? '—'}</td>
+          <td><span class="status-chip status-chip--${ev.status}">${ev.status}</span></td>
+        </tr>
+      `).join('');
+    } else {
+      eBody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--gray-400);">No event registrations found.</td></tr>';
+    }
+  }
+
+  // Tabs
+  document.querySelectorAll('.portal-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.portal-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.portal-tab-content').forEach(c => c.classList.remove('active'));
+      tab.classList.add('active');
+      const target = (tab as HTMLElement).dataset.tab;
+      document.getElementById(`tab-${target}`)?.classList.add('active');
+    });
+  });
+
+  // Logout
+  document.getElementById('logout-btn')?.addEventListener('click', async () => {
+    await supabase.auth.signOut();
+    window.location.href = '/member-login';
+  });
+</script>
+
+<style>
+/* Portal Layout */
+.portal { min-height: 100vh; background: var(--gray-50); }
+.portal-loading {
+  position: fixed; inset: 0; z-index: 999;
+  background: var(--white);
+  display: flex; align-items: center; justify-content: center;
+}
+.portal-loading-inner {
+  text-align: center;
+  color: var(--gray-600);
+  font-size: 0.9rem;
+}
+.portal-loading-inner img { margin-bottom: 16px; }
+
+/* Banner */
+.portal-banner {
+  background: var(--crimson-dark);
+  color: var(--white);
+  padding: 12px 0;
+  border-bottom: 3px solid var(--gold);
+}
+.portal-banner-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.portal-banner-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.portal-banner-left strong {
+  font-family: var(--font-serif);
+  font-size: 1.05rem;
+  display: block;
+  line-height: 1.2;
+}
+.portal-banner-left span {
+  font-size: 0.7rem;
+  opacity: 0.6;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.portal-banner-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.portal-user-name {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: rgba(255,255,255,0.8);
+}
+.portal-logout-btn {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: var(--white);
+  padding: 6px 16px;
+  border-radius: var(--radius);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+  font-family: var(--font-sans);
+}
+.portal-logout-btn:hover {
+  background: rgba(255,255,255,0.2);
+}
+
+/* Grid */
+.portal-body { padding: 32px 0 64px; }
+.portal-grid {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 32px;
+  align-items: start;
+}
+
+/* Sidebar */
+.portal-sidebar {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--gray-100);
+  overflow: hidden;
+  position: sticky;
+  top: 100px;
+}
+.portal-sidebar-photo {
+  background: linear-gradient(160deg, var(--crimson-dark), var(--crimson));
+  padding: 32px;
+  display: flex;
+  justify-content: center;
+}
+.portal-avatar {
+  width: 80px; height: 80px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-serif);
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--white);
+  border: 3px solid rgba(255,255,255,0.3);
+}
+.portal-sidebar-name {
+  text-align: center;
+  padding: 16px 20px 8px;
+  font-family: var(--font-serif);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--gray-800);
+}
+.portal-nav {
+  padding: 8px 0 12px;
+  display: flex;
+  flex-direction: column;
+}
+.portal-nav-item {
+  display: block;
+  padding: 10px 24px;
+  font-size: 0.85rem;
+  color: var(--gray-600);
+  text-decoration: none;
+  font-family: var(--font-sans);
+  font-weight: 500;
+  border-left: 3px solid transparent;
+  transition: all var(--transition);
+}
+.portal-nav-item:hover {
+  background: var(--gray-50);
+  color: var(--crimson);
+}
+.portal-nav-item.active {
+  color: var(--crimson);
+  border-left-color: var(--crimson);
+  background: rgba(139,0,0,0.04);
+  font-weight: 700;
+}
+
+/* Main Content */
+.portal-main {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--gray-100);
+  overflow: hidden;
+}
+.portal-page-header {
+  padding: 28px 32px 0;
+  border-bottom: 1px solid var(--gray-100);
+}
+.portal-page-header h1 {
+  font-family: var(--font-serif);
+  font-size: 1.6rem;
+  color: var(--crimson);
+  margin-bottom: 20px;
+}
+
+/* Tabs */
+.portal-tabs {
+  display: flex;
+  gap: 0;
+  overflow-x: auto;
+}
+.portal-tab {
+  padding: 10px 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--gray-600);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  white-space: nowrap;
+  transition: all var(--transition);
+}
+.portal-tab:hover { color: var(--crimson); }
+.portal-tab.active {
+  color: var(--crimson);
+  border-bottom-color: var(--crimson);
+}
+
+/* Tab Content */
+.portal-tab-content { display: none; padding: 32px; }
+.portal-tab-content.active { display: block; }
+
+/* Sections */
+.portal-section {
+  margin-bottom: 32px;
+}
+.portal-section:last-child { margin-bottom: 0; }
+.portal-section h2 {
+  font-family: var(--font-serif);
+  font-size: 1.15rem;
+  color: var(--gray-800);
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--gray-100);
+}
+
+/* Info Grid */
+.info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+.info-item label {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--gray-400);
+  margin-bottom: 4px;
+  font-family: var(--font-sans);
+}
+.info-item span {
+  font-size: 0.95rem;
+  color: var(--gray-800);
+  font-weight: 500;
+}
+.info-item.full { grid-column: 1 / -1; }
+
+/* Financial Badge */
+.financial-badge {
+  display: inline-block;
+  padding: 8px 20px;
+  border-radius: 24px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  font-family: var(--font-sans);
+}
+.financial-badge--good {
+  background: #ECFDF5;
+  color: #065F46;
+  border: 1px solid #A7F3D0;
+}
+.financial-badge--warn {
+  background: #FEF3C7;
+  color: #92400E;
+  border: 1px solid #FCD34D;
+}
+
+/* Portal Table */
+.portal-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+.portal-table th {
+  text-align: left;
+  padding: 10px 16px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--gray-400);
+  border-bottom: 2px solid var(--gray-100);
+  font-family: var(--font-sans);
+}
+.portal-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--gray-50);
+  color: var(--gray-800);
+}
+.portal-table tbody tr:hover {
+  background: var(--gray-50);
+}
+
+/* Status Chips */
+.status-chip {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: capitalize;
+  font-family: var(--font-sans);
+}
+.status-chip--completed { background: #ECFDF5; color: #065F46; }
+.status-chip--pending { background: #FEF3C7; color: #92400E; }
+.status-chip--registered { background: #EFF6FF; color: #1E40AF; }
+.status-chip--cancelled { background: #FEF2F2; color: #991B1B; }
+.status-chip--attended { background: #ECFDF5; color: #065F46; }
+.status-chip--failed { background: #FEF2F2; color: #991B1B; }
+
+/* Responsive */
+@media (max-width: 900px) {
+  .portal-grid {
+    grid-template-columns: 1fr;
+  }
+  .portal-sidebar {
+    position: static;
+  }
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 640px) {
+  .portal-tab-content { padding: 20px 16px; }
+  .portal-page-header { padding: 20px 16px 0; }
+  .portal-banner-left span { display: none; }
+}
+</style>

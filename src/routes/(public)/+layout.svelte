@@ -37,18 +37,19 @@
 		{
 			label: 'About Us',
 			dropdown: [
-				{ label: 'Our History', href: '/about/history' },
-				{ label: 'The Founders', href: '/about/founders' },
-				{ label: 'Mission & Vision', href: '/about/mission' },
-				{ label: 'Constitution', href: '/about/constitution' }
+				{ label: 'Historical Brief', href: '/history' },
+				{ label: 'Founders', href: '/founders' },
+				{ label: 'Membership in Kappa Alpha Psi®', href: '/membership' },
+				{ label: 'Grand Chapter Awardees', href: '/awardees' },
+				{ label: 'Chapter Locator', href: '/chapter-locator' },
+				{ label: 'Vendor Program', href: '/vendor-program' }
 			]
 		},
 		{
 			label: 'Leadership',
 			dropdown: [
-				{ label: 'Grand Board of Directors', href: '/leadership/grand-board' },
-				{ label: 'Province Polemarchs', href: '/leadership/province-polemarchs' },
-				{ label: 'International Headquarters', href: '/leadership/ihq' }
+				{ label: 'Grand Chapter Leadership', href: '/leadership' },
+				{ label: 'International Headquarters', href: '/ihq' }
 			]
 		},
 		{
@@ -59,23 +60,27 @@
 				{ label: 'Achievement Academy', href: '/programs/achievement-academy' },
 				{ label: 'Room To Read', href: '/programs/room-to-read' },
 				{ label: 'Learn 2 Live', href: '/programs/learn-2-live' },
+				{ label: 'Undergraduate Leadership Institute', href: '/programs/undergraduate-leadership-institute' },
+				{ label: 'Lead Kappa', href: '/programs/lead-kappa' },
+				{ label: 'G.L.A.D.', href: '/programs/glad' },
 				{ label: 'Are You OK?', href: '/programs/are-you-ok' }
 			]
 		},
 		{
 			label: 'Media',
 			dropdown: [
-				{ label: 'News', href: '/media/news' },
-				{ label: 'The Journal', href: '/media/journal' },
-				{ label: 'Gallery', href: '/media/gallery' }
+				{ label: 'Kappa Alpha Psi® Journal', href: '/media/journal' },
+				{ label: 'Journal Submissions', href: '/media/journal-submissions' },
+				{ label: 'News Coverage', href: '/media/news' },
+				{ label: 'Press Releases', href: '/media/press-releases' },
+				{ label: 'Photo Album', href: '/media/photo-album' }
 			]
 		},
 		{
 			label: 'Members',
 			dropdown: [
-				{ label: 'Member Portal', href: '/members' },
-				{ label: 'Find a Chapter', href: '/chapters' },
-				{ label: 'Membership Intake', href: '/membership' }
+				{ label: 'Brothers Only Login', href: '/member-login' },
+				{ label: 'Membership Information', href: '/membership' }
 			]
 		},
 		{ label: 'Philanthropy', href: '/philanthropy' },
@@ -83,8 +88,9 @@
 		{
 			label: 'Contact',
 			dropdown: [
-				{ label: 'Contact Us', href: '/contact' },
-				{ label: 'International Headquarters', href: '/contact/ihq' }
+				{ label: 'Need Assistance', href: '/contact/need-assistance' },
+				{ label: 'Speaker Request', href: '/contact/speaker-request' },
+				{ label: 'Plan a Visit to IHQ', href: '/contact/plan-a-visit' }
 			]
 		}
 	];

@@ -1,42 +1,44 @@
-import { defineMiddleware } from 'astro:middleware';
-import { createSupabaseServerClient } from './lib/supabase-server';
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { createServerClient } from '@supabase/ssr';
 
-export const onRequest = defineMiddleware(async (context, next) => {
-  const { request, cookies, redirect, locals, url } = context;
+export async function middleware(request: NextRequest) {
+  const response = NextResponse.next({ request });
 
-  const supabase = createSupabaseServerClient(request, cookies);
-  locals.supabase = supabase;
+  const supabase = createServerClient(
+    'https://fnvvlibyowhnumiwgvvz.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZudnZsaWJ5b3dobnVtaXdndnZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwMjY0ODEsImV4cCI6MjA4OTYwMjQ4MX0.weXHY_5_uWnw2AGjAGtw9rBJijBo7Pv0fCRWWpnQA2Y',
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            request.cookies.set(name, value);
+            response.cookies.set(name, value, options);
+          });
+        },
+      },
+    }
+  );
 
-  // Validate session securely (getUser verifies JWT, not just cookie)
-  const { data: { user }, error } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
+  const { pathname } = request.nextUrl;
 
-  if (user && !error) {
-    const { data: session } = await supabase.auth.getSession();
-    locals.session = session.session;
-
-    // Fetch minimal member data for PortalShell
-    const { data: member } = await supabase
-      .from('members')
-      .select('id, first_name, middle_name, last_name, suffix, photo_url')
-      .eq('id', user.id)
-      .single();
-    locals.member = member;
-  } else {
-    locals.session = null;
-    locals.member = null;
+  // Protect /members/* routes
+  if (pathname.startsWith('/members') && !user) {
+    return NextResponse.redirect(new URL('/member-login', request.url));
   }
 
-  // Auth gate: protect /members/* routes
-  const isPortalRoute = url.pathname.startsWith('/members');
-  const isLoginPage = url.pathname === '/member-login' || url.pathname === '/member-login/';
-
-  if (isPortalRoute && !locals.session) {
-    return redirect('/member-login', 302);
+  // Redirect logged-in users away from login page
+  if (pathname === '/member-login' && user) {
+    return NextResponse.redirect(new URL('/members', request.url));
   }
 
-  if (isLoginPage && locals.session) {
-    return redirect('/members/', 302);
-  }
+  return response;
+}
 
-  return next();
-});
+export const config = {
+  matcher: ['/members/:path*', '/member-login'],
+};

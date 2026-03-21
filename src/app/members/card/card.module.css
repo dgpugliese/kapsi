@@ -1,0 +1,105 @@
+/* Membership Card */
+.kap-card {
+  max-width: 520px;
+  margin: 0 auto;
+  aspect-ratio: 1.6 / 1;
+  border-radius: 16px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+.kap-card-bg {
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, var(--crimson-dark) 0%, var(--crimson) 50%, #3D0000 100%);
+}
+.kap-card-bg::after {
+  content: '';
+  position: absolute; inset: 0;
+  background-image:
+    radial-gradient(circle at 80% 20%, rgba(201,168,76,0.15) 0%, transparent 50%),
+    radial-gradient(circle at 20% 80%, rgba(255,255,255,0.05) 0%, transparent 40%);
+}
+.kap-card-content {
+  position: relative; z-index: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 28px 32px;
+  color: var(--white);
+}
+.kap-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.kap-card-org {
+  font-family: var(--font-serif);
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+.kap-card-sub {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  opacity: 0.6;
+}
+.kap-card-name {
+  font-family: var(--font-serif);
+  font-size: 1.8rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+.kap-card-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 24px;
+}
+.kap-card-label {
+  display: block;
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  opacity: 0.5;
+}
+.kap-card-value {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.kap-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+.kap-card-motto {
+  font-family: var(--font-serif);
+  font-size: 0.7rem;
+  font-style: italic;
+  opacity: 0.5;
+}
+.kap-card-valid {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--gold);
+}
+
+/* Card Actions */
+.card-actions {
+  text-align: center;
+}
+.card-note {
+  font-size: 0.82rem;
+  color: var(--gray-400);
+  margin-top: 12px;
+}
+
+/* Print styles */
+@media print {
+  .portal-banner, .portal-sidebar, .portal-page-header, .card-actions, .portal-nav { display: none !important; }
+  .portal-grid { grid-template-columns: 1fr !important; }
+  .portal-main { border: none !important; box-shadow: none !important; }
+  .kap-card { box-shadow: none; }
+}

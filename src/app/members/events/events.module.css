@@ -1,0 +1,55 @@
+.event-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.event-card-portal {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  padding: 20px;
+  border: 1px solid var(--gray-100);
+  border-radius: var(--radius-lg);
+  transition: all var(--transition);
+}
+.event-card-portal:hover {
+  border-color: var(--gray-200);
+  box-shadow: var(--shadow-sm);
+}
+.event-card-date {
+  background: var(--crimson);
+  color: var(--white);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  text-align: center;
+  min-width: 64px;
+  flex-shrink: 0;
+}
+.event-card-month {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 600;
+  opacity: 0.8;
+}
+.event-card-day {
+  font-family: var(--font-serif);
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+.event-card-year {
+  font-size: 0.65rem;
+  opacity: 0.6;
+}
+.event-card-info h3 {
+  font-family: var(--font-serif);
+  font-size: 1.05rem;
+  color: var(--gray-800);
+  margin-bottom: 4px;
+}
+.event-card-info p {
+  font-size: 0.82rem;
+  color: var(--gray-600);
+  margin-bottom: 8px;
+}

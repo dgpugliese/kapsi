@@ -100,8 +100,7 @@
 <header class="header" class:header--scrolled={scrolled}>
 	<div class="header__inner">
 		<a href="/" class="header__brand">
-			<img src="/images/kap-crest.png" alt="KAP Crest" class="header__logo" />
-			<span class="header__brand-text">Kappa Alpha Psi<sup>®</sup></span>
+			<img src="/images/kap-header-logo.png" alt="Kappa Alpha Psi® Fraternity, Inc." class="header__logo" />
 		</a>
 
 		<nav class="nav hide-mobile">
@@ -295,22 +294,9 @@
 	}
 
 	.header__logo {
-		width: 40px;
-		height: 40px;
+		height: 44px;
+		width: auto;
 		object-fit: contain;
-	}
-
-	.header__brand-text {
-		font-family: var(--font-serif);
-		font-size: 1.25rem;
-		font-weight: 700;
-		color: var(--white);
-		letter-spacing: 0.01em;
-	}
-
-	.header__brand-text sup {
-		font-size: 0.6em;
-		color: var(--gold);
 	}
 
 	/* Nav */

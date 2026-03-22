@@ -6,6 +6,9 @@
 	let syncing = $state(false);
 	let syncResult = $state('');
 	let syncProgress = $state('');
+	let chapterSyncing = $state(false);
+	let chapterSyncResult = $state('');
+	let chapterSyncProgress = $state('');
 
 	async function triggerSync(full: boolean) {
 		syncing = true;
@@ -60,6 +63,53 @@
 
 		syncing = false;
 	}
+
+	async function triggerChapterSync() {
+		chapterSyncing = true;
+		chapterSyncResult = '';
+		chapterSyncProgress = 'Starting chapter sync...';
+
+		try {
+			let offset = 0;
+			const limit = 200;
+			let totalSynced = 0;
+			let totalSize = 0;
+
+			while (true) {
+				chapterSyncProgress = `Fetching chapters (offset ${offset})...`;
+
+				const res = await fetch(`/api/sync-chapters?offset=${offset}&limit=${limit}`, { method: 'POST' });
+				if (!res.ok) {
+					const err = await res.json().catch(() => ({ message: 'Fetch failed' }));
+					throw new Error(err.message || 'Fetch failed');
+				}
+
+				const batch = await res.json();
+				totalSize = batch.totalSize;
+
+				if (batch.chapters.length > 0) {
+					chapterSyncProgress = `Writing ${batch.chapters.length} chapters (${offset + batch.chapters.length} of ${totalSize})...`;
+
+					const { error: upsertError } = await supabase
+						.from('directory_chapters')
+						.upsert(batch.chapters, { onConflict: 'sf_account_id' });
+
+					if (upsertError) throw new Error(`Upsert failed: ${upsertError.message}`);
+					totalSynced += batch.chapters.length;
+				}
+
+				if (!batch.hasMore) break;
+				offset += limit;
+			}
+
+			chapterSyncResult = `Successfully synced ${totalSynced} of ${totalSize} chapters`;
+			chapterSyncProgress = '';
+		} catch (err: any) {
+			chapterSyncResult = `Error: ${err.message}`;
+			chapterSyncProgress = '';
+		}
+		chapterSyncing = false;
+	}
 </script>
 
 <svelte:head>
@@ -88,6 +138,23 @@
 			{syncing ? 'Syncing...' : 'Full Sync'}
 		</button>
 	</div>
+</div>
+
+<!-- Chapter Sync -->
+<div style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; padding:20px; margin-bottom:24px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+	<div>
+		<h3 style="font-family:var(--font-serif); font-size:1rem; font-weight:700; margin-bottom:4px;">Chapter Locator Sync</h3>
+		<p style="font-size:0.82rem; color:var(--gray-600);">Sync chapter data from Fonteva for the chapter locator.</p>
+		{#if chapterSyncProgress}
+			<p style="font-size:0.82rem; margin-top:6px; color:var(--crimson); font-weight:500;">{chapterSyncProgress}</p>
+		{/if}
+		{#if chapterSyncResult}
+			<p style="font-size:0.82rem; margin-top:6px; color:{chapterSyncResult.startsWith('Error') ? '#991B1B' : '#065F46'}; font-weight:600;">{chapterSyncResult}</p>
+		{/if}
+	</div>
+	<button class="btn btn--primary" style="padding:8px 16px; font-size:0.82rem;" disabled={chapterSyncing} onclick={() => triggerChapterSync()}>
+		{chapterSyncing ? 'Syncing...' : 'Sync Chapters'}
+	</button>
 </div>
 
 <!-- KPI Cards -->

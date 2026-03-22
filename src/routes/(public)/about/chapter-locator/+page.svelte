@@ -1,10 +1,15 @@
 <script lang="ts">
+	import { supabase } from '$lib/supabase';
+
 	let searchQuery = $state('');
 	let stateFilter = $state('');
 	let typeFilter = $state('');
+	let statusFilter = $state('Active');
 	let loading = $state(false);
 	let chapters = $state<any[]>([]);
+	let totalCount = $state(0);
 	let searched = $state(false);
+	let selectedChapter = $state<any>(null);
 
 	const states = [
 		'AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY',
@@ -12,33 +17,31 @@
 		'OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY','DC'
 	];
 
-	async function handleSearch(e: Event) {
-		e.preventDefault();
+	async function handleSearch(e?: Event) {
+		e?.preventDefault();
 		loading = true;
 		searched = true;
 
-		// Will connect to Supabase when DB is set up
-		// For now, show empty state
 		try {
-			const { supabase } = await import('$lib/supabase');
-			let query = supabase.from('chapters').select('*').eq('status', 'active');
+			let query = supabase
+				.from('directory_chapters')
+				.select('*', { count: 'exact' });
 
 			if (searchQuery) {
-				query = query.or(`name.ilike.%${searchQuery}%,city.ilike.%${searchQuery}%,institution.ilike.%${searchQuery}%,greek_designation.ilike.%${searchQuery}%`);
+				query = query.or(`name.ilike.%${searchQuery}%,billing_city.ilike.%${searchQuery}%,province.ilike.%${searchQuery}%,chapter_id.ilike.%${searchQuery}%`);
 			}
-			if (stateFilter) {
-				query = query.eq('state', stateFilter);
-			}
-			if (typeFilter) {
-				query = query.eq('chapter_type', typeFilter);
-			}
+			if (stateFilter) query = query.eq('billing_state', stateFilter);
+			if (typeFilter) query = query.eq('chapter_type', typeFilter);
+			if (statusFilter) query = query.eq('chapter_status', statusFilter);
 
-			const { data, error } = await query.order('name').limit(50);
-			if (!error && data) {
-				chapters = data;
-			}
+			query = query.order('name').limit(50);
+
+			const { data, count } = await query;
+			chapters = data ?? [];
+			totalCount = count ?? 0;
 		} catch {
 			chapters = [];
+			totalCount = 0;
 		}
 
 		loading = false;
@@ -47,112 +50,148 @@
 
 <svelte:head>
 	<title>Chapter Locator — Kappa Alpha Psi®</title>
-	<meta name="description" content="Find a Kappa Alpha Psi chapter near you. Search by state, city, or chapter name across 700+ chapters worldwide." />
+	<meta name="description" content="Find a Kappa Alpha Psi chapter near you. Search across 700+ undergraduate and alumni chapters worldwide." />
 </svelte:head>
 
 <section class="page-hero">
 	<div class="container">
 		<h1>Chapter Locator</h1>
 		<div class="hero-divider"><span>&#9670;</span></div>
-		<p>
-			Find a Kappa Alpha Psi chapter near you. Search across 700+ undergraduate and alumni chapters worldwide.
-		</p>
+		<p>Find a Kappa Alpha Psi chapter near you. Search across 700+ undergraduate and alumni chapters worldwide.</p>
 	</div>
 </section>
 
 <section class="section">
 	<div class="container">
 		<!-- Search Form -->
-		<form
-			onsubmit={handleSearch}
-			style="background:var(--white); border-radius:var(--radius-lg); box-shadow:var(--shadow-sm); border:1px solid var(--gray-200); padding:clamp(20px, 3vw, 32px); margin-bottom:32px;"
-		>
-			<div class="grid grid--2" style="gap:16px;">
-				<div style="grid-column:1 / -1;">
-					<label for="search" style="display:block; font-size:0.85rem; font-weight:500; color:var(--gray-800); margin-bottom:6px;">Search</label>
-					<input
-						id="search"
-						type="text"
-						bind:value={searchQuery}
-						placeholder="Chapter name, city, or university..."
-						class="form-control"
-					/>
-				</div>
-				<div>
-					<label for="state" style="display:block; font-size:0.85rem; font-weight:500; color:var(--gray-800); margin-bottom:6px;">State</label>
-					<select
-						id="state"
-						bind:value={stateFilter}
-						class="form-control"
-					>
-						<option value="">All States</option>
-						{#each states as st}
-							<option value={st}>{st}</option>
-						{/each}
-					</select>
-				</div>
-				<div>
-					<label for="type" style="display:block; font-size:0.85rem; font-weight:500; color:var(--gray-800); margin-bottom:6px;">Type</label>
-					<select
-						id="type"
-						bind:value={typeFilter}
-						class="form-control"
-					>
-						<option value="">All Types</option>
-						<option value="undergraduate">Undergraduate</option>
-						<option value="alumni">Alumni</option>
-					</select>
-				</div>
-			</div>
-			<div style="margin-top:20px;">
-				<button
-					type="submit"
-					disabled={loading}
-					class="btn btn--primary"
-					style="opacity:{loading ? '0.5' : '1'};"
-				>
-					{loading ? 'Searching...' : 'Search Chapters'}
+		<form onsubmit={handleSearch} style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; padding:20px; margin-bottom:24px; box-shadow:var(--shadow-sm);">
+			<div style="display:grid; grid-template-columns:1fr auto; gap:12px; margin-bottom:12px;">
+				<input
+					type="text"
+					bind:value={searchQuery}
+					placeholder="Search by chapter name, city, or province..."
+					class="form-control"
+				/>
+				<button type="submit" disabled={loading} class="btn btn--primary" style="padding:10px 24px;">
+					{loading ? 'Searching...' : 'Search'}
 				</button>
+			</div>
+			<div style="display:flex; gap:12px; flex-wrap:wrap;">
+				<select bind:value={stateFilter} onchange={() => handleSearch()} class="form-control" style="width:auto; min-width:120px;">
+					<option value="">All States</option>
+					{#each states as st}<option value={st}>{st}</option>{/each}
+				</select>
+				<select bind:value={typeFilter} onchange={() => handleSearch()} class="form-control" style="width:auto; min-width:160px;">
+					<option value="">All Types</option>
+					<option value="Undergraduate">Undergraduate</option>
+					<option value="Alumni">Alumni</option>
+				</select>
+				<select bind:value={statusFilter} onchange={() => handleSearch()} class="form-control" style="width:auto; min-width:140px;">
+					<option value="Active">Active Only</option>
+					<option value="">All Status</option>
+				</select>
 			</div>
 		</form>
 
 		<!-- Results -->
 		{#if searched}
-			{#if chapters.length > 0}
-				<p style="font-size:0.85rem; color:var(--gray-600); margin-bottom:16px;">{chapters.length} chapter{chapters.length !== 1 ? 's' : ''} found</p>
-				<div class="grid grid--3">
-					{#each chapters as chapter}
-						<div style="background:var(--white); border-radius:var(--radius-lg); border:1px solid var(--gray-100); padding:20px; transition:box-shadow var(--transition);">
-							<div style="display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:8px;">
-								<h3 style="font-family:var(--font-serif); font-size:1.1rem; font-weight:700; color:var(--gray-800);">{chapter.name}</h3>
-								<span style="flex-shrink:0; margin-left:8px; padding:2px 10px; font-size:0.7rem; font-weight:600; border-radius:999px; background:{chapter.chapter_type === 'undergraduate' ? 'rgba(30,64,175,0.1)' : 'rgba(201,168,76,0.2)'}; color:{chapter.chapter_type === 'undergraduate' ? 'var(--info)' : 'var(--gray-800)'};">
-									{chapter.chapter_type}
-								</span>
-							</div>
-							{#if chapter.greek_designation}
-								<p style="font-size:0.85rem; color:var(--crimson); font-weight:500;">{chapter.greek_designation}</p>
-							{/if}
-							{#if chapter.institution}
-								<p style="font-size:0.85rem; color:var(--gray-600); margin-top:4px;">{chapter.institution}</p>
-							{/if}
-							<p style="font-size:0.85rem; color:var(--gray-400); margin-top:4px;">
-								{chapter.city}{chapter.state ? `, ${chapter.state}` : ''}
-							</p>
-							{#if chapter.charter_date}
-								<p style="font-size:0.75rem; color:var(--gray-400); margin-top:8px;">Chartered: {new Date(chapter.charter_date).toLocaleDateString()}</p>
-							{/if}
-						</div>
-					{/each}
+			<p style="font-size:0.82rem; color:var(--gray-600); margin-bottom:16px;">{totalCount} chapter{totalCount !== 1 ? 's' : ''} found</p>
+
+			{#if chapters.length === 0}
+				<div style="text-align:center; padding:48px; background:var(--gray-50); border-radius:12px; color:var(--gray-600);">
+					No chapters found matching your search.
 				</div>
 			{:else}
-				<div style="text-align:center; padding:48px 20px; background:var(--gray-50); border-radius:var(--radius-lg);">
-					<p style="color:var(--gray-600);">No chapters found matching your search. Try broadening your criteria.</p>
+				<div style="display:flex; flex-direction:column; gap:8px;">
+					{#each chapters as chapter}
+						<button
+							style="display:flex; align-items:center; gap:14px; padding:14px 18px; background:var(--white); border:1px solid var(--gray-100); border-radius:10px; text-align:left; cursor:pointer; width:100%; transition:all 0.25s; font-family:inherit; font-size:inherit; color:inherit;"
+							class="chapter-row"
+							onclick={() => (selectedChapter = chapter)}
+						>
+							<div style="width:44px; height:44px; border-radius:8px; background:{chapter.chapter_type === 'Undergraduate' ? 'rgba(30,64,175,0.08)' : 'rgba(201,168,76,0.15)'}; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+								<span style="font-family:var(--font-serif); font-size:0.72rem; font-weight:700; color:{chapter.chapter_type === 'Undergraduate' ? '#1E40AF' : 'var(--gold)'};">
+									{chapter.chapter_type === 'Undergraduate' ? 'UG' : 'AL'}
+								</span>
+							</div>
+							<div style="flex:1; min-width:0;">
+								<div style="font-family:var(--font-serif); font-size:0.95rem; font-weight:700; color:var(--black); margin-bottom:2px;">{chapter.name}</div>
+								<div style="font-size:0.78rem; color:var(--gray-600);">
+									{[chapter.billing_city, chapter.billing_state].filter(Boolean).join(', ') || 'Location TBD'}
+									{#if chapter.province} &middot; {chapter.province}{/if}
+								</div>
+							</div>
+							<div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
+								<span style="padding:3px 10px; border-radius:10px; font-size:0.68rem; font-weight:700; background:{chapter.chapter_status === 'Active' ? '#ECFDF5' : 'var(--gray-100)'}; color:{chapter.chapter_status === 'Active' ? '#065F46' : 'var(--gray-400)'};">
+									{chapter.chapter_status}
+								</span>
+							</div>
+						</button>
+					{/each}
 				</div>
 			{/if}
 		{:else}
-			<div style="text-align:center; padding:48px 20px; background:var(--cream); border-radius:var(--radius-lg);">
+			<div style="text-align:center; padding:48px; background:var(--cream); border-radius:12px;">
+				<div style="font-size:2rem; margin-bottom:12px; opacity:0.3;">📍</div>
 				<p style="color:var(--gray-600);">Enter your search criteria above to find chapters near you.</p>
+			</div>
+		{/if}
+
+		<!-- Chapter Detail Modal -->
+		{#if selectedChapter}
+			<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+			<div style="position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:100; display:flex; align-items:center; justify-content:center; padding:20px; backdrop-filter:blur(4px);" onclick={() => (selectedChapter = null)}>
+				<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+				<div style="background:var(--white); border-radius:20px; max-width:500px; width:100%; max-height:80vh; overflow-y:auto; padding:32px; position:relative;" onclick={(e) => e.stopPropagation()}>
+					<button onclick={() => (selectedChapter = null)} style="position:absolute; top:12px; right:16px; background:none; border:none; cursor:pointer; font-size:1.5rem; color:var(--gray-400);">&times;</button>
+
+					<h2 style="font-family:var(--font-serif); font-size:1.4rem; font-weight:700; margin-bottom:4px;">{selectedChapter.name}</h2>
+					{#if selectedChapter.chapter_id}
+						<p style="font-size:0.78rem; color:var(--gray-400); margin-bottom:20px;">Chapter ID: {selectedChapter.chapter_id}</p>
+					{/if}
+
+					<div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+						{#each [
+							{ label: 'Type', value: selectedChapter.chapter_type },
+							{ label: 'Status', value: selectedChapter.chapter_status },
+							{ label: 'City', value: selectedChapter.billing_city },
+							{ label: 'State', value: selectedChapter.billing_state },
+							{ label: 'Province', value: selectedChapter.province }
+						].filter(f => f.value) as field}
+							<div style="padding:8px 12px; background:var(--gray-50); border-radius:6px;">
+								<div style="font-size:0.6rem; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:var(--gray-400); margin-bottom:2px;">{field.label}</div>
+								<div style="font-size:0.85rem; color:var(--black); font-weight:500;">{field.value}</div>
+							</div>
+						{/each}
+					</div>
+
+					{#if selectedChapter.meeting_location || selectedChapter.meeting_day}
+						<div style="margin-top:16px; padding:12px 16px; background:var(--cream); border-radius:8px; border-left:3px solid var(--gold);">
+							<div style="font-size:0.68rem; font-weight:700; text-transform:uppercase; color:var(--gray-400); margin-bottom:4px;">Meeting Info</div>
+							{#if selectedChapter.meeting_location}
+								<p style="font-size:0.85rem; color:var(--gray-800);">{selectedChapter.meeting_location}</p>
+							{/if}
+							{#if selectedChapter.meeting_day}
+								<p style="font-size:0.82rem; color:var(--gray-600); margin-top:4px;">{selectedChapter.meeting_day}</p>
+							{/if}
+						</div>
+					{/if}
+
+					{#if selectedChapter.website}
+						<div style="margin-top:16px;">
+							<a href={selectedChapter.website} target="_blank" rel="noopener" class="btn btn--outline" style="font-size:0.82rem; padding:8px 20px;">Visit Website</a>
+						</div>
+					{/if}
+				</div>
 			</div>
 		{/if}
 	</div>
 </section>
+
+<style>
+	.chapter-row:hover {
+		border-color: transparent;
+		box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+		transform: translateX(4px);
+	}
+</style>

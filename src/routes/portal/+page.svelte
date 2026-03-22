@@ -6,6 +6,7 @@
 	const member = $derived(data.member);
 	const announcements = $derived(data.announcements ?? []);
 	const events = $derived(data.events ?? []);
+	const sfContact = $derived(data.sfContact);
 	const sfMembership = $derived(data.sfMembership);
 	const sfDuesBalance = $derived(data.sfDuesBalance ?? []);
 	const totalDue = $derived(sfDuesBalance.reduce((sum: number, b: any) => sum + (b.balance ?? 0), 0));
@@ -72,6 +73,38 @@
 			{/if}
 		</div>
 	</div>
+
+	<!-- Fonteva Member Details -->
+	{#if sfContact}
+		<div style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; padding:24px; margin-bottom:32px;">
+			<h2 style="font-family:var(--font-serif); font-size:1.15rem; margin-bottom:16px; padding-bottom:10px; border-bottom:1px solid var(--gray-100);">Member Details</h2>
+			<div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px;">
+				{#each [
+					{ label: 'Membership #', value: sfContact.membershipNumber },
+					{ label: 'Status', value: sfContact.memberStatus },
+					{ label: 'Type', value: sfContact.memberType },
+					{ label: 'Chapter of Initiation', value: sfContact.chapterOfInitiation },
+					{ label: 'Current Chapter', value: sfContact.currentChapter },
+					{ label: 'Initiation Date', value: sfContact.initiationDate ? new Date(sfContact.initiationDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : null },
+					{ label: 'Province of Initiation', value: sfContact.provinceOfInitiation },
+					{ label: 'Year of Initiation', value: sfContact.yearOfInitiation },
+					{ label: 'Life Member', value: sfContact.isLifeMember ? 'Yes' : 'No' }
+				].filter(f => f.value) as field}
+					<div style="padding:10px 14px; background:var(--gray-50); border-radius:8px;">
+						<div style="font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:var(--gray-400); margin-bottom:3px;">{field.label}</div>
+						<div style="font-size:0.9rem; color:var(--black); font-weight:500;">{field.value}</div>
+					</div>
+				{/each}
+			</div>
+			{#if sfContact.badges}
+				<div style="margin-top:16px; display:flex; gap:8px; flex-wrap:wrap;">
+					{#each sfContact.badges.split(',') as badge}
+						<span style="padding:4px 12px; background:rgba(139,0,0,0.06); color:var(--crimson); font-size:0.72rem; font-weight:600; border-radius:20px; text-transform:capitalize;">{badge.trim()}</span>
+					{/each}
+				</div>
+			{/if}
+		</div>
+	{/if}
 
 	<!-- Quick Actions -->
 	<div class="grid sm:grid-cols-3 gap-4 mb-8">

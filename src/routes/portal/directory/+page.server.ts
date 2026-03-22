@@ -5,32 +5,38 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 	const stateFilter = url.searchParams.get('state') || '';
 	const statusFilter = url.searchParams.get('status') || '';
 	const typeFilter = url.searchParams.get('type') || '';
+	const chapterFilter = url.searchParams.get('chapter') || '';
 	const page = parseInt(url.searchParams.get('page') || '1');
 	const perPage = 20;
 
 	let dbQuery = locals.supabase
-		.from('members')
-		.select('id, first_name, last_name, city, state, profession, membership_status, membership_type, profile_photo_url, chapters(name, greek_designation)', { count: 'exact' })
-		.eq('show_in_directory', true);
+		.from('directory_contacts')
+		.select('*', { count: 'exact' });
 
+	// Full-text search
 	if (query) {
-		dbQuery = dbQuery.or(`first_name.ilike.%${query}%,last_name.ilike.%${query}%,city.ilike.%${query}%,profession.ilike.%${query}%`);
+		dbQuery = dbQuery.or(
+			`first_name.ilike.%${query}%,last_name.ilike.%${query}%,mailing_city.ilike.%${query}%,chapter_name.ilike.%${query}%,chapter_of_initiation.ilike.%${query}%,profession.ilike.%${query}%,employer.ilike.%${query}%,membership_number.ilike.%${query}%`
+		);
 	}
-	if (stateFilter) dbQuery = dbQuery.eq('state', stateFilter);
-	if (statusFilter) dbQuery = dbQuery.eq('membership_status', statusFilter);
-	if (typeFilter) dbQuery = dbQuery.eq('membership_type', typeFilter);
+
+	if (stateFilter) dbQuery = dbQuery.eq('mailing_state', stateFilter);
+	if (statusFilter) dbQuery = dbQuery.eq('member_status', statusFilter);
+	if (typeFilter) dbQuery = dbQuery.eq('member_type', typeFilter);
+	if (chapterFilter) dbQuery = dbQuery.ilike('chapter_name', `%${chapterFilter}%`);
 
 	dbQuery = dbQuery
 		.order('last_name')
+		.order('first_name')
 		.range((page - 1) * perPage, page * perPage - 1);
 
-	const { data: members, count } = await dbQuery;
+	const { data: contacts, count } = await dbQuery;
 
 	return {
-		members: members ?? [],
+		contacts: contacts ?? [],
 		total: count ?? 0,
 		page,
 		perPage,
-		filters: { q: query, state: stateFilter, status: statusFilter, type: typeFilter }
+		filters: { q: query, state: stateFilter, status: statusFilter, type: typeFilter, chapter: chapterFilter }
 	};
 };

@@ -1,7 +1,16 @@
 import { createSupabaseServerClient } from '$lib/supabase-server';
 import { redirect, type Handle } from '@sveltejs/kit';
+import { initSalesforce } from '$lib/salesforce';
+import { env } from '$env/dynamic/private';
 
 export const handle: Handle = async ({ event, resolve }) => {
+	// Initialize Salesforce from env vars (works on both local dev and Cloudflare)
+	initSalesforce({
+		SF_LOGIN_URL: env.SF_LOGIN_URL,
+		SF_CLIENT_ID: env.SF_CLIENT_ID,
+		SF_CLIENT_SECRET: env.SF_CLIENT_SECRET
+	});
+
 	const supabase = createSupabaseServerClient(event.cookies);
 	event.locals.supabase = supabase;
 

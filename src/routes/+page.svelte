@@ -31,6 +31,7 @@
 
 <!-- HERO -->
 <section class="hero">
+	<div class="hero-achievement" aria-hidden="true"></div>
 	<div class="container hero-inner">
 		<div class="hero-content">
 			<div class="hero-eyebrow">
@@ -223,6 +224,13 @@
 <style>
 	/* ===== HERO ===== */
 	.hero { position: relative; min-height: 100svh; display: flex; align-items: center; overflow: hidden; background: linear-gradient(150deg, #3D0000 0%, #5C0000 30%, #8B0000 70%, #700000 100%); }
+	.hero-achievement {
+		position: absolute; right: -5%; top: 50%; transform: translateY(-50%);
+		width: 500px; height: 500px; z-index: 0;
+		background: url('/images/achievement.png') center center / contain no-repeat;
+		opacity: 0.08;
+		filter: brightness(2);
+	}
 	.hero-inner { position: relative; z-index: 1; display: flex; align-items: center; padding-top: 80px; padding-bottom: 80px; }
 	.hero-content { max-width: 640px; }
 	.hero-eyebrow { display: flex; align-items: center; gap: 10px; font-size: 0.78rem; font-weight: 500; color: rgba(255,255,255,0.5); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 24px; }

@@ -1,6 +1,65 @@
 <script lang="ts">
+	import { supabase } from '$lib/supabase';
 	import type { PageData } from './$types';
 	let { data }: { data: PageData } = $props();
+
+	let syncing = $state(false);
+	let syncResult = $state('');
+	let syncProgress = $state('');
+
+	async function triggerSync(full: boolean) {
+		syncing = true;
+		syncResult = '';
+		syncProgress = 'Starting sync...';
+
+		try {
+			let offset = 0;
+			const limit = 200;
+			let totalSynced = 0;
+			let totalSize = 0;
+
+			while (true) {
+				syncProgress = `Fetching from Salesforce (offset ${offset})...`;
+
+				const res = await fetch(`/api/sync-directory?offset=${offset}&limit=${limit}&full=${full}`, {
+					method: 'POST'
+				});
+
+				if (!res.ok) {
+					const err = await res.json().catch(() => ({ message: 'Fetch failed' }));
+					throw new Error(err.message || `Fetch failed at offset ${offset}`);
+				}
+
+				const batch = await res.json();
+				totalSize = batch.totalSize;
+
+				if (batch.contacts.length > 0) {
+					syncProgress = `Writing ${batch.contacts.length} contacts to directory (${offset + batch.contacts.length} of ${totalSize})...`;
+
+					const { error: upsertError } = await supabase
+						.from('directory_contacts')
+						.upsert(batch.contacts, { onConflict: 'sf_contact_id' });
+
+					if (upsertError) {
+						throw new Error(`Supabase upsert failed: ${upsertError.message}`);
+					}
+
+					totalSynced += batch.contacts.length;
+				}
+
+				if (!batch.hasMore) break;
+				offset += limit;
+			}
+
+			syncResult = `Successfully synced ${totalSynced} of ${totalSize} contacts`;
+			syncProgress = '';
+		} catch (err: any) {
+			syncResult = `Error: ${err.message}`;
+			syncProgress = '';
+		}
+
+		syncing = false;
+	}
 </script>
 
 <svelte:head>
@@ -8,6 +67,28 @@
 </svelte:head>
 
 <h1 style="font-family:var(--font-serif); font-size:1.6rem; color:var(--crimson); margin-bottom:24px;">Dashboard</h1>
+
+<!-- Directory Sync -->
+<div style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; padding:20px; margin-bottom:24px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+	<div>
+		<h3 style="font-family:var(--font-serif); font-size:1rem; font-weight:700; margin-bottom:4px;">Salesforce Directory Sync</h3>
+		<p style="font-size:0.82rem; color:var(--gray-600);">Sync member directory data from Fonteva to enable fast search.</p>
+		{#if syncProgress}
+			<p style="font-size:0.82rem; margin-top:6px; color:var(--crimson); font-weight:500;">{syncProgress}</p>
+		{/if}
+		{#if syncResult}
+			<p style="font-size:0.82rem; margin-top:6px; color:{syncResult.startsWith('Error') ? '#991B1B' : '#065F46'}; font-weight:600;">{syncResult}</p>
+		{/if}
+	</div>
+	<div style="display:flex; gap:8px;">
+		<button class="btn btn--outline" style="padding:8px 16px; font-size:0.82rem;" disabled={syncing} onclick={() => triggerSync(false)}>
+			{syncing ? 'Syncing...' : 'Delta Sync'}
+		</button>
+		<button class="btn btn--primary" style="padding:8px 16px; font-size:0.82rem;" disabled={syncing} onclick={() => triggerSync(true)}>
+			{syncing ? 'Syncing...' : 'Full Sync'}
+		</button>
+	</div>
+</div>
 
 <!-- KPI Cards -->
 <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-bottom:32px;">

@@ -1,62 +1,55 @@
 <script lang="ts">
-	import { supabase } from '$lib/supabase';
-	import type { PageData } from './$types';
 	import { invalidateAll } from '$app/navigation';
-	import { page } from '$app/stores';
+	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
 	let member = $derived(data.member);
+	let sf = $derived(data.sfContact);
 
 	let editing = $state(false);
 	let saving = $state(false);
 	let message = $state('');
 	let error = $state('');
-	let uploading = $state(false);
 
-	// Password reset mode
-	let showPasswordReset = $derived($page.url.searchParams.get('reset') === 'true');
-	let newPassword = $state('');
-	let confirmNewPassword = $state('');
-	let passwordSaving = $state(false);
-	let passwordMessage = $state('');
-
-	// Edit form state
+	// Edit form — populated from SF data
 	let form = $state({
-		first_name: '',
-		last_name: '',
 		phone: '',
-		address_line1: '',
-		address_line2: '',
-		city: '',
-		state: '',
-		zip: '',
-		profession: '',
+		mobilePhone: '',
+		mailingStreet: '',
+		mailingCity: '',
+		mailingState: '',
+		mailingPostalCode: '',
 		employer: '',
-		bio: '',
-		show_in_directory: true,
-		show_email: false,
-		show_phone: false,
-		show_address: false
+		profession: '',
+		professionalTitle: '',
+		facebook: '',
+		instagram: '',
+		linkedin: '',
+		twitter: '',
+		showAddress: true,
+		showEmail: true,
+		showPhone: true
 	});
 
 	function startEditing() {
-		if (!member) return;
+		if (!sf) return;
 		form = {
-			first_name: member.first_name || '',
-			last_name: member.last_name || '',
-			phone: member.phone || '',
-			address_line1: member.address_line1 || '',
-			address_line2: member.address_line2 || '',
-			city: member.city || '',
-			state: member.state || '',
-			zip: member.zip || '',
-			profession: member.profession || '',
-			employer: member.employer || '',
-			bio: member.bio || '',
-			show_in_directory: member.show_in_directory ?? true,
-			show_email: member.show_email ?? false,
-			show_phone: member.show_phone ?? false,
-			show_address: member.show_address ?? false
+			phone: sf.phone || '',
+			mobilePhone: sf.mobilePhone || '',
+			mailingStreet: sf.mailingStreet || '',
+			mailingCity: sf.mailingCity || '',
+			mailingState: sf.mailingState || '',
+			mailingPostalCode: sf.mailingPostalCode || '',
+			employer: sf.employer || '',
+			profession: sf.profession || '',
+			professionalTitle: sf.professionalTitle || '',
+			facebook: sf.facebook || '',
+			instagram: sf.instagram || '',
+			linkedin: sf.linkedin || '',
+			twitter: sf.twitter || '',
+			showAddress: sf.showAddress ?? true,
+			showEmail: sf.showEmail ?? true,
+			showPhone: sf.showPhone ?? true
 		};
 		editing = true;
 		message = '';
@@ -68,91 +61,36 @@
 		saving = true;
 		error = '';
 
-		const { error: updateError } = await supabase
-			.from('members')
-			.update(form)
-			.eq('id', member!.id);
+		try {
+			const res = await fetch('/api/profile', {
+				method: 'PATCH',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(form)
+			});
 
-		if (updateError) {
-			error = 'Failed to save profile. Please try again.';
-		} else {
-			message = 'Profile updated successfully.';
+			if (!res.ok) {
+				const errData = await res.json().catch(() => ({ message: 'Save failed' }));
+				throw new Error(errData.message || 'Save failed');
+			}
+
+			message = 'Profile updated successfully — changes saved to the membership system.';
 			editing = false;
 			await invalidateAll();
+		} catch (err: any) {
+			error = err.message || 'Failed to save. Please try again.';
 		}
 		saving = false;
-	}
-
-	async function uploadPhoto(e: Event) {
-		const input = e.target as HTMLInputElement;
-		const file = input.files?.[0];
-		if (!file || !member) return;
-
-		if (file.size > 5 * 1024 * 1024) {
-			error = 'Photo must be under 5MB.';
-			return;
-		}
-
-		uploading = true;
-		error = '';
-
-		const ext = file.name.split('.').pop();
-		const path = `${member.id}/avatar.${ext}`;
-
-		const { error: uploadError } = await supabase.storage
-			.from('profile-photos')
-			.upload(path, file, { upsert: true });
-
-		if (uploadError) {
-			error = 'Failed to upload photo.';
-			uploading = false;
-			return;
-		}
-
-		const { data: urlData } = supabase.storage.from('profile-photos').getPublicUrl(path);
-
-		await supabase
-			.from('members')
-			.update({ profile_photo_url: urlData.publicUrl })
-			.eq('id', member.id);
-
-		message = 'Photo updated.';
-		uploading = false;
-		await invalidateAll();
-	}
-
-	async function updatePassword(e: Event) {
-		e.preventDefault();
-		if (newPassword !== confirmNewPassword) {
-			error = 'Passwords do not match.';
-			return;
-		}
-		if (newPassword.length < 8) {
-			error = 'Password must be at least 8 characters.';
-			return;
-		}
-
-		passwordSaving = true;
-		const { error: pwError } = await supabase.auth.updateUser({ password: newPassword });
-		if (pwError) {
-			error = pwError.message;
-		} else {
-			passwordMessage = 'Password updated successfully.';
-			newPassword = '';
-			confirmNewPassword = '';
-		}
-		passwordSaving = false;
 	}
 </script>
 
 <svelte:head>
-	<title>My Profile — Member Portal — Kappa Alpha Psi®</title>
+	<title>My Info — Member Portal — Kappa Alpha Psi®</title>
 </svelte:head>
 
 <div style="max-width:800px;">
 	<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:32px; flex-wrap:wrap; gap:12px;">
-		<h1 style="font-family:var(--font-serif); font-size:1.6rem; color:var(--crimson);">My Profile</h1>
-		{#if !editing}
+		<h1 style="font-family:var(--font-serif); font-size:1.6rem; color:var(--crimson);">My Info</h1>
+		{#if !editing && sf}
 			<button class="btn btn--primary" onclick={startEditing}>Edit Profile</button>
 		{/if}
 	</div>
@@ -164,102 +102,110 @@
 		<div style="background:#FEF2F2; color:#991B1B; padding:12px 16px; border-radius:8px; font-size:0.9rem; margin-bottom:24px;">{error}</div>
 	{/if}
 
-	<!-- Photo -->
-	<div style="display:flex; align-items:center; gap:20px; margin-bottom:32px; padding:24px; background:var(--white); border:1px solid var(--gray-100); border-radius:12px;">
-		<div style="width:80px; height:80px; border-radius:50%; overflow:hidden; background:linear-gradient(160deg, var(--crimson-dark), var(--crimson)); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-			{#if member?.profile_photo_url}
-				<img src={member.profile_photo_url} alt="Profile" style="width:100%; height:100%; object-fit:cover;" />
-			{:else}
-				<span style="font-family:var(--font-serif); font-size:1.6rem; color:rgba(255,255,255,0.6);">
-					{member?.first_name?.[0] ?? ''}{member?.last_name?.[0] ?? ''}
-				</span>
-			{/if}
+	{#if !sf}
+		<div style="background:#FEF3C7; color:#92400E; padding:16px 20px; border-radius:12px; font-size:0.9rem; border-left:4px solid var(--gold);">
+			<strong>Account Not Linked</strong> — Your email was not found in the membership system. Please contact IHQ at (215) 228-7184.
 		</div>
-		<div>
-			<h2 style="font-size:1.15rem; margin-bottom:4px;">{member?.first_name} {member?.last_name}</h2>
-			<p style="font-size:0.82rem; color:var(--gray-600);">{member?.email}</p>
-			<label style="display:inline-block; margin-top:8px; cursor:pointer; font-size:0.82rem; color:var(--crimson); font-weight:600;">
-				{uploading ? 'Uploading...' : 'Change Photo'}
-				<input type="file" accept="image/*" style="display:none;" onchange={uploadPhoto} disabled={uploading} />
-			</label>
-		</div>
-	</div>
-
-	{#if editing}
-		<!-- Edit Form -->
-		<form onsubmit={saveProfile} style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; padding:32px;">
-			<h2 style="font-size:1.15rem; margin-bottom:20px; padding-bottom:10px; border-bottom:1px solid var(--gray-100);">Personal Information</h2>
-
-			<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px;">
-				<div>
-					<label for="fn" style="display:block; font-size:0.82rem; font-weight:600; margin-bottom:6px;">First Name</label>
-					<input id="fn" type="text" bind:value={form.first_name} required class="form-control" />
-				</div>
-				<div>
-					<label for="ln" style="display:block; font-size:0.82rem; font-weight:600; margin-bottom:6px;">Last Name</label>
-					<input id="ln" type="text" bind:value={form.last_name} required class="form-control" />
+	{:else if editing}
+		<!-- EDIT MODE -->
+		<form onsubmit={saveProfile}>
+			<!-- Contact Info -->
+			<div style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; padding:28px; margin-bottom:24px;">
+				<h2 style="font-family:var(--font-serif); font-size:1.15rem; margin-bottom:20px; padding-bottom:10px; border-bottom:1px solid var(--gray-100);">Contact Information</h2>
+				<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+					<div>
+						<label class="form-label" for="phone">Phone</label>
+						<input id="phone" type="tel" bind:value={form.phone} class="form-control" />
+					</div>
+					<div>
+						<label class="form-label" for="mobile">Mobile</label>
+						<input id="mobile" type="tel" bind:value={form.mobilePhone} class="form-control" />
+					</div>
 				</div>
 			</div>
 
-			<div style="margin-bottom:20px;">
-				<label for="phone" style="display:block; font-size:0.82rem; font-weight:600; margin-bottom:6px;">Phone</label>
-				<input id="phone" type="tel" bind:value={form.phone} class="form-control" />
-			</div>
-
-			<div style="margin-bottom:20px;">
-				<label for="addr1" style="display:block; font-size:0.82rem; font-weight:600; margin-bottom:6px;">Address Line 1</label>
-				<input id="addr1" type="text" bind:value={form.address_line1} class="form-control" />
-			</div>
-			<div style="margin-bottom:20px;">
-				<label for="addr2" style="display:block; font-size:0.82rem; font-weight:600; margin-bottom:6px;">Address Line 2</label>
-				<input id="addr2" type="text" bind:value={form.address_line2} class="form-control" />
-			</div>
-
-			<div style="display:grid; grid-template-columns:2fr 1fr 1fr; gap:16px; margin-bottom:20px;">
-				<div>
-					<label for="city" style="display:block; font-size:0.82rem; font-weight:600; margin-bottom:6px;">City</label>
-					<input id="city" type="text" bind:value={form.city} class="form-control" />
-				</div>
-				<div>
-					<label for="state" style="display:block; font-size:0.82rem; font-weight:600; margin-bottom:6px;">State</label>
-					<input id="state" type="text" bind:value={form.state} class="form-control" maxlength="2" />
-				</div>
-				<div>
-					<label for="zip" style="display:block; font-size:0.82rem; font-weight:600; margin-bottom:6px;">ZIP</label>
-					<input id="zip" type="text" bind:value={form.zip} class="form-control" />
+			<!-- Address -->
+			<div style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; padding:28px; margin-bottom:24px;">
+				<h2 style="font-family:var(--font-serif); font-size:1.15rem; margin-bottom:20px; padding-bottom:10px; border-bottom:1px solid var(--gray-100);">Mailing Address</h2>
+				<div style="display:grid; gap:16px;">
+					<div>
+						<label class="form-label" for="street">Street</label>
+						<input id="street" type="text" bind:value={form.mailingStreet} class="form-control" />
+					</div>
+					<div style="display:grid; grid-template-columns:2fr 1fr 1fr; gap:16px;">
+						<div>
+							<label class="form-label" for="city">City</label>
+							<input id="city" type="text" bind:value={form.mailingCity} class="form-control" />
+						</div>
+						<div>
+							<label class="form-label" for="state">State</label>
+							<input id="state" type="text" bind:value={form.mailingState} class="form-control" maxlength="2" />
+						</div>
+						<div>
+							<label class="form-label" for="zip">ZIP</label>
+							<input id="zip" type="text" bind:value={form.mailingPostalCode} class="form-control" />
+						</div>
+					</div>
 				</div>
 			</div>
 
-			<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px;">
-				<div>
-					<label for="profession" style="display:block; font-size:0.82rem; font-weight:600; margin-bottom:6px;">Profession</label>
-					<input id="profession" type="text" bind:value={form.profession} class="form-control" />
-				</div>
-				<div>
-					<label for="employer" style="display:block; font-size:0.82rem; font-weight:600; margin-bottom:6px;">Employer</label>
-					<input id="employer" type="text" bind:value={form.employer} class="form-control" />
+			<!-- Professional -->
+			<div style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; padding:28px; margin-bottom:24px;">
+				<h2 style="font-family:var(--font-serif); font-size:1.15rem; margin-bottom:20px; padding-bottom:10px; border-bottom:1px solid var(--gray-100);">Professional Information</h2>
+				<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+					<div>
+						<label class="form-label" for="employer">Employer</label>
+						<input id="employer" type="text" bind:value={form.employer} class="form-control" />
+					</div>
+					<div>
+						<label class="form-label" for="profession">Profession</label>
+						<input id="profession" type="text" bind:value={form.profession} class="form-control" />
+					</div>
+					<div style="grid-column:1/-1;">
+						<label class="form-label" for="title">Professional Title</label>
+						<input id="title" type="text" bind:value={form.professionalTitle} class="form-control" />
+					</div>
 				</div>
 			</div>
 
-			<div style="margin-bottom:24px;">
-				<label for="bio" style="display:block; font-size:0.82rem; font-weight:600; margin-bottom:6px;">Bio</label>
-				<textarea id="bio" bind:value={form.bio} class="form-control" rows="3"></textarea>
+			<!-- Social -->
+			<div style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; padding:28px; margin-bottom:24px;">
+				<h2 style="font-family:var(--font-serif); font-size:1.15rem; margin-bottom:20px; padding-bottom:10px; border-bottom:1px solid var(--gray-100);">Social Media</h2>
+				<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+					<div>
+						<label class="form-label" for="facebook">Facebook</label>
+						<input id="facebook" type="text" bind:value={form.facebook} class="form-control" placeholder="username or URL" />
+					</div>
+					<div>
+						<label class="form-label" for="instagram">Instagram</label>
+						<input id="instagram" type="text" bind:value={form.instagram} class="form-control" placeholder="@handle" />
+					</div>
+					<div>
+						<label class="form-label" for="linkedin">LinkedIn</label>
+						<input id="linkedin" type="text" bind:value={form.linkedin} class="form-control" placeholder="profile URL" />
+					</div>
+					<div>
+						<label class="form-label" for="twitter">X / Twitter</label>
+						<input id="twitter" type="text" bind:value={form.twitter} class="form-control" placeholder="@handle" />
+					</div>
+				</div>
 			</div>
 
-			<h2 style="font-size:1.15rem; margin-bottom:16px; padding-bottom:10px; border-bottom:1px solid var(--gray-100);">Privacy Settings</h2>
-
-			<div style="display:flex; flex-direction:column; gap:12px; margin-bottom:24px;">
-				{#each [
-					{ key: 'show_in_directory', label: 'Show my profile in the member directory' },
-					{ key: 'show_email', label: 'Show my email to other members' },
-					{ key: 'show_phone', label: 'Show my phone number to other members' },
-					{ key: 'show_address', label: 'Show my address to other members' }
-				] as toggle}
-					<label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size:0.9rem;">
-						<input type="checkbox" bind:checked={form[toggle.key as keyof typeof form]} />
-						{toggle.label}
-					</label>
-				{/each}
+			<!-- Privacy -->
+			<div style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; padding:28px; margin-bottom:24px;">
+				<h2 style="font-family:var(--font-serif); font-size:1.15rem; margin-bottom:20px; padding-bottom:10px; border-bottom:1px solid var(--gray-100);">Directory Privacy</h2>
+				<div style="display:flex; flex-direction:column; gap:12px;">
+					{#each [
+						{ key: 'showEmail', label: 'Show my email in the member directory' },
+						{ key: 'showPhone', label: 'Show my phone number in the member directory' },
+						{ key: 'showAddress', label: 'Show my address in the member directory' }
+					] as toggle}
+						<label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size:0.9rem;">
+							<input type="checkbox" bind:checked={form[toggle.key as keyof typeof form]} style="accent-color:var(--crimson);" />
+							{toggle.label}
+						</label>
+					{/each}
+				</div>
 			</div>
 
 			<div style="display:flex; gap:12px;">
@@ -269,81 +215,106 @@
 				<button type="button" class="btn btn--outline" onclick={() => { editing = false; }}>Cancel</button>
 			</div>
 		</form>
+
 	{:else}
-		<!-- View Mode -->
-		<div style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; overflow:hidden;">
-			<div style="padding:24px 32px 16px; border-bottom:1px solid var(--gray-100);">
-				<h2 style="font-size:1.15rem;">Personal Information</h2>
+		<!-- VIEW MODE -->
+
+		<!-- Membership Info (read-only from Fonteva) -->
+		<div style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; padding:28px; margin-bottom:24px;">
+			<h2 style="font-family:var(--font-serif); font-size:1.15rem; margin-bottom:20px; padding-bottom:10px; border-bottom:1px solid var(--gray-100);">Membership Information</h2>
+			<div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px;">
+				{#each [
+					{ label: 'Membership #', value: sf.membershipNumber },
+					{ label: 'Status', value: sf.memberStatus },
+					{ label: 'Member Type', value: sf.memberType },
+					{ label: 'Chapter of Initiation', value: sf.chapterOfInitiation },
+					{ label: 'Current Chapter', value: sf.currentChapter },
+					{ label: 'Initiation Date', value: sf.initiationDate ? new Date(sf.initiationDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : null },
+					{ label: 'Year of Initiation', value: sf.yearOfInitiation },
+					{ label: 'Province of Initiation', value: sf.provinceOfInitiation },
+					{ label: 'Life Member', value: sf.isLifeMember ? 'Yes' : 'No' },
+					{ label: 'Directory Status', value: sf.directoryStatus },
+					{ label: 'Chapter ID', value: sf.chapterId }
+				].filter(f => f.value) as field}
+					<div style="padding:10px 14px; background:var(--gray-50); border-radius:8px;">
+						<div style="font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:var(--gray-400); margin-bottom:3px;">{field.label}</div>
+						<div style="font-size:0.9rem; color:var(--black); font-weight:500;">{field.value}</div>
+					</div>
+				{/each}
 			</div>
-			<div style="padding:24px 32px;">
-				<div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+			{#if sf.badges}
+				<div style="margin-top:16px; display:flex; gap:8px; flex-wrap:wrap;">
+					{#each sf.badges.split(',') as badge}
+						<span style="padding:4px 12px; background:rgba(139,0,0,0.06); color:var(--crimson); font-size:0.72rem; font-weight:600; border-radius:20px;">{badge.trim()}</span>
+					{/each}
+				</div>
+			{/if}
+			<p style="font-size:0.75rem; color:var(--gray-400); margin-top:12px;">Membership details are managed by International Headquarters.</p>
+		</div>
+
+		<!-- Contact Info -->
+		<div style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; padding:28px; margin-bottom:24px;">
+			<h2 style="font-family:var(--font-serif); font-size:1.15rem; margin-bottom:20px; padding-bottom:10px; border-bottom:1px solid var(--gray-100);">Contact Information</h2>
+			<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+				{#each [
+					{ label: 'Name', value: `${sf.firstName} ${sf.lastName}` },
+					{ label: 'Email', value: sf.email },
+					{ label: 'Phone', value: sf.phone },
+					{ label: 'Mobile', value: sf.mobilePhone },
+					{ label: 'Address', value: [sf.mailingStreet, sf.mailingCity, sf.mailingState, sf.mailingPostalCode].filter(Boolean).join(', ') },
+					{ label: 'Country', value: sf.mailingCountry }
+				] as field}
+					<div style="padding:10px 14px; background:var(--gray-50); border-radius:8px; {field.label === 'Address' ? 'grid-column:1/-1;' : ''}">
+						<div style="font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:var(--gray-400); margin-bottom:3px;">{field.label}</div>
+						<div style="font-size:0.9rem; color:var(--black); font-weight:500;">{field.value || '—'}</div>
+					</div>
+				{/each}
+			</div>
+		</div>
+
+		<!-- Professional -->
+		<div style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; padding:28px; margin-bottom:24px;">
+			<h2 style="font-family:var(--font-serif); font-size:1.15rem; margin-bottom:20px; padding-bottom:10px; border-bottom:1px solid var(--gray-100);">Professional Information</h2>
+			<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+				{#each [
+					{ label: 'Employer', value: sf.employer },
+					{ label: 'Profession', value: sf.profession },
+					{ label: 'Title', value: sf.professionalTitle },
+					{ label: 'University/College', value: sf.university }
+				] as field}
+					<div style="padding:10px 14px; background:var(--gray-50); border-radius:8px;">
+						<div style="font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:var(--gray-400); margin-bottom:3px;">{field.label}</div>
+						<div style="font-size:0.9rem; color:var(--black); font-weight:500;">{field.value || '—'}</div>
+					</div>
+				{/each}
+			</div>
+		</div>
+
+		<!-- Social Media -->
+		{#if sf.facebook || sf.instagram || sf.linkedin || sf.twitter}
+			<div style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; padding:28px; margin-bottom:24px;">
+				<h2 style="font-family:var(--font-serif); font-size:1.15rem; margin-bottom:20px; padding-bottom:10px; border-bottom:1px solid var(--gray-100);">Social Media</h2>
+				<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
 					{#each [
-						{ label: 'Name', value: `${member?.first_name ?? ''} ${member?.last_name ?? ''}` },
-						{ label: 'Email', value: member?.email },
-						{ label: 'Phone', value: member?.phone || '—' },
-						{ label: 'Chapter', value: member?.chapters?.name || '—' },
-						{ label: 'City / State', value: [member?.city, member?.state].filter(Boolean).join(', ') || '—' },
-						{ label: 'Profession', value: member?.profession || '—' },
-						{ label: 'Employer', value: member?.employer || '—' },
-						{ label: 'Membership Type', value: member?.membership_type || '—' },
-						{ label: 'Status', value: member?.membership_status || '—' },
-						{ label: 'Life Member', value: member?.is_life_member ? 'Yes' : 'No' }
-					] as field}
-						<div style="padding:12px 16px; background:var(--gray-50); border-radius:6px;">
-							<div style="font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:var(--gray-400); margin-bottom:4px;">{field.label}</div>
-							<div style="font-size:0.95rem; color:var(--gray-800); font-weight:500; text-transform:capitalize;">{field.value}</div>
+						{ label: 'Facebook', value: sf.facebook },
+						{ label: 'Instagram', value: sf.instagram },
+						{ label: 'LinkedIn', value: sf.linkedin },
+						{ label: 'X / Twitter', value: sf.twitter }
+					].filter(f => f.value) as field}
+						<div style="padding:10px 14px; background:var(--gray-50); border-radius:8px;">
+							<div style="font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:var(--gray-400); margin-bottom:3px;">{field.label}</div>
+							<div style="font-size:0.9rem; color:var(--black); font-weight:500;">{field.value}</div>
 						</div>
 					{/each}
 				</div>
 			</div>
-		</div>
-
-		<!-- Initiation Info (read-only, admin editable) -->
-		{#if member?.initiation_year || member?.line_name}
-			<div style="margin-top:24px; background:var(--white); border:1px solid var(--gray-100); border-radius:12px; overflow:hidden;">
-				<div style="padding:24px 32px 16px; border-bottom:1px solid var(--gray-100);">
-					<h2 style="font-size:1.15rem;">Initiation Details</h2>
-				</div>
-				<div style="padding:24px 32px;">
-					<div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
-						{#each [
-							{ label: 'Initiation Year', value: member?.initiation_year?.toString() || '—' },
-							{ label: 'Line Name', value: member?.line_name || '—' },
-							{ label: 'Line Number', value: member?.line_number?.toString() || '—' },
-							{ label: 'Scroll Number', value: member?.scroll_number || '—' }
-						] as field}
-							<div style="padding:12px 16px; background:var(--gray-50); border-radius:6px;">
-								<div style="font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:var(--gray-400); margin-bottom:4px;">{field.label}</div>
-								<div style="font-size:0.95rem; color:var(--gray-800); font-weight:500;">{field.value}</div>
-							</div>
-						{/each}
-					</div>
-					<p style="font-size:0.78rem; color:var(--gray-400); margin-top:12px;">Initiation details can only be edited by administrators.</p>
-				</div>
-			</div>
 		{/if}
 	{/if}
-
-	<!-- Password Reset -->
-	{#if showPasswordReset}
-		<div style="margin-top:24px; background:var(--white); border:1px solid var(--gray-100); border-radius:12px; padding:32px;">
-			<h2 style="font-size:1.15rem; margin-bottom:16px;">Set New Password</h2>
-			{#if passwordMessage}
-				<div style="background:#ECFDF5; color:#065F46; padding:12px 16px; border-radius:8px; font-size:0.9rem; margin-bottom:16px;">{passwordMessage}</div>
-			{/if}
-			<form onsubmit={updatePassword}>
-				<div style="margin-bottom:16px;">
-					<label for="newPw" style="display:block; font-size:0.82rem; font-weight:600; margin-bottom:6px;">New Password</label>
-					<input id="newPw" type="password" bind:value={newPassword} required minlength="8" class="form-control" />
-				</div>
-				<div style="margin-bottom:20px;">
-					<label for="confirmPw" style="display:block; font-size:0.82rem; font-weight:600; margin-bottom:6px;">Confirm Password</label>
-					<input id="confirmPw" type="password" bind:value={confirmNewPassword} required class="form-control" />
-				</div>
-				<button type="submit" disabled={passwordSaving} class="btn btn--primary">
-					{passwordSaving ? 'Updating...' : 'Update Password'}
-				</button>
-			</form>
-		</div>
-	{/if}
 </div>
+
+<style>
+	.form-label {
+		display: block; font-size: 0.82rem; font-weight: 600;
+		color: var(--gray-800); margin-bottom: 6px;
+	}
+</style>

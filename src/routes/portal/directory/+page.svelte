@@ -3,7 +3,7 @@
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
-	let members = $derived(data.members);
+	let contacts = $derived(data.contacts);
 	let total = $derived(data.total);
 	let page = $derived(data.page);
 	let perPage = $derived(data.perPage);
@@ -13,6 +13,10 @@
 	let stateFilter = $state(data.filters.state);
 	let statusFilter = $state(data.filters.status);
 	let typeFilter = $state(data.filters.type);
+	let chapterFilter = $state(data.filters.chapter);
+
+	// Selected member detail
+	let selected = $state<any>(null);
 
 	function search() {
 		const params = new URLSearchParams();
@@ -20,6 +24,7 @@
 		if (stateFilter) params.set('state', stateFilter);
 		if (statusFilter) params.set('status', statusFilter);
 		if (typeFilter) params.set('type', typeFilter);
+		if (chapterFilter) params.set('chapter', chapterFilter);
 		goto(`/portal/directory?${params.toString()}`);
 	}
 
@@ -29,11 +34,16 @@
 		if (stateFilter) params.set('state', stateFilter);
 		if (statusFilter) params.set('status', statusFilter);
 		if (typeFilter) params.set('type', typeFilter);
+		if (chapterFilter) params.set('chapter', chapterFilter);
 		params.set('page', p.toString());
 		goto(`/portal/directory?${params.toString()}`);
 	}
 
 	const states = ['AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY','DC'];
+
+	function getInitials(c: any) {
+		return (c.first_name?.[0] ?? '') + (c.last_name?.[0] ?? '');
+	}
 </script>
 
 <svelte:head>
@@ -46,7 +56,7 @@
 	<!-- Search -->
 	<form onsubmit={(e) => { e.preventDefault(); search(); }} style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; padding:20px; margin-bottom:24px;">
 		<div style="display:grid; grid-template-columns:1fr auto; gap:12px; margin-bottom:12px;">
-			<input type="text" bind:value={q} placeholder="Search by name, city, or profession..." class="form-control" />
+			<input type="text" bind:value={q} placeholder="Search by name, city, chapter, profession, membership #..." class="form-control" />
 			<button type="submit" class="btn btn--primary" style="padding:10px 24px;">Search</button>
 		</div>
 		<div style="display:flex; gap:12px; flex-wrap:wrap;">
@@ -54,60 +64,120 @@
 				<option value="">All States</option>
 				{#each states as st}<option value={st}>{st}</option>{/each}
 			</select>
-			<select bind:value={statusFilter} onchange={search} class="form-control" style="width:auto; min-width:140px;">
+			<select bind:value={statusFilter} onchange={search} class="form-control" style="width:auto; min-width:160px;">
 				<option value="">All Status</option>
-				<option value="active">Active</option>
-				<option value="inactive">Inactive</option>
+				<option value="In Good Standing">In Good Standing</option>
+				<option value="Not In Good Standing">Not In Good Standing</option>
 			</select>
-			<select bind:value={typeFilter} onchange={search} class="form-control" style="width:auto; min-width:160px;">
+			<select bind:value={typeFilter} onchange={search} class="form-control" style="width:auto; min-width:140px;">
 				<option value="">All Types</option>
-				<option value="undergraduate">Undergraduate</option>
-				<option value="alumni">Alumni</option>
-				<option value="life">Life Member</option>
+				<option value="Alumni">Alumni</option>
+				<option value="Undergraduate">Undergraduate</option>
 			</select>
+			<input type="text" bind:value={chapterFilter} onchange={search} class="form-control" style="width:auto; min-width:160px;" placeholder="Chapter name..." />
 		</div>
 	</form>
 
-	<!-- Results -->
 	<p style="font-size:0.82rem; color:var(--gray-600); margin-bottom:16px;">{total} member{total !== 1 ? 's' : ''} found</p>
 
-	{#if members.length === 0}
+	<!-- Member Detail Modal -->
+	{#if selected}
+		<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+		<div style="position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:100; display:flex; align-items:center; justify-content:center; padding:20px; backdrop-filter:blur(4px);" onclick={() => (selected = null)}>
+			<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+			<div style="background:var(--white); border-radius:20px; max-width:500px; width:100%; max-height:80vh; overflow-y:auto; padding:32px;" onclick={(e) => e.stopPropagation()}>
+				<button onclick={() => (selected = null)} style="position:absolute; top:16px; right:20px; background:none; border:none; cursor:pointer; font-size:1.5rem; color:var(--gray-400);">&times;</button>
+
+				<div style="text-align:center; margin-bottom:24px;">
+					<div style="width:80px; height:80px; border-radius:50%; overflow:hidden; margin:0 auto 12px; border:3px solid var(--crimson); background:linear-gradient(160deg, var(--crimson-dark), var(--crimson)); display:flex; align-items:center; justify-content:center;">
+						{#if selected.photo_url}
+							<img src={selected.photo_url} alt="" style="width:100%; height:100%; object-fit:cover;" />
+						{:else}
+							<span style="font-family:var(--font-serif); font-size:1.4rem; color:rgba(255,255,255,0.5);">{getInitials(selected)}</span>
+						{/if}
+					</div>
+					<h2 style="font-family:var(--font-serif); font-size:1.3rem; font-weight:700;">{selected.first_name} {selected.last_name}</h2>
+					{#if selected.membership_number}
+						<p style="font-size:0.78rem; color:var(--gray-400);">#{selected.membership_number}</p>
+					{/if}
+				</div>
+
+				<div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+					{#each [
+						{ label: 'Status', value: selected.member_status },
+						{ label: 'Type', value: selected.member_type },
+						{ label: 'Current Chapter', value: selected.chapter_name },
+						{ label: 'Chapter of Initiation', value: selected.chapter_of_initiation },
+						{ label: 'Location', value: [selected.mailing_city, selected.mailing_state].filter(Boolean).join(', ') },
+						{ label: 'Province', value: selected.province },
+						{ label: 'Year Initiated', value: selected.year_of_initiation },
+						{ label: 'Life Member', value: selected.is_life_member ? 'Yes' : 'No' }
+					].filter(f => f.value) as field}
+						<div style="padding:8px 12px; background:var(--gray-50); border-radius:6px;">
+							<div style="font-size:0.6rem; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:var(--gray-400); margin-bottom:2px;">{field.label}</div>
+							<div style="font-size:0.85rem; color:var(--black); font-weight:500;">{field.value}</div>
+						</div>
+					{/each}
+				</div>
+
+				{#if selected.show_email && selected.email}
+					<div style="margin-top:16px; text-align:center;">
+						<a href="mailto:{selected.email}" class="btn btn--primary" style="font-size:0.82rem; padding:8px 20px;">Send Email</a>
+					</div>
+				{/if}
+			</div>
+		</div>
+	{/if}
+
+	<!-- Results -->
+	{#if contacts.length === 0}
 		<div style="text-align:center; padding:48px; background:var(--gray-50); border-radius:12px; color:var(--gray-600);">
-			No members found matching your search.
+			{#if total === 0 && !q && !stateFilter && !statusFilter && !typeFilter}
+				<div style="font-size:2rem; margin-bottom:12px; opacity:0.3;">👥</div>
+				<h3 style="font-family:var(--font-serif); font-size:1.2rem; margin-bottom:8px;">Directory Not Yet Synced</h3>
+				<p style="font-size:0.9rem;">The member directory will be available once the data sync has been completed.</p>
+			{:else}
+				No members found matching your search.
+			{/if}
 		</div>
 	{:else}
-		<div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:16px;">
-			{#each members as member}
-				<div style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; padding:20px; display:flex; gap:14px; align-items:flex-start; transition:all 0.25s;" class="member-card">
-					<div style="width:48px; height:48px; border-radius:50%; overflow:hidden; background:linear-gradient(160deg, var(--crimson-dark), var(--crimson)); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-						{#if member.profile_photo_url}
-							<img src={member.profile_photo_url} alt="" style="width:100%; height:100%; object-fit:cover;" />
+		<div style="display:flex; flex-direction:column; gap:8px;">
+			{#each contacts as contact}
+				<button
+					class="dir-row"
+					onclick={() => (selected = contact)}
+				>
+					<div class="dir-photo">
+						{#if contact.photo_url}
+							<img src={contact.photo_url} alt="" />
 						{:else}
-							<span style="font-family:var(--font-serif); font-size:0.9rem; color:rgba(255,255,255,0.6);">{member.first_name?.[0]}{member.last_name?.[0]}</span>
+							<span>{getInitials(contact)}</span>
 						{/if}
 					</div>
-					<div style="min-width:0;">
-						<h3 style="font-size:0.95rem; font-weight:700; margin-bottom:2px;">{member.first_name} {member.last_name}</h3>
-						{#if member.chapters}
-							<p style="font-size:0.78rem; color:var(--crimson); font-weight:600;">{member.chapters.name}</p>
-						{/if}
-						<p style="font-size:0.78rem; color:var(--gray-600); margin-top:2px;">
-							{[member.city, member.state].filter(Boolean).join(', ') || '—'}
-						</p>
-						{#if member.profession}
-							<p style="font-size:0.75rem; color:var(--gray-400); margin-top:2px;">{member.profession}</p>
-						{/if}
-						<span style="display:inline-block; margin-top:6px; padding:2px 8px; border-radius:10px; font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; background:{member.membership_status === 'active' ? '#ECFDF5' : 'var(--gray-50)'}; color:{member.membership_status === 'active' ? '#065F46' : 'var(--gray-400)'};">
-							{member.membership_status}
-						</span>
+					<div style="flex:1; min-width:0; text-align:left;">
+						<div class="dir-name">{contact.first_name} {contact.last_name}</div>
+						<div class="dir-detail">
+							{#if contact.chapter_name}{contact.chapter_name}{/if}
+							{#if contact.mailing_city || contact.mailing_state}
+								{contact.chapter_name ? ' · ' : ''}{[contact.mailing_city, contact.mailing_state].filter(Boolean).join(', ')}
+							{/if}
+						</div>
 					</div>
-				</div>
+					<div style="display:flex; align-items:center; gap:12px; flex-shrink:0;">
+						{#if contact.member_status}
+							<span class="dir-badge" class:dir-badge--good={contact.member_status === 'In Good Standing'}>
+								{contact.member_status}
+							</span>
+						{/if}
+						<span style="font-size:0.78rem; color:var(--gray-400); text-transform:capitalize;">{contact.member_type ?? ''}</span>
+					</div>
+				</button>
 			{/each}
 		</div>
 
 		<!-- Pagination -->
 		{#if totalPages > 1}
-			<div style="display:flex; justify-content:center; gap:8px; margin-top:32px;">
+			<div style="display:flex; justify-content:center; gap:8px; margin-top:32px; align-items:center;">
 				{#if page > 1}
 					<button class="btn btn--outline" style="padding:8px 16px; font-size:0.82rem;" onclick={() => goToPage(page - 1)}>Previous</button>
 				{/if}
@@ -121,5 +191,44 @@
 </div>
 
 <style>
-	.member-card:hover { border-color: transparent; box-shadow: 0 4px 20px rgba(0,0,0,0.10); transform: translateY(-2px); }
+	.dir-row {
+		display: flex; align-items: center; gap: 14px;
+		padding: 14px 18px; background: var(--white);
+		border: 1px solid var(--gray-100); border-radius: 10px;
+		cursor: pointer; transition: all 0.3s ease;
+		width: 100%; font-family: inherit; font-size: inherit; color: inherit;
+	}
+	.dir-row:hover {
+		border-color: transparent;
+		box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+		transform: translateX(4px);
+	}
+	.dir-photo {
+		width: 44px; height: 44px; border-radius: 50%;
+		overflow: hidden; flex-shrink: 0;
+		border: 2px solid var(--crimson);
+		background: linear-gradient(160deg, var(--crimson-dark), var(--crimson));
+		display: flex; align-items: center; justify-content: center;
+	}
+	.dir-photo img { width: 100%; height: 100%; object-fit: cover; }
+	.dir-photo span {
+		font-family: var(--font-serif); font-size: 0.8rem; font-weight: 700;
+		color: rgba(255,255,255,0.5);
+	}
+	.dir-name {
+		font-family: var(--font-serif); font-size: 0.95rem; font-weight: 700;
+		color: var(--black); margin-bottom: 2px;
+	}
+	.dir-detail { font-size: 0.78rem; color: var(--gray-600); }
+	.dir-badge {
+		padding: 3px 10px; border-radius: 10px;
+		font-size: 0.68rem; font-weight: 700; text-transform: capitalize;
+		background: var(--gray-100); color: var(--gray-400);
+		white-space: nowrap;
+	}
+	.dir-badge--good { background: #ECFDF5; color: #065F46; }
+
+	@media (max-width: 640px) {
+		.dir-badge { display: none; }
+	}
 </style>

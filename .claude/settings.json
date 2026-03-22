@@ -1,0 +1,35 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rm -rf \"g:/My Drive/Projects/KAPSI/Website/static/images/past-gp\")",
+      "Bash(mkdir -p \"g:/My Drive/Projects/KAPSI/Website/static/images/past-gp\")",
+      "Bash(curl -sL \"https://www.kappaalphapsi1911.com/wp-content/uploads/2023/11/1st-diggs.jpg\" -o 1.jpg)",
+      "Bash(curl -sL \"https://www.kappaalphapsi1911.com/wp-content/uploads/2023/11/2nd-armstrong.jpg\" -o 2.jpg)",
+      "Bash(curl -sL \"https://www.kappaalphapsi1911.com/wp-content/uploads/2023/11/3rd-david.jpg\" -o 3.jpg)",
+      "Bash(rm -f *.jpg)",
+      "Bash(curl -sL \"https://www.kappaalphapsi1911.com/wp-content/uploads/2023/11/4th-stewart.jpg\" -o 4.jpg)",
+      "Bash(curl -sL \"https://www.kappaalphapsi1911.com/wp-content/uploads/2023/11/5th-dickerson.jpg\" -o 5.jpg)",
+      "Bash(curl -sL \"https://www.kappaalphapsi1911.com/wp-content/uploads/2023/11/6th-alexander.jpg\" -o 6.jpg)",
+      "Bash(curl -sL \"https://www.kappaalphapsi1911.com/wp-content/uploads/2023/11/7th-shearin.jpg\" -o 7.jpg)",
+      "Bash(curl -sL \"https://www.kappaalphapsi1911.com/wp-content/uploads/2023/11/18th-bradley.jpg\" -o 18.jpg)",
+      "Bash(curl -sL \"https://www.kappaalphapsi1911.com/wp-content/uploads/2023/11/19th-davenport.jpg\" -o 19.jpg)",
+      "Bash(curl -sL \"https://www.kappaalphapsi1911.com/wp-content/uploads/2023/11/20th-carter.jpg\" -o 20.jpg)",
+      "Bash(curl -sL \"https://www.kappaalphapsi1911.com/wp-content/uploads/2023/11/21st-allen.jpg\" -o 21.jpg)",
+      "Bash(curl -sL \"https://www.kappaalphapsi1911.com/wp-content/uploads/2023/11/22nd-holloway.jpg\" -o 22.jpg)",
+      "Bash(mkdir -p \"g:/My Drive/Projects/KAPSI/Website/static/images/founders\")",
+      "Bash(curl -sL \"https://www.kappaalphapsi1911.com/wp-content/uploads/2023/09/diggs.jpg\" -o diggs.jpg)",
+      "Bash(curl -sL \"https://www.kappaalphapsi1911.com/wp-content/uploads/2023/09/Armstrong.jpg\" -o armstrong.jpg)",
+      "Bash(curl -sL \"https://www.kappaalphapsi1911.com/wp-content/uploads/2023/09/Grant.jpg\" -o grant.jpg)",
+      "Bash(curl -sL \"https://www.kappaalphapsi1911.com/wp-content/uploads/2023/09/Blakemore.jpg\" -o blakemore.jpg)",
+      "WebFetch(domain:thenewjournalandguide.com)",
+      "WebFetch(domain:www.kappasofdulles.org)",
+      "WebFetch(domain:kingstreekappas.wordpress.com)",
+      "WebFetch(domain:www.thewaterfrontcollective.com)",
+      "Bash(mkdir -p \"g:/My Drive/Projects/KAPSI/Website/static/images/province-seals\")",
+      "Bash(curl -sL \"https://www.kappaalphapsi1911.com/wp-content/uploads/2023/09/Northern_Province.png\" -o northern.png)",
+      "Bash(curl -sL \"https://www.kappaalphapsi1911.com/wp-content/uploads/2023/09/Eastern_Province.png\" -o eastern.png)",
+      "Bash(curl -sL \"https://www.kappaalphapsi1911.com/wp-content/uploads/2023/09/Southern_Province.png\" -o southern.png)",
+      "Bash(curl -sL \"https://www.kappaalphapsi1911.com/wp-content/uploads/2023/09/Western_Province.png\" -o western.png)"
+    ]
+  }
+}

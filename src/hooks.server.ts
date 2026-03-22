@@ -1,25 +1,46 @@
-import type { Handle } from '@sveltejs/kit';
-import { redirect } from '@sveltejs/kit';
-import { createServerSupabase } from '$lib/supabase-server';
+import { createSupabaseServerClient } from '$lib/supabase-server';
+import { redirect, type Handle } from '@sveltejs/kit';
 
 export const handle: Handle = async ({ event, resolve }) => {
-	const supabase = createServerSupabase(event.cookies);
+	const supabase = createSupabaseServerClient(event.cookies);
 	event.locals.supabase = supabase;
 
-	const {
-		data: { user }
-	} = await supabase.auth.getUser();
+	event.locals.safeGetSession = async () => {
+		const {
+			data: { session }
+		} = await supabase.auth.getSession();
 
-	event.locals.user = user;
+		if (!session) {
+			return { session: null, user: null };
+		}
 
-	// Protect /members/* routes — redirect to login if not authenticated
-	if (event.url.pathname.startsWith('/members') && !user) {
-		throw redirect(303, '/member-login');
+		const {
+			data: { user },
+			error
+		} = await supabase.auth.getUser();
+
+		if (error) {
+			return { session: null, user: null };
+		}
+
+		return { session, user };
+	};
+
+	// Protect /portal/* routes
+	if (event.url.pathname.startsWith('/portal')) {
+		const { session } = await event.locals.safeGetSession();
+		if (!session) {
+			throw redirect(303, '/login?redirect=' + encodeURIComponent(event.url.pathname));
+		}
 	}
 
-	// If already logged in, redirect away from login page
-	if (event.url.pathname === '/member-login' && user) {
-		throw redirect(303, '/members');
+	// Protect /admin/* routes
+	if (event.url.pathname.startsWith('/admin')) {
+		const { session, user } = await event.locals.safeGetSession();
+		if (!session) {
+			throw redirect(303, '/login?redirect=' + encodeURIComponent(event.url.pathname));
+		}
+		// Role check will be handled in the admin layout server load
 	}
 
 	return resolve(event, {

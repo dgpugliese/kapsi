@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /portal/
+Disallow: /admin/
+
+Sitemap: https://kappaalphapsi1911.com/sitemap.xml

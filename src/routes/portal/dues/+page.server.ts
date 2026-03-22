@@ -1,24 +1,61 @@
 import type { PageServerLoad } from './$types';
+import { findContactByEmail } from '$lib/salesforce';
+import { getMembership, getDuesBalance, getPaymentHistory, getDuesItems } from '$lib/fonteva';
 
 export const load: PageServerLoad = async ({ locals, parent }) => {
-	const { session } = await parent();
-	if (!session) return { payments: [], duesConfig: [] };
+	const { session, user } = await parent();
+	if (!session) {
+		return {
+			sfLinked: false,
+			membership: null,
+			balance: [],
+			history: [],
+			duesItems: [],
+			contactId: null,
+			accountId: null
+		};
+	}
 
-	const { data: payments } = await locals.supabase
-		.from('payments')
-		.select('*')
-		.eq('member_id', session.user.id)
-		.order('created_at', { ascending: false })
-		.limit(20);
+	let sfLinked = false;
+	let membership = null;
+	let balance: any[] = [];
+	let history: any[] = [];
+	let duesItems: any[] = [];
+	let contactId: string | null = null;
+	let accountId: string | null = null;
 
-	const { data: duesConfig } = await locals.supabase
-		.from('dues_config')
-		.select('*')
-		.eq('is_active', true)
-		.order('dues_type');
+	try {
+		if (user?.email) {
+			const contact = await findContactByEmail(user.email);
+			if (contact) {
+				sfLinked = true;
+				contactId = contact.Id;
+				accountId = contact.AccountId;
+
+				const [m, b, h, items] = await Promise.all([
+					getMembership(contact.Id),
+					getDuesBalance(contact.Id),
+					getPaymentHistory(contact.Id),
+					getDuesItems()
+				]);
+
+				membership = m;
+				balance = b;
+				history = h;
+				duesItems = items;
+			}
+		}
+	} catch (err) {
+		console.error('Dues page SF load error:', err);
+	}
 
 	return {
-		payments: payments ?? [],
-		duesConfig: duesConfig ?? []
+		sfLinked,
+		membership,
+		balance,
+		history,
+		duesItems,
+		contactId,
+		accountId
 	};
 };

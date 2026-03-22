@@ -6,6 +6,9 @@
 	const member = $derived(data.member);
 	const announcements = $derived(data.announcements ?? []);
 	const events = $derived(data.events ?? []);
+	const sfMembership = $derived(data.sfMembership);
+	const sfDuesBalance = $derived(data.sfDuesBalance ?? []);
+	const totalDue = $derived(sfDuesBalance.reduce((sum: number, b: any) => sum + (b.balance ?? 0), 0));
 </script>
 
 <svelte:head>
@@ -22,36 +25,50 @@
 	</div>
 
 	<!-- Status Cards -->
-	<div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-		<!-- Membership Status -->
-		<div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-			<p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Status</p>
-			<p class="font-serif text-lg font-bold text-charcoal capitalize">
-				{member?.membership_status ?? 'Unknown'}
-			</p>
-			<p class="text-sm text-gray-500 capitalize mt-1">{member?.membership_type ?? ''} Member</p>
+	<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:16px; margin-bottom:32px;">
+		<!-- Membership Status (SF) -->
+		<div style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; padding:20px;">
+			<div style="font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:var(--gray-400); margin-bottom:6px;">Membership</div>
+			{#if sfMembership}
+				<div style="font-family:var(--font-serif); font-size:1.4rem; font-weight:700; color:{sfMembership.isActive ? '#065F46' : '#991B1B'};">
+					{sfMembership.isActive ? 'Active' : sfMembership.status}
+				</div>
+				<p style="font-size:0.82rem; color:var(--gray-600); margin-top:4px;">{sfMembership.type}</p>
+			{:else}
+				<div style="font-family:var(--font-serif); font-size:1.4rem; font-weight:700; color:var(--gray-400); text-transform:capitalize;">
+					{member?.membership_status ?? 'Unknown'}
+				</div>
+				<p style="font-size:0.82rem; color:var(--gray-600); margin-top:4px; text-transform:capitalize;">{member?.membership_type ?? ''}</p>
+			{/if}
 		</div>
 
-		<!-- Dues Status -->
-		<div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-			<p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Dues</p>
-			{#if member?.dues_paid_through}
-				<p class="font-serif text-lg font-bold text-success">Paid</p>
-				<p class="text-sm text-gray-500 mt-1">Through {new Date(member.dues_paid_through).toLocaleDateString()}</p>
+		<!-- Dues Balance (SF) -->
+		<div style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; padding:20px;">
+			<div style="font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:var(--gray-400); margin-bottom:6px;">Dues</div>
+				{#if totalDue > 0}
+				<div style="font-family:var(--font-serif); font-size:1.4rem; font-weight:700; color:#991B1B;">${totalDue.toFixed(2)} Due</div>
+				<p style="font-size:0.82rem; color:var(--gray-600); margin-top:4px;">
+					<a href="/portal/dues" style="color:var(--crimson); font-weight:600;">Pay Now</a>
+				</p>
+			{:else if sfMembership?.isActive}
+				<div style="font-family:var(--font-serif); font-size:1.4rem; font-weight:700; color:#065F46;">Current</div>
+				<p style="font-size:0.82rem; color:var(--gray-600); margin-top:4px;">No balance due</p>
 			{:else}
-				<p class="font-serif text-lg font-bold text-error">Outstanding</p>
-				<p class="text-sm text-gray-500 mt-1">Payment required</p>
+				<div style="font-family:var(--font-serif); font-size:1.4rem; font-weight:700; color:var(--gray-400);">—</div>
+				<p style="font-size:0.82rem; color:var(--gray-600); margin-top:4px;">
+					<a href="/portal/dues" style="color:var(--crimson); font-weight:600;">View Dues</a>
+				</p>
 			{/if}
 		</div>
 
 		<!-- Chapter -->
-		<div class="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-			<p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Chapter</p>
-			<p class="font-serif text-lg font-bold text-charcoal">
+		<div style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; padding:20px;">
+			<div style="font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:var(--gray-400); margin-bottom:6px;">Chapter</div>
+			<div style="font-family:var(--font-serif); font-size:1.4rem; font-weight:700; color:var(--black);">
 				{member?.chapters?.name ?? 'None assigned'}
-			</p>
+			</div>
 			{#if member?.chapters?.greek_designation}
-				<p class="text-sm text-gray-500 mt-1">{member.chapters.greek_designation}</p>
+				<p style="font-size:0.82rem; color:var(--gray-600); margin-top:4px;">{member.chapters.greek_designation}</p>
 			{/if}
 		</div>
 	</div>

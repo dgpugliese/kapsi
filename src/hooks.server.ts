@@ -15,24 +15,34 @@ export const handle: Handle = async ({ event, resolve }) => {
 	event.locals.supabase = supabase;
 
 	event.locals.safeGetSession = async () => {
+		// Try cookie-based session first (web app)
 		const {
 			data: { session }
 		} = await supabase.auth.getSession();
 
-		if (!session) {
-			return { session: null, user: null };
+		if (session) {
+			const {
+				data: { user },
+				error
+			} = await supabase.auth.getUser();
+
+			if (!error && user) {
+				return { session, user };
+			}
 		}
 
-		const {
-			data: { user },
-			error
-		} = await supabase.auth.getUser();
-
-		if (error) {
-			return { session: null, user: null };
+		// Fall back to Bearer token (mobile app)
+		const authHeader = event.request.headers.get('authorization');
+		if (authHeader?.startsWith('Bearer ')) {
+			const token = authHeader.slice(7);
+			const { data: { user }, error } = await supabase.auth.getUser(token);
+			if (!error && user) {
+				// Create a minimal session object for API compatibility
+				return { session: { access_token: token } as any, user };
+			}
 		}
 
-		return { session, user };
+		return { session: null, user: null };
 	};
 
 	// Protect /portal/* routes

@@ -3,6 +3,56 @@ import type { RequestHandler } from './$types';
 import { findContactByEmail, sfUpdate } from '$lib/salesforce';
 
 /**
+ * GET /api/profile
+ * Fetch member profile from Salesforce.
+ */
+export const GET: RequestHandler = async ({ locals }) => {
+	const { session, user } = await locals.safeGetSession();
+	if (!session || !user) throw error(401, 'Unauthorized');
+
+	try {
+		const contact = await findContactByEmail(user.email!);
+		if (!contact) throw error(404, 'No Salesforce contact found');
+
+		return json({
+			sfContact: {
+				firstName: contact.FirstName,
+				lastName: contact.LastName,
+				email: contact.Email,
+				phone: contact.Phone,
+				mobilePhone: contact.MobilePhone,
+				mailingStreet: contact.MailingStreet,
+				mailingCity: contact.MailingCity,
+				mailingState: contact.MailingState,
+				mailingPostalCode: contact.MailingPostalCode,
+				membershipNumber: contact.FON_Membership_Number__c,
+				memberStatus: contact.FON_Member_Status__c,
+				memberType: contact.FON_Member_Type__c,
+				currentChapter: contact.FON_Chapter_Name__c,
+				chapterOfInitiation: contact.FON_Chapter_Initiation_Name__c,
+				yearOfInitiation: contact.Year_of_Initiation__c,
+				provinceOfInitiation: contact.Province_of_Initiation__c,
+				isLifeMember: contact.FON_Is_Life_Member__c === true,
+				membershipExpires: contact.Date_Membership_Expires__c,
+				outstandingDebt: contact.FON_Outstanding_Debt__c || 0,
+				employer: contact.FON_Employer_Name__c,
+				profession: contact.FON_Profession__c,
+				professionalTitle: contact.FON_Professional_Title__c,
+				facebook: contact.FON_Facebook__c,
+				instagram: contact.FON_Instagram__c,
+				linkedin: contact.FON_LinkedIn__c,
+				twitter: contact.FON_Twitter__c,
+				imageUrl: contact.FON_Image_URL__c,
+			}
+		});
+	} catch (err: any) {
+		console.error('Profile fetch error:', err);
+		if (err.status) throw err;
+		throw error(500, err.message || 'Failed to load profile');
+	}
+};
+
+/**
  * PATCH /api/profile
  * Update member profile in Salesforce.
  */

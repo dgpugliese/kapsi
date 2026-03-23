@@ -22,42 +22,38 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		const stripeSecretKey = env.STRIPE_SECRET_KEY;
 		if (!stripeSecretKey) throw error(500, 'Stripe not configured');
 
-		// Get dues items — Fonteva breaks dues into component fund items
-		const itemFilter = duesType === 'undergraduate'
-			? "(Name LIKE 'Undergrad Annual%' OR Name LIKE 'Undergraduate Annual%')"
-			: "Name LIKE 'Alumni Annual Dues%'";
+		// Get the main Assessment item — single item = single subscription/membership
+		const itemName = duesType === 'undergraduate'
+			? 'Undergraduate Annual Dues-Annual Assessment'
+			: 'Alumni Annual Dues-Annual Assessment';
 
 		const items = await sfQuery<any>(
 			`SELECT Id, Name, OrderApi__Price__c
 			 FROM OrderApi__Item__c
 			 WHERE OrderApi__Is_Active__c = true
-			   AND OrderApi__Item_Class__r.Name = 'Dues'
-			   AND ${itemFilter}
-			 ORDER BY Name`
+			   AND Name = '${itemName}'
+			 LIMIT 1`
 		);
 
-		if (items.length === 0) throw error(404, 'No dues items found');
+		if (items.length === 0) throw error(404, 'No dues item found');
 
-		const total = items.reduce((sum: number, i: any) => sum + (i.OrderApi__Price__c || 0), 0);
-		const totalCents = Math.round(total * 100);
+		const item = items[0];
+		// Full dues amount (Assessment item carries the full price)
+		const total = duesType === 'undergraduate' ? 100 : 200;
+		const totalCents = total * 100;
 
-		// Check for existing active subscriptions (renewal detection)
-		// Query Subscription Lines to map Item → Subscription
-		const subLines = await sfQuery<any>(
-			`SELECT OrderApi__Item__c, OrderApi__Subscription__c
+		// Check for existing active subscription (renewal detection)
+		const existingSubs = await sfQuery<any>(
+			`SELECT OrderApi__Subscription__c
 			 FROM OrderApi__Subscription_Line__c
 			 WHERE OrderApi__Subscription__r.OrderApi__Contact__c = '${contact.Id}'
-			   AND OrderApi__Subscription__r.OrderApi__Is_Active__c = true`
+			   AND OrderApi__Subscription__r.OrderApi__Is_Active__c = true
+			   AND OrderApi__Item__c = '${item.Id}'
+			 LIMIT 1`
 		);
 
-		const itemToSubscription: Record<string, string> = {};
-		for (const sl of subLines) {
-			if (sl.OrderApi__Item__c) {
-				itemToSubscription[sl.OrderApi__Item__c] = sl.OrderApi__Subscription__c;
-			}
-		}
-
-		const isRenewal = items.some((i: any) => itemToSubscription[i.Id]);
+		const existingSubId = existingSubs.length > 0 ? existingSubs[0].OrderApi__Subscription__c : null;
+		const isRenewal = !!existingSubId;
 
 		// Step 1: Create Sales Order
 		const orderId = await sfCreate('OrderApi__Sales_Order__c', {
@@ -86,20 +82,16 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			})
 		});
 
-		// Link to existing subscription if renewing
-		const lineItemPromises = items.map((item: any) =>
-			sfCreate('OrderApi__Sales_Order_Line__c', {
-				OrderApi__Sales_Order__c: orderId,
-				OrderApi__Item__c: item.Id,
-				OrderApi__Quantity__c: 1,
-				OrderApi__Sale_Price__c: item.OrderApi__Price__c,
-				...(itemToSubscription[item.Id]
-					? { OrderApi__Subscription__c: itemToSubscription[item.Id] }
-					: {})
-			})
-		);
+		// Single line item — link to existing subscription if renewing
+		const lineItemPromise = sfCreate('OrderApi__Sales_Order_Line__c', {
+			OrderApi__Sales_Order__c: orderId,
+			OrderApi__Item__c: item.Id,
+			OrderApi__Quantity__c: 1,
+			OrderApi__Sale_Price__c: total,
+			...(existingSubId ? { OrderApi__Subscription__c: existingSubId } : {})
+		});
 
-		const [stripeRes] = await Promise.all([stripePromise, ...lineItemPromises]);
+		const [stripeRes] = await Promise.all([stripePromise, lineItemPromise]);
 
 		if (!stripeRes.ok) {
 			const stripeErr = await stripeRes.json();
@@ -115,7 +107,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			total,
 			isRenewal,
 			paymentIntentId: paymentIntent.id,
-			items: items.map((i: any) => ({ name: i.Name, price: i.OrderApi__Price__c }))
+			items: [{ name: `${duesType === 'undergraduate' ? 'Undergraduate' : 'Alumni'} Annual Dues`, price: total }]
 		});
 
 	} catch (err: any) {

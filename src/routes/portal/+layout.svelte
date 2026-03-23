@@ -1,9 +1,19 @@
 <script lang="ts">
 	import type { LayoutData } from './$types';
+	import { page } from '$app/stores';
 
 	let { data, children }: { data: LayoutData; children: any } = $props();
 
 	let sidebarOpen = $state(false);
+
+	// Bottom tab bar items for mobile — key actions only
+	const bottomTabs = [
+		{ label: 'Home', href: '/portal', icon: 'home' },
+		{ label: 'Dues', href: '/portal/dues', icon: 'credit-card' },
+		{ label: 'Card', href: '/portal/card', icon: 'card' },
+		{ label: 'Profile', href: '/portal/profile', icon: 'user' },
+		{ label: 'More', href: '#more', icon: 'menu' }
+	];
 
 	const navSections = [
 		{
@@ -42,23 +52,15 @@
 		search: 'M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z',
 		map: 'M9 6.75V15m0-8.25a1.5 1.5 0 113 0m-3 0a1.5 1.5 0 013 0m-3 8.25V15m3-8.25V15m0-8.25a1.5 1.5 0 113 0M15 6.75V15M9 15l3 3 3-3',
 		bell: 'M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0',
-		folder: 'M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z'
+		folder: 'M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z',
+		menu: 'M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5'
 	};
 </script>
 
 <div class="min-h-screen bg-gray-50">
-	<!-- Mobile sidebar toggle -->
-	<div class="lg:hidden flex items-center justify-between bg-white border-b px-4 py-3">
+	<!-- Mobile header — simplified, no duplicate hamburger -->
+	<div class="lg:hidden flex items-center bg-white border-b px-4 py-3">
 		<h2 class="font-serif font-bold text-crimson-900">Member Portal</h2>
-		<button
-			class="p-2 text-charcoal hover:bg-gray-100 rounded-md"
-			onclick={() => (sidebarOpen = !sidebarOpen)}
-			aria-label="Toggle sidebar"
-		>
-			<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-				<path d="M4 6h16M4 12h16M4 18h16" />
-			</svg>
-		</button>
 	</div>
 
 	<div class="lg:flex">
@@ -124,10 +126,39 @@
 		</aside>
 
 		<!-- Main content -->
-		<div class="flex-1 p-4 sm:p-6 lg:p-8">
+		<div class="flex-1 p-4 sm:p-6 lg:p-8 pb-24 lg:pb-8">
 			{@render children()}
 		</div>
 	</div>
+
+	<!-- Mobile bottom tab bar -->
+	<nav class="bottom-tab-bar" aria-label="Mobile navigation">
+		{#each bottomTabs as tab}
+			{#if tab.href === '#more'}
+				<button
+					class="bottom-tab"
+					onclick={() => (sidebarOpen = !sidebarOpen)}
+					aria-label="More options"
+				>
+					<svg class="bottom-tab-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+						<path stroke-linecap="round" stroke-linejoin="round" d={iconPaths[tab.icon]} />
+					</svg>
+					<span class="bottom-tab-label">{tab.label}</span>
+				</button>
+			{:else}
+				<a
+					href={tab.href}
+					class="bottom-tab"
+					class:bottom-tab--active={$page.url.pathname === tab.href}
+				>
+					<svg class="bottom-tab-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+						<path stroke-linecap="round" stroke-linejoin="round" d={iconPaths[tab.icon]} />
+					</svg>
+					<span class="bottom-tab-label">{tab.label}</span>
+				</a>
+			{/if}
+		{/each}
+	</nav>
 </div>
 
 <style>
@@ -137,4 +168,61 @@
 		border-left-color: var(--crimson);
 	}
 	.portal-nav-link:hover svg { opacity: 1; }
+
+	/* Bottom tab bar — mobile only */
+	.bottom-tab-bar {
+		display: none;
+		position: fixed;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		z-index: 50;
+		background: #fff;
+		border-top: 1px solid var(--gray-200);
+		padding: 6px 0 env(safe-area-inset-bottom, 8px);
+		justify-content: space-around;
+		align-items: center;
+		box-shadow: 0 -2px 10px rgba(0,0,0,0.06);
+	}
+	@media (max-width: 1023px) {
+		.bottom-tab-bar { display: flex; }
+	}
+
+	.bottom-tab {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 2px;
+		padding: 4px 8px;
+		text-decoration: none;
+		color: var(--gray-600);
+		background: none;
+		border: none;
+		cursor: pointer;
+		font-family: inherit;
+		transition: color 0.15s;
+		-webkit-tap-highlight-color: transparent;
+	}
+	.bottom-tab:hover,
+	.bottom-tab:active {
+		color: var(--crimson);
+	}
+
+	.bottom-tab--active {
+		color: var(--crimson);
+	}
+	.bottom-tab--active .bottom-tab-icon {
+		stroke-width: 2;
+	}
+
+	.bottom-tab-icon {
+		width: 22px;
+		height: 22px;
+	}
+
+	.bottom-tab-label {
+		font-size: 0.65rem;
+		font-weight: 500;
+		letter-spacing: 0.01em;
+	}
 </style>

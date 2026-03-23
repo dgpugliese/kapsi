@@ -140,10 +140,19 @@
 				})
 			});
 
-			if (!confirmRes.ok) {
-				const err = await confirmRes.json().catch(() => ({}));
-				console.error('SF confirmation failed:', err);
-				// Payment succeeded but SF update failed — still show success
+			const confirmData = await confirmRes.json().catch(() => null);
+			console.log('Confirm payment result:', confirmData);
+
+			if (!confirmRes.ok || (confirmData && !confirmData.success)) {
+				// Payment went through Stripe but SF recording had issues
+				const failedSteps = confirmData?.steps
+					? Object.entries(confirmData.steps)
+						.filter(([, v]: [string, any]) => !v.ok)
+						.map(([k, v]: [string, any]) => `${k}: ${v.error}`)
+						.join('; ')
+					: 'Unknown error';
+				console.error('SF confirmation issues:', failedSteps);
+				paymentError = `Payment processed but Salesforce update had issues: ${failedSteps}`;
 			}
 
 			paymentSuccess = true;
@@ -255,7 +264,12 @@
 			<div style="font-size:2rem; margin-bottom:12px;">&#10003;</div>
 			<h2 style="font-size:1.3rem; color:#065F46; margin-bottom:8px;">Payment Successful</h2>
 			<p style="color:#065F46; font-size:0.95rem;">Your payment has been processed. Your membership status will update shortly. Thank you!</p>
-			<button class="btn btn--primary" style="margin-top:16px;" onclick={() => { paymentStep = 'select'; paymentSuccess = false; }}>Make Another Payment</button>
+			{#if paymentError}
+				<div style="background:#FEF3C7; color:#92400E; padding:12px 16px; border-radius:8px; font-size:0.78rem; margin-top:16px; text-align:left; word-break:break-word;">
+					<strong>Note:</strong> {paymentError}
+				</div>
+			{/if}
+			<button class="btn btn--primary" style="margin-top:16px;" onclick={() => { paymentStep = 'select'; paymentSuccess = false; paymentError = ''; }}>Make Another Payment</button>
 		</div>
 	{:else if paymentStep === 'pay' && sfLinked}
 		<!-- Step 2: Payment form -->

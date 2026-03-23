@@ -282,15 +282,12 @@
 				<!-- Order summary -->
 				<div style="margin-bottom:20px; padding:16px; background:var(--cream); border-radius:8px; border-left:3px solid var(--gold);">
 					<div style="font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:var(--gray-400); margin-bottom:8px;">Order Summary</div>
-					{#each orderItems as item}
-						<div style="display:flex; justify-content:space-between; font-size:0.85rem; padding:2px 0;">
-							<span style="color:var(--gray-600);">{item.name}</span>
-							<span style="font-weight:600;">${item.price.toFixed(2)}</span>
-						</div>
-					{/each}
-					<div style="display:flex; justify-content:space-between; font-size:1rem; font-weight:700; padding-top:8px; margin-top:8px; border-top:1px solid var(--gray-200);">
-						<span>Total</span>
-						<span style="color:var(--crimson);">${orderTotal.toFixed(2)}</span>
+					<div style="display:flex; justify-content:space-between; font-size:0.95rem; padding:4px 0;">
+						<span style="font-weight:600;">{selectedDuesType === 'undergraduate' ? 'Undergraduate' : 'Alumni'} Annual Dues</span>
+						<span style="font-weight:700; color:var(--crimson);">${orderTotal.toFixed(2)}</span>
+					</div>
+					<div style="font-size:0.75rem; color:var(--gray-400); margin-top:4px;">
+						Includes: {orderItems.map(i => i.name.replace(/^(Alumni|Undergrad|Undergraduate) Annual Dues\s*[-–]\s*/i, '')).join(', ')}
 					</div>
 				</div>
 

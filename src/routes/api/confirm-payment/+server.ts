@@ -32,11 +32,9 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	try {
 		ePaymentId = await sfCreate('OrderApi__EPayment__c', {
 			OrderApi__Payment_Gateway__c: gatewayId,
-			OrderApi__Amount__c: amount,
 			OrderApi__Contact__c: contact.Id,
 			OrderApi__Account__c: contact.AccountId,
 			OrderApi__Sales_Order__c: orderId,
-			OrderApi__Status__c: 'Completed',
 			OrderApi__Date__c: today,
 			OrderApi__Payment_Method_Token__c: paymentIntentId,
 			OrderApi__Reference_Token__c: paymentIntentId

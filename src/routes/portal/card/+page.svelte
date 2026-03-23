@@ -3,6 +3,19 @@
 
 	let { data }: { data: PageData } = $props();
 	let member = $derived(data.member);
+	let sf = $derived(data.sfContact);
+
+	// Use SF data if available, fall back to Supabase member
+	let cardName = $derived(sf ? `${sf.firstName} ${sf.lastName}` : `${member?.first_name ?? ''} ${member?.last_name ?? ''}`);
+	let cardNumber = $derived(sf?.membershipNumber ?? '—');
+	let cardStatus = $derived(sf?.memberStatus ?? member?.membership_status ?? '—');
+	let cardType = $derived(sf?.memberType ?? member?.membership_type ?? '—');
+	let cardChapter = $derived(sf?.currentChapter ?? member?.chapters?.name ?? '');
+	let cardInitiation = $derived(sf?.chapterOfInitiation ?? '');
+	let cardYear = $derived(sf?.yearOfInitiation ?? '');
+	let cardProvince = $derived(sf?.provinceOfInitiation ?? '');
+	let cardIsLife = $derived(sf?.isLifeMember ?? member?.is_life_member ?? false);
+	let cardExpires = $derived(sf?.membershipExpires ?? '');
 </script>
 
 <svelte:head>
@@ -33,44 +46,51 @@
 					{#if member?.profile_photo_url}
 						<img src={member.profile_photo_url} alt="" />
 					{:else}
-						<span>{member?.first_name?.[0] ?? ''}{member?.last_name?.[0] ?? ''}</span>
+						<span>{cardName.split(' ').map((n: string) => n[0]).join('')}</span>
 					{/if}
 				</div>
 				<div>
-					<div class="kcard-name">{member?.first_name ?? ''} {member?.last_name ?? ''}</div>
-					{#if member?.chapters}
-						<div class="kcard-chapter">{member.chapters.name}</div>
-					{/if}
+					<div class="kcard-name">{cardName}</div>
+					<div class="kcard-number">#{cardNumber}</div>
 				</div>
 			</div>
 
 			<!-- Details -->
 			<div class="kcard-details">
 				<div class="kcard-field">
-					<span class="kcard-label">Member Type</span>
-					<span class="kcard-value">{member?.membership_type ?? '—'}</span>
+					<span class="kcard-label">Status</span>
+					<span class="kcard-value">{cardStatus}</span>
 				</div>
 				<div class="kcard-field">
-					<span class="kcard-label">Status</span>
-					<span class="kcard-value">{member?.membership_status ?? '—'}</span>
+					<span class="kcard-label">Type</span>
+					<span class="kcard-value">{cardType}</span>
 				</div>
-				{#if member?.initiation_year}
+				<div class="kcard-field">
+					<span class="kcard-label">Chapter</span>
+					<span class="kcard-value">{cardChapter || '—'}</span>
+				</div>
+				{#if cardIsLife}
 					<div class="kcard-field">
-						<span class="kcard-label">Initiated</span>
-						<span class="kcard-value">{member.initiation_year}</span>
+						<span class="kcard-label">Membership</span>
+						<span class="kcard-value" style="color:var(--gold);">Life Member</span>
 					</div>
-				{/if}
-				{#if member?.is_life_member}
+				{:else if cardExpires}
 					<div class="kcard-field">
-						<span class="kcard-label">Life Member</span>
-						<span class="kcard-value" style="color:var(--gold);">Yes</span>
+						<span class="kcard-label">Expires</span>
+						<span class="kcard-value">{new Date(cardExpires).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</span>
 					</div>
 				{/if}
 			</div>
 
 			<!-- Bottom -->
 			<div class="kcard-footer">
-				<span>Achievement in Every Field of Human Endeavor</span>
+				<div style="display:flex; justify-content:space-between; align-items:flex-end;">
+					<div>
+						<span style="font-size:0.6rem; opacity:0.4; display:block;">Initiated</span>
+						<span style="font-size:0.75rem; opacity:0.7;">{cardInitiation}{cardYear ? ` · ${cardYear}` : ''}</span>
+					</div>
+					<span style="font-style:italic; font-family:var(--font-serif); opacity:0.4; font-size:0.65rem;">Achievement in Every Field of Human Endeavor</span>
+				</div>
 			</div>
 		</div>
 	</div>
@@ -90,7 +110,7 @@
 <style>
 	.kcard {
 		position: relative; border-radius: 16px; overflow: hidden;
-		aspect-ratio: 1.586; /* credit card ratio */
+		aspect-ratio: 1.586;
 		box-shadow: 0 16px 48px rgba(0,0,0,0.2);
 		transition: transform 0.4s ease;
 	}
@@ -111,53 +131,26 @@
 		height: 100%; display: flex; flex-direction: column;
 		justify-content: space-between; color: var(--white);
 	}
-	.kcard-header {
-		display: flex; justify-content: space-between; align-items: flex-start;
-	}
-	.kcard-org {
-		font-family: var(--font-serif); font-size: 1.3rem; font-weight: 700;
-		letter-spacing: -0.3px;
-	}
-	.kcard-subtitle {
-		font-size: 0.7rem; font-weight: 500; opacity: 0.6;
-		letter-spacing: 1px; text-transform: uppercase;
-	}
+	.kcard-header { display: flex; justify-content: space-between; align-items: flex-start; }
+	.kcard-org { font-family: var(--font-serif); font-size: 1.3rem; font-weight: 700; letter-spacing: -0.3px; }
+	.kcard-subtitle { font-size: 0.7rem; font-weight: 500; opacity: 0.6; letter-spacing: 1px; text-transform: uppercase; }
 	.kcard-crest { opacity: 0.3; }
-	.kcard-member {
-		display: flex; align-items: center; gap: 16px;
-	}
+	.kcard-member { display: flex; align-items: center; gap: 16px; }
 	.kcard-photo {
-		width: 56px; height: 56px; border-radius: 50%;
-		overflow: hidden; border: 2px solid rgba(255,255,255,0.3);
-		display: flex; align-items: center; justify-content: center;
+		width: 56px; height: 56px; border-radius: 50%; overflow: hidden;
+		border: 2px solid rgba(255,255,255,0.3); display: flex;
+		align-items: center; justify-content: center;
 		background: rgba(255,255,255,0.1); flex-shrink: 0;
 	}
 	.kcard-photo img { width: 100%; height: 100%; object-fit: cover; }
-	.kcard-photo span {
-		font-family: var(--font-serif); font-size: 1rem; font-weight: 700;
-		color: rgba(255,255,255,0.5);
-	}
-	.kcard-name {
-		font-family: var(--font-serif); font-size: 1.2rem; font-weight: 700;
-	}
-	.kcard-chapter {
-		font-size: 0.78rem; opacity: 0.7; margin-top: 2px;
-	}
-	.kcard-details {
-		display: flex; gap: 24px; flex-wrap: wrap;
-	}
+	.kcard-photo span { font-family: var(--font-serif); font-size: 1rem; font-weight: 700; color: rgba(255,255,255,0.5); }
+	.kcard-name { font-family: var(--font-serif); font-size: 1.2rem; font-weight: 700; }
+	.kcard-number { font-size: 0.78rem; opacity: 0.6; margin-top: 2px; letter-spacing: 0.5px; }
+	.kcard-details { display: flex; gap: 24px; flex-wrap: wrap; }
 	.kcard-field { display: flex; flex-direction: column; }
-	.kcard-label {
-		font-size: 0.6rem; font-weight: 700; text-transform: uppercase;
-		letter-spacing: 1px; opacity: 0.5; margin-bottom: 2px;
-	}
-	.kcard-value {
-		font-size: 0.85rem; font-weight: 600; text-transform: capitalize;
-	}
-	.kcard-footer {
-		font-size: 0.65rem; opacity: 0.4; font-style: italic;
-		font-family: var(--font-serif); letter-spacing: 0.5px;
-	}
+	.kcard-label { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.5; margin-bottom: 2px; }
+	.kcard-value { font-size: 0.85rem; font-weight: 600; text-transform: capitalize; }
+	.kcard-footer { }
 
 	@media (max-width: 480px) {
 		.kcard-content { padding: 20px 24px; }

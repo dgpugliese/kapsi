@@ -12,124 +12,146 @@
 	let sfLinked = $derived(data.sfLinked);
 
 	// Payment state
-	let selectedItemId = $state('');
-	let selectedAmount = $derived(
-		duesItems.find((d: any) => d.id === selectedItemId)?.price ?? 0
-	);
+	let selectedDuesType = $state('');
 	let processing = $state(false);
 	let paymentError = $state('');
 	let paymentSuccess = $state(false);
+	let paymentStep = $state<'select' | 'pay' | 'done'>('select');
 	let totalBalance = $derived(balance.reduce((sum: number, b: any) => sum + (b.balance ?? 0), 0));
 
-	// Stripe Elements
+	// Stripe
 	let stripe: any = null;
 	let elements: any = null;
-	let paymentElement: any = null;
+	let clientSecret = $state('');
+	let currentOrderId = $state('');
+	let currentPaymentIntentId = $state('');
+	let orderTotal = $state(0);
+	let orderItems = $state<any[]>([]);
 	let stripeReady = $state(false);
 
-	const STRIPE_PK = 'PLACEHOLDER_pk_test_'; // Will be replaced with real key
-	const CONNECTED_ACCOUNT = 'acct_1T9srlD0tKRhxEfa';
+	const STRIPE_PK = 'pk_test_51S8RNnRqCcfg1CMWL8HMCwExLbKLMQBMBeHzEaKGeQc7ewjlocccVlcVYnnA0YRkOyMqt7Bs0ImQagBMFfuGlKEg00TlkjTeUy';
 
 	onMount(async () => {
-		// Load Stripe.js
-		if (typeof window !== 'undefined' && STRIPE_PK && !STRIPE_PK.startsWith('PLACEHOLDER')) {
+		if (typeof window !== 'undefined') {
 			const script = document.createElement('script');
 			script.src = 'https://js.stripe.com/v3/';
 			script.onload = () => {
-				stripe = (window as any).Stripe(STRIPE_PK, {
-					stripeAccount: CONNECTED_ACCOUNT
-				});
-				initElements();
+				stripe = (window as any).Stripe(STRIPE_PK);
 			};
 			document.head.appendChild(script);
 		}
 	});
 
-	function initElements() {
-		if (!stripe) return;
+	async function createOrder() {
+		if (!selectedDuesType) return;
+		processing = true;
+		paymentError = '';
 
-		elements = stripe.elements({
-			appearance: {
-				theme: 'stripe',
-				variables: {
-					colorPrimary: '#8B0000',
-					colorText: '#2A2A2A',
-					fontFamily: 'Inter, system-ui, sans-serif',
-					borderRadius: '8px'
-				}
+		try {
+			const res = await fetch('/api/create-payment', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ duesType: selectedDuesType })
+			});
+
+			if (!res.ok) {
+				const err = await res.json().catch(() => ({ message: 'Failed to create order' }));
+				throw new Error(err.message || 'Failed to create order');
 			}
-		});
 
-		paymentElement = elements.create('payment', {
-			layout: 'tabs',
-			paymentMethodOrder: ['apple_pay', 'google_pay', 'card', 'us_bank_account']
-		});
+			const result = await res.json();
 
-		paymentElement.mount('#stripe-payment-element');
-		stripeReady = true;
+			if (result.method === 'redirect' && result.redirectUrl) {
+				// Fallback: redirect to Fonteva checkout
+				window.location.href = result.redirectUrl;
+				return;
+			}
+
+			clientSecret = result.clientSecret;
+			currentOrderId = result.orderId;
+			currentPaymentIntentId = result.paymentIntentId;
+			orderTotal = result.total;
+			orderItems = result.items || [];
+
+			// Initialize Stripe Elements with the client secret
+			if (stripe && clientSecret) {
+				elements = stripe.elements({
+					clientSecret,
+					appearance: {
+						theme: 'stripe',
+						variables: {
+							colorPrimary: '#8B0000',
+							colorText: '#2A2A2A',
+							fontFamily: 'Inter, system-ui, sans-serif',
+							borderRadius: '8px'
+						}
+					}
+				});
+
+				paymentStep = 'pay';
+
+				// Mount after DOM updates
+				setTimeout(() => {
+					const paymentElement = elements.create('payment', {
+						layout: 'tabs',
+						paymentMethodOrder: ['apple_pay', 'google_pay', 'card', 'us_bank_account']
+					});
+					paymentElement.mount('#stripe-payment-element');
+					stripeReady = true;
+				}, 100);
+			} else {
+				throw new Error('Stripe not loaded or no client secret received');
+			}
+		} catch (err: any) {
+			paymentError = err.message || 'Failed to create order';
+		}
+		processing = false;
 	}
 
-	async function handlePayment(e: Event) {
+	async function confirmPayment(e: Event) {
 		e.preventDefault();
-		if (!selectedItemId || !selectedAmount) return;
+		if (!stripe || !elements) return;
 
 		processing = true;
 		paymentError = '';
 
 		try {
-			if (!stripe || !elements) {
-				// No Stripe loaded — post directly to API (for testing without Stripe)
-				const res = await fetch('/api/dues', {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({
-						itemId: selectedItemId,
-						amount: selectedAmount,
-						paymentMethodId: 'pm_test_placeholder'
-					})
-				});
-
-				if (!res.ok) {
-					const errData = await res.json().catch(() => ({ message: 'Payment failed' }));
-					throw new Error(errData.message || 'Payment failed');
-				}
-
-				paymentSuccess = true;
-				await invalidateAll();
-				return;
-			}
-
-			// Confirm with Stripe Elements
-			const { error: stripeError, paymentMethod } = await stripe.createPaymentMethod({
-				elements
+			const { error: stripeError } = await stripe.confirmPayment({
+				elements,
+				confirmParams: {
+					return_url: `${window.location.origin}/portal/dues?success=true`
+				},
+				redirect: 'if_required'
 			});
 
 			if (stripeError) {
 				throw new Error(stripeError.message);
 			}
 
-			// Submit to our API
-			const res = await fetch('/api/dues', {
+			// Payment succeeded — record in Salesforce
+			const confirmRes = await fetch('/api/confirm-payment', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
-					itemId: selectedItemId,
-					amount: selectedAmount,
-					paymentMethodId: paymentMethod.id
+					orderId: currentOrderId,
+					paymentIntentId: currentPaymentIntentId,
+					amount: orderTotal,
+					duesType: selectedDuesType
 				})
 			});
 
-			if (!res.ok) {
-				const errData = await res.json().catch(() => ({ message: 'Payment failed' }));
-				throw new Error(errData.message || 'Payment failed');
+			if (!confirmRes.ok) {
+				const err = await confirmRes.json().catch(() => ({}));
+				console.error('SF confirmation failed:', err);
+				// Payment succeeded but SF update failed — still show success
 			}
 
 			paymentSuccess = true;
+			paymentStep = 'done';
 			await invalidateAll();
 		} catch (err: any) {
-			paymentError = err.message || 'Payment failed. Please try again.';
+			paymentError = err.message || 'Payment failed';
 		}
-
 		processing = false;
 	}
 
@@ -228,68 +250,98 @@
 	{/if}
 
 	<!-- Make a Payment -->
-	{#if !paymentSuccess && sfLinked}
-		<div style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; overflow:hidden; margin-bottom:32px;">
-			<div style="padding:20px 24px; border-bottom:1px solid var(--gray-100); background:linear-gradient(180deg, var(--white), var(--gray-50));">
-				<h2 style="font-size:1.15rem;">Make a Payment</h2>
-			</div>
-			<div style="padding:24px;">
-				{#if duesItems.length === 0}
-					<p style="color:var(--gray-600); text-align:center; padding:20px;">No dues items are currently available. Please contact IHQ.</p>
-				{:else}
-					<form onsubmit={handlePayment}>
-						<div style="margin-bottom:20px;">
-							<label style="display:block; font-size:0.82rem; font-weight:600; margin-bottom:8px;">Select Payment Type</label>
-							<div style="display:flex; flex-direction:column; gap:8px;">
-								{#each duesItems as item}
-									<label style="display:flex; align-items:center; gap:12px; padding:14px 16px; border:1.5px solid {selectedItemId === item.id ? 'var(--crimson)' : 'var(--gray-200)'}; border-radius:8px; cursor:pointer; transition:all 0.25s; background:{selectedItemId === item.id ? 'rgba(139,0,0,0.03)' : 'var(--white)'};">
-										<input type="radio" name="duesItem" value={item.id} bind:group={selectedItemId} style="accent-color:var(--crimson);" />
-										<div style="flex:1;">
-											<div style="font-weight:600; font-size:0.9rem;">{item.name}</div>
-											{#if item.description}
-												<div style="font-size:0.78rem; color:var(--gray-600); margin-top:2px;">{item.description}</div>
-											{/if}
-										</div>
-										<div style="font-family:var(--font-serif); font-size:1.2rem; font-weight:700; color:var(--crimson);">
-											${item.price.toFixed(2)}
-										</div>
-									</label>
-								{/each}
-							</div>
-						</div>
-
-						{#if paymentError}
-							<div style="background:#FEF2F2; color:#991B1B; padding:12px 16px; border-radius:8px; font-size:0.9rem; margin-bottom:16px;">{paymentError}</div>
-						{/if}
-
-						<!-- Stripe Payment Element -->
-						<div id="stripe-payment-element" style="min-height:60px; margin-bottom:20px; padding:16px; border:1.5px solid var(--gray-200); border-radius:8px; background:var(--gray-50);">
-							{#if !stripeReady}
-								<p style="font-size:0.82rem; color:var(--gray-400); text-align:center;">
-									{STRIPE_PK.startsWith('PLACEHOLDER')
-										? 'Stripe payment form will appear once API keys are configured.'
-										: 'Loading payment form...'}
-								</p>
-							{/if}
-						</div>
-
-						<button
-							type="submit"
-							disabled={!selectedItemId || processing}
-							class="btn btn--primary"
-							style="width:100%; justify-content:center;"
-						>
-							{processing ? 'Processing...' : selectedAmount ? `Pay $${selectedAmount.toFixed(2)}` : 'Select a payment type'}
-						</button>
-					</form>
-				{/if}
-			</div>
-		</div>
-	{:else if paymentSuccess}
+	{#if paymentStep === 'done' || paymentSuccess}
 		<div style="background:#ECFDF5; border:1px solid #A7F3D0; border-radius:12px; padding:32px; text-align:center; margin-bottom:32px;">
 			<div style="font-size:2rem; margin-bottom:12px;">&#10003;</div>
 			<h2 style="font-size:1.3rem; color:#065F46; margin-bottom:8px;">Payment Successful</h2>
-			<p style="color:#065F46; font-size:0.95rem;">Your payment has been processed and your receipt has been created. Thank you!</p>
+			<p style="color:#065F46; font-size:0.95rem;">Your payment has been processed. Your membership status will update shortly. Thank you!</p>
+			<button class="btn btn--primary" style="margin-top:16px;" onclick={() => { paymentStep = 'select'; paymentSuccess = false; }}>Make Another Payment</button>
+		</div>
+	{:else if paymentStep === 'pay' && sfLinked}
+		<!-- Step 2: Payment form -->
+		<div style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; overflow:hidden; margin-bottom:32px;">
+			<div style="padding:20px 24px; border-bottom:1px solid var(--gray-100); background:linear-gradient(180deg, var(--white), var(--gray-50)); display:flex; justify-content:space-between; align-items:center;">
+				<h2 style="font-size:1.15rem;">Complete Payment</h2>
+				<button style="font-size:0.82rem; color:var(--crimson); background:none; border:none; cursor:pointer; font-weight:600;" onclick={() => { paymentStep = 'select'; stripeReady = false; }}>← Back</button>
+			</div>
+			<div style="padding:24px;">
+				<!-- Order summary -->
+				<div style="margin-bottom:20px; padding:16px; background:var(--cream); border-radius:8px; border-left:3px solid var(--gold);">
+					<div style="font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:var(--gray-400); margin-bottom:8px;">Order Summary</div>
+					{#each orderItems as item}
+						<div style="display:flex; justify-content:space-between; font-size:0.85rem; padding:2px 0;">
+							<span style="color:var(--gray-600);">{item.name}</span>
+							<span style="font-weight:600;">${item.price.toFixed(2)}</span>
+						</div>
+					{/each}
+					<div style="display:flex; justify-content:space-between; font-size:1rem; font-weight:700; padding-top:8px; margin-top:8px; border-top:1px solid var(--gray-200);">
+						<span>Total</span>
+						<span style="color:var(--crimson);">${orderTotal.toFixed(2)}</span>
+					</div>
+				</div>
+
+				{#if paymentError}
+					<div style="background:#FEF2F2; color:#991B1B; padding:12px 16px; border-radius:8px; font-size:0.9rem; margin-bottom:16px;">{paymentError}</div>
+				{/if}
+
+				<form onsubmit={confirmPayment}>
+					<div id="stripe-payment-element" style="min-height:100px; margin-bottom:20px;"></div>
+
+					<button
+						type="submit"
+						disabled={!stripeReady || processing}
+						class="btn btn--primary"
+						style="width:100%; justify-content:center; font-size:1rem; padding:14px;"
+					>
+						{processing ? 'Processing...' : `Pay $${orderTotal.toFixed(2)}`}
+					</button>
+				</form>
+
+				<p style="text-align:center; margin-top:12px; font-size:0.75rem; color:var(--gray-400);">
+					Payments are processed securely through Stripe.
+				</p>
+			</div>
+		</div>
+	{:else if sfLinked}
+		<!-- Step 1: Select dues type -->
+		<div style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; overflow:hidden; margin-bottom:32px;">
+			<div style="padding:20px 24px; border-bottom:1px solid var(--gray-100); background:linear-gradient(180deg, var(--white), var(--gray-50));">
+				<h2 style="font-size:1.15rem;">Pay Dues</h2>
+			</div>
+			<div style="padding:24px;">
+				{#if paymentError}
+					<div style="background:#FEF2F2; color:#991B1B; padding:12px 16px; border-radius:8px; font-size:0.9rem; margin-bottom:16px;">{paymentError}</div>
+				{/if}
+
+				<div style="display:flex; flex-direction:column; gap:12px; margin-bottom:24px;">
+					<label style="display:flex; align-items:center; gap:14px; padding:18px 20px; border:1.5px solid {selectedDuesType === 'alumni' ? 'var(--crimson)' : 'var(--gray-200)'}; border-radius:10px; cursor:pointer; transition:all 0.25s; background:{selectedDuesType === 'alumni' ? 'rgba(139,0,0,0.03)' : 'var(--white)'};">
+						<input type="radio" name="duesType" value="alumni" bind:group={selectedDuesType} style="accent-color:var(--crimson);" />
+						<div style="flex:1;">
+							<div style="font-weight:700; font-size:0.95rem;">Alumni Annual Dues</div>
+							<div style="font-size:0.78rem; color:var(--gray-600); margin-top:2px;">Annual Assessment, Housing Fund, Scholarship, Publication, NAACP/UNCF, Endowment</div>
+						</div>
+						<div style="font-family:var(--font-serif); font-size:1.3rem; font-weight:700; color:var(--crimson);">$200.00</div>
+					</label>
+
+					<label style="display:flex; align-items:center; gap:14px; padding:18px 20px; border:1.5px solid {selectedDuesType === 'undergraduate' ? 'var(--crimson)' : 'var(--gray-200)'}; border-radius:10px; cursor:pointer; transition:all 0.25s; background:{selectedDuesType === 'undergraduate' ? 'rgba(139,0,0,0.03)' : 'var(--white)'};">
+						<input type="radio" name="duesType" value="undergraduate" bind:group={selectedDuesType} style="accent-color:var(--crimson);" />
+						<div style="flex:1;">
+							<div style="font-weight:700; font-size:0.95rem;">Undergraduate Annual Dues</div>
+							<div style="font-size:0.78rem; color:var(--gray-600); margin-top:2px;">Annual Assessment, Housing Fund, Scholarship, Publication, NAACP/UNCF, Endowment</div>
+						</div>
+						<div style="font-family:var(--font-serif); font-size:1.3rem; font-weight:700; color:var(--crimson);">$200.00</div>
+					</label>
+				</div>
+
+				<button
+					disabled={!selectedDuesType || processing}
+					class="btn btn--primary"
+					style="width:100%; justify-content:center; font-size:1rem; padding:14px;"
+					onclick={createOrder}
+				>
+					{processing ? 'Creating Order...' : 'Continue to Payment'}
+				</button>
+			</div>
 		</div>
 	{/if}
 

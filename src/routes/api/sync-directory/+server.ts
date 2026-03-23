@@ -38,7 +38,7 @@ export const POST: RequestHandler = async ({ locals, url }) => {
 	try {
 		const token = await getSFToken();
 
-		let whereClause = "WHERE FON_Member_Status__c != null";
+		let whereClause = "WHERE FON_Membership_Number__c != null AND FON_Chapter_Initiation_Name__c != null AND Year_of_Initiation__c != null";
 		if (!fullSync) {
 			const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 			whereClause += ` AND LastModifiedDate >= ${yesterday}`;

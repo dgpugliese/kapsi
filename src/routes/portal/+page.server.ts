@@ -34,6 +34,8 @@ export const load: PageServerLoad = async ({ locals, parent }) => {
 			if (contact) {
 				sfContact = {
 					id: contact.Id,
+					firstName: contact.FirstName,
+					lastName: contact.LastName,
 					membershipNumber: contact.FON_Membership_Number__c,
 					memberStatus: contact.FON_Member_Status__c,
 					memberType: contact.FON_Member_Type__c,
@@ -46,6 +48,7 @@ export const load: PageServerLoad = async ({ locals, parent }) => {
 					province: contact.Province_Name__c,
 					provinceOfInitiation: contact.Province_of_Initiation__c,
 					outstandingDebt: contact.FON_Outstanding_Debt__c,
+					membershipExpires: contact.Date_Membership_Expires__c || contact.Membership_End_Date__c,
 					yearOfInitiation: contact.Year_of_Initiation__c,
 					imageUrl: contact.FON_Image_URL__c
 				};

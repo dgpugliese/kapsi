@@ -81,6 +81,48 @@
 		}
 		saving = false;
 	}
+
+	// Photo upload
+	let uploading = $state(false);
+
+	async function uploadPhoto(e: Event) {
+		const input = e.target as HTMLInputElement;
+		const file = input.files?.[0];
+		if (!file) return;
+
+		if (file.size > 5 * 1024 * 1024) {
+			error = 'Photo must be under 5MB.';
+			return;
+		}
+
+		uploading = true;
+		error = '';
+
+		try {
+			const { supabase } = await import('$lib/supabase');
+			const ext = file.name.split('.').pop();
+			const path = `${data.user?.id}/avatar.${ext}`;
+
+			const { error: uploadErr } = await supabase.storage
+				.from('profile-photos')
+				.upload(path, file, { upsert: true });
+
+			if (uploadErr) throw new Error('Failed to upload photo.');
+
+			const { data: urlData } = supabase.storage.from('profile-photos').getPublicUrl(path);
+
+			await supabase
+				.from('members')
+				.update({ profile_photo_url: urlData.publicUrl })
+				.eq('id', data.user?.id);
+
+			message = 'Photo updated.';
+			await invalidateAll();
+		} catch (err: any) {
+			error = err.message || 'Upload failed.';
+		}
+		uploading = false;
+	}
 </script>
 
 <svelte:head>
@@ -218,6 +260,27 @@
 
 	{:else}
 		<!-- VIEW MODE -->
+
+		<!-- Photo -->
+		<div style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; padding:24px; margin-bottom:24px; display:flex; align-items:center; gap:20px;">
+			<div style="width:80px; height:80px; border-radius:50%; overflow:hidden; background:linear-gradient(160deg, var(--crimson-dark), var(--crimson)); display:flex; align-items:center; justify-content:center; flex-shrink:0; border:3px solid var(--crimson);">
+				{#if member?.profile_photo_url}
+					<img src={member.profile_photo_url} alt="Profile" style="width:100%; height:100%; object-fit:cover;" />
+				{:else}
+					<span style="font-family:var(--font-serif); font-size:1.4rem; color:rgba(255,255,255,0.5);">
+						{sf?.firstName?.[0] ?? ''}{sf?.lastName?.[0] ?? ''}
+					</span>
+				{/if}
+			</div>
+			<div>
+				<h2 style="font-family:var(--font-serif); font-size:1.15rem; font-weight:700; margin-bottom:2px;">{sf?.firstName ?? member?.first_name} {sf?.lastName ?? member?.last_name}</h2>
+				<p style="font-size:0.82rem; color:var(--gray-600);">{sf?.email ?? member?.email}</p>
+				<label style="display:inline-block; margin-top:8px; cursor:pointer; font-size:0.82rem; color:var(--crimson); font-weight:600;">
+					{uploading ? 'Uploading...' : 'Change Photo'}
+					<input type="file" accept="image/*" style="display:none;" onchange={uploadPhoto} disabled={uploading} />
+				</label>
+			</div>
+		</div>
 
 		<!-- Membership Info (read-only from Fonteva) -->
 		<div style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; padding:28px; margin-bottom:24px;">

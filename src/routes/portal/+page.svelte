@@ -19,41 +19,45 @@
 <div class="max-w-5xl">
 	<!-- Welcome -->
 	<div class="mb-8">
-		<h1 class="font-serif text-2xl sm:text-3xl font-bold text-charcoal">
-			Welcome, {member?.first_name ?? 'Brother'}
+		<h1 style="font-family:var(--font-serif); font-size:clamp(1.6rem, 4vw, 2.2rem); font-weight:700; color:var(--black);">
+			Welcome, {sfContact?.firstName ?? member?.first_name ?? 'Brother'} {sfContact?.lastName ?? member?.last_name ?? ''}
 		</h1>
 		<p class="text-gray-500 mt-1">Your membership dashboard</p>
 	</div>
 
 	<!-- Status Cards -->
 	<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:16px; margin-bottom:32px;">
-		<!-- Membership Status (SF) -->
-		<div style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; padding:20px;">
-			<div style="font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:var(--gray-400); margin-bottom:6px;">Membership</div>
-			{#if sfMembership}
-				<div style="font-family:var(--font-serif); font-size:1.4rem; font-weight:700; color:{sfMembership.isActive ? '#065F46' : '#991B1B'};">
-					{sfMembership.isActive ? 'Active' : sfMembership.status}
+		<!-- 1. Standing Status -->
+		<div style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; padding:20px; border-left:4px solid {sfContact?.memberStatus === 'In Good Standing' ? '#065F46' : '#991B1B'};">
+			<div style="font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:var(--gray-400); margin-bottom:6px;">Standing</div>
+			{#if sfContact}
+				<div style="font-family:var(--font-serif); font-size:1.4rem; font-weight:700; color:{sfContact.memberStatus === 'In Good Standing' ? '#065F46' : '#991B1B'};">
+					{sfContact.memberStatus}
 				</div>
-				<p style="font-size:0.82rem; color:var(--gray-600); margin-top:4px;">{sfMembership.type}</p>
+				<p style="font-size:0.82rem; color:var(--gray-600); margin-top:4px;">{sfContact.memberType} Member</p>
 			{:else}
-				<div style="font-family:var(--font-serif); font-size:1.4rem; font-weight:700; color:var(--gray-400); text-transform:capitalize;">
-					{member?.membership_status ?? 'Unknown'}
-				</div>
-				<p style="font-size:0.82rem; color:var(--gray-600); margin-top:4px; text-transform:capitalize;">{member?.membership_type ?? ''}</p>
+				<div style="font-family:var(--font-serif); font-size:1.4rem; font-weight:700; color:var(--gray-400);">Unknown</div>
 			{/if}
 		</div>
 
-		<!-- Dues Balance (SF) -->
-		<div style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; padding:20px;">
-			<div style="font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:var(--gray-400); margin-bottom:6px;">Dues</div>
-				{#if totalDue > 0}
-				<div style="font-family:var(--font-serif); font-size:1.4rem; font-weight:700; color:#991B1B;">${totalDue.toFixed(2)} Due</div>
+		<!-- 2. Membership Expiration -->
+		<div style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; padding:20px; border-left:4px solid {sfContact?.isLifeMember ? 'var(--gold)' : sfContact?.membershipExpires && new Date(sfContact.membershipExpires) >= new Date() ? '#065F46' : '#991B1B'};">
+			<div style="font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:var(--gray-400); margin-bottom:6px;">Membership</div>
+			{#if sfContact?.isLifeMember}
+				<div style="font-family:var(--font-serif); font-size:1.4rem; font-weight:700; color:var(--gold);">Life Member</div>
+				<p style="font-size:0.82rem; color:var(--gray-600); margin-top:4px;">No expiration</p>
+			{:else if sfContact?.membershipExpires}
+				{@const expires = new Date(sfContact.membershipExpires)}
+				{@const isExpired = expires < new Date()}
+				<div style="font-family:var(--font-serif); font-size:1.4rem; font-weight:700; color:{isExpired ? '#991B1B' : '#065F46'};">
+					{isExpired ? 'Expired' : 'Active'}
+				</div>
 				<p style="font-size:0.82rem; color:var(--gray-600); margin-top:4px;">
-					<a href="/portal/dues" style="color:var(--crimson); font-weight:600;">Pay Now</a>
+					{isExpired ? 'Expired' : 'Expires'} {expires.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
 				</p>
-			{:else if sfMembership?.isActive}
-				<div style="font-family:var(--font-serif); font-size:1.4rem; font-weight:700; color:#065F46;">Current</div>
-				<p style="font-size:0.82rem; color:var(--gray-600); margin-top:4px;">No balance due</p>
+				{#if isExpired}
+					<a href="/portal/dues" style="font-size:0.82rem; color:var(--crimson); font-weight:600; margin-top:4px; display:inline-block;">Renew Now</a>
+				{/if}
 			{:else}
 				<div style="font-family:var(--font-serif); font-size:1.4rem; font-weight:700; color:var(--gray-400);">—</div>
 				<p style="font-size:0.82rem; color:var(--gray-600); margin-top:4px;">
@@ -62,14 +66,14 @@
 			{/if}
 		</div>
 
-		<!-- Chapter -->
-		<div style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; padding:20px;">
-			<div style="font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:var(--gray-400); margin-bottom:6px;">Chapter</div>
+		<!-- 3. Current Chapter -->
+		<div style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; padding:20px; border-left:4px solid var(--crimson);">
+			<div style="font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:var(--gray-400); margin-bottom:6px;">Current Chapter</div>
 			<div style="font-family:var(--font-serif); font-size:1.4rem; font-weight:700; color:var(--black);">
-				{member?.chapters?.name ?? 'None assigned'}
+				{sfContact?.currentChapter ?? member?.chapters?.name ?? 'None assigned'}
 			</div>
-			{#if member?.chapters?.greek_designation}
-				<p style="font-size:0.82rem; color:var(--gray-600); margin-top:4px;">{member.chapters.greek_designation}</p>
+			{#if sfContact?.province}
+				<p style="font-size:0.82rem; color:var(--gray-600); margin-top:4px;">{sfContact.province}</p>
 			{/if}
 		</div>
 	</div>
@@ -81,14 +85,12 @@
 			<div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px;">
 				{#each [
 					{ label: 'Membership #', value: sfContact.membershipNumber },
-					{ label: 'Status', value: sfContact.memberStatus },
 					{ label: 'Type', value: sfContact.memberType },
 					{ label: 'Chapter of Initiation', value: sfContact.chapterOfInitiation },
 					{ label: 'Current Chapter', value: sfContact.currentChapter },
 					{ label: 'Initiation Date', value: sfContact.initiationDate ? new Date(sfContact.initiationDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : null },
 					{ label: 'Province of Initiation', value: sfContact.provinceOfInitiation },
-					{ label: 'Year of Initiation', value: sfContact.yearOfInitiation },
-					{ label: 'Life Member', value: sfContact.isLifeMember ? 'Yes' : 'No' }
+					{ label: 'Year of Initiation', value: sfContact.yearOfInitiation }
 				].filter(f => f.value) as field}
 					<div style="padding:10px 14px; background:var(--gray-50); border-radius:8px;">
 						<div style="font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:var(--gray-400); margin-bottom:3px;">{field.label}</div>

@@ -536,20 +536,18 @@
 	.prog-row--reverse { direction: rtl; }
 	.prog-row--reverse > * { direction: ltr; }
 	.prog-row-icon {
-		background: linear-gradient(160deg, #5C0000, #8B0000);
 		display: flex; align-items: center; justify-content: center;
 		padding: 24px;
 	}
 	.prog-row-icon-img {
-		width: 110px; height: 110px; object-fit: contain;
-		filter: drop-shadow(0 2px 8px rgba(0,0,0,0.3));
+		width: 120px; height: 120px; object-fit: contain;
 	}
 	.prog-row-icon-placeholder {
 		width: 80px; height: 80px; border-radius: 50%;
-		background: rgba(255,255,255,0.1); border: 2px solid rgba(201,168,76,0.4);
+		background: var(--cream); border: 2px solid rgba(139,0,0,0.15);
 		display: flex; align-items: center; justify-content: center;
 		font-family: var(--font-serif); font-size: 2rem; font-weight: 700;
-		color: var(--gold);
+		color: var(--crimson);
 	}
 	.prog-row-content {
 		padding: 28px 32px; display: flex; flex-direction: column; justify-content: center;

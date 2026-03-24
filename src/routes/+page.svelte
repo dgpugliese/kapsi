@@ -694,12 +694,15 @@
 		transform: rotateY(180deg);
 	}
 	.evt-flip-front, .evt-flip-back {
-		position: absolute; inset: 0;
+		position: absolute !important; inset: 0;
 		backface-visibility: hidden;
 		-webkit-backface-visibility: hidden;
 	}
 	.evt-flip-back {
 		transform: rotateY(180deg);
+		background: var(--white);
+		border-radius: 16px;
+		box-shadow: 0 2px 12px rgba(0,0,0,0.04);
 	}
 	.evt-back-content {
 		display: flex; flex-direction: column; height: 100%;

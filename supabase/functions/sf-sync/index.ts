@@ -14,6 +14,7 @@
 import { syncChapters } from "./handler-chapters.ts";
 import { syncTiers } from "./handler-tiers.ts";
 import { syncContacts } from "./handler-contacts.ts";
+import { getSFToken } from "./salesforce.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -75,7 +76,7 @@ Deno.serve(async (req) => {
     return errorResponse("Unauthorized", 401);
   }
 
-  let body: { type?: string; full?: boolean; letterRange?: string };
+  let body: { type?: string; full?: boolean; letterRange?: string; object?: string; soql?: string };
   try {
     body = await req.json();
   } catch {
@@ -108,9 +109,40 @@ Deno.serve(async (req) => {
       results.contacts = await syncContacts(full, letterRange);
     }
 
-    if (!results.chapters && !results.tiers && !results.contacts) {
+    // Admin: describe a SF object
+    if (syncType === "describe" && body.object) {
+      const token = await getSFToken();
+      const res = await fetch(
+        `${token.instance_url}/services/data/v62.0/sobjects/${body.object}/describe`,
+        { headers: { Authorization: `Bearer ${token.access_token}` } }
+      );
+      if (!res.ok) return errorResponse(`Describe failed: ${await res.text()}`);
+      const desc = await res.json();
+      results.describe = {
+        name: desc.name,
+        label: desc.label,
+        fields: desc.fields.map((f: any) => ({
+          name: f.name, label: f.label, type: f.type,
+          writable: f.createable, required: !f.nillable && f.createable,
+        })).filter((f: any) => f.writable)
+      };
+    }
+
+    // Admin: run a SOQL query
+    if (syncType === "query" && body.soql) {
+      const token = await getSFToken();
+      const res = await fetch(
+        `${token.instance_url}/services/data/v62.0/query?q=${encodeURIComponent(body.soql)}`,
+        { headers: { Authorization: `Bearer ${token.access_token}` } }
+      );
+      if (!res.ok) return errorResponse(`Query failed: ${await res.text()}`);
+      const data = await res.json();
+      results.query = { totalSize: data.totalSize, records: data.records?.slice(0, 10) };
+    }
+
+    if (Object.keys(results).length === 0) {
       return errorResponse(
-        `Unknown sync type: ${syncType}. Use "chapters", "tiers", "contacts", or "all"`,
+        `Unknown sync type: ${syncType}. Use "chapters", "tiers", "contacts", "describe", "query", or "all"`,
         400
       );
     }

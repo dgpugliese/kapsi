@@ -384,11 +384,12 @@
 		background: linear-gradient(150deg, #3D0000 0%, #5C0000 30%, #8B0000 70%, #700000 100%);
 	}
 	.hero-achievement {
-		position: absolute; right: -5%; top: 50%; transform: translateY(-50%);
-		width: 500px; height: 500px; z-index: 0;
-		background: url('/images/achievement.png') center center / contain no-repeat;
-		opacity: 0.08;
-		filter: brightness(2);
+		position: absolute; right: 2%; top: 50%; transform: translateY(-50%);
+		width: 420px; height: 420px; z-index: 0;
+		background: url('/images/crest.png') center center / contain no-repeat;
+		opacity: 0.12;
+		filter: brightness(1.8) saturate(0);
+		mix-blend-mode: soft-light;
 	}
 	.hero-inner { position: relative; z-index: 1; display: flex; align-items: center; padding-top: 40px; padding-bottom: 40px; }
 	.hero-content { max-width: 640px; }

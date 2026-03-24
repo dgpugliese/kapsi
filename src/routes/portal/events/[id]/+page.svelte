@@ -41,6 +41,7 @@
 
 		processing = true;
 		registrationError = '';
+		registrationSuccess = false;
 
 		const isFree = (ticket.price ?? 0) === 0;
 

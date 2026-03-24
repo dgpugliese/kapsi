@@ -32,9 +32,9 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	const steps: Record<string, { ok: boolean; id?: string; error?: string }> = {};
 
 	try {
-		// Get ticket type details
+		// Get ticket type details including linked Item
 		const ticketTypes = await sfQuery<any>(
-			`SELECT Id, Name, EventApi__Price__c, EventApi__Event__c
+			`SELECT Id, Name, EventApi__Price__c, EventApi__Event__c, EventApi__Item__c
 			 FROM EventApi__Ticket_Type__c
 			 WHERE Id = '${ticketTypeId}' LIMIT 1`
 		);
@@ -43,6 +43,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		const ticket = ticketTypes[0];
 		const price = ticket.EventApi__Price__c ?? 0;
 		const isFree = price === 0;
+		const itemId = ticket.EventApi__Item__c; // The actual OrderApi__Item__c linked to this ticket type
 
 		// Step 1: Create Sales Order
 		let orderId = '';
@@ -60,11 +61,11 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			throw new Error('Failed to create sales order: ' + err.message);
 		}
 
-		// Step 2: Create Line Item
+		// Step 2: Create Line Item (use the Item linked to the Ticket Type, not the Ticket Type itself)
 		try {
 			const lineId = await sfCreate('OrderApi__Sales_Order_Line__c', {
 				OrderApi__Sales_Order__c: orderId,
-				OrderApi__Item__c: ticketTypeId,
+				OrderApi__Item__c: itemId || ticketTypeId,
 				OrderApi__Quantity__c: 1,
 				OrderApi__Sale_Price__c: price
 			});

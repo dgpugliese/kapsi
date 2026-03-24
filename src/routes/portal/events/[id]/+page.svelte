@@ -67,54 +67,53 @@
 			}
 			processing = false;
 		} else {
-			// Paid event — create PaymentIntent first
+			// Paid event — create PaymentIntent on server, then show Stripe Elements
 			try {
-				const totalCents = Math.round(ticket.price * 100);
-				const stripeRes = await fetch('/api/create-event-payment', {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({
-						eventId: event.sf_event_id,
-						ticketTypeId: ticket.sf_ticket_type_id,
-						amount: ticket.price
-					})
-				});
-
-				// If no dedicated endpoint, create PI via Stripe directly
-				// For now, use the same pattern as dues — create PI client-side
-				const piRes = await fetch('https://api.stripe.com/v1/payment_intents', {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/x-www-form-urlencoded'
-					},
-					body: new URLSearchParams({
-						'amount': totalCents.toString(),
-						'currency': 'usd',
-						'automatic_payment_methods[enabled]': 'true',
-						'description': `${ticket.name} - ${event.name}`
-					})
-				});
-
-				// Actually we need the server to create the PI (needs secret key)
-				// Let's use the register-event endpoint flow differently
-				// For paid events, show Stripe Elements
 				if (!stripe) {
 					registrationError = 'Payment system not loaded. Please refresh.';
 					processing = false;
 					return;
 				}
 
-				// Create PI on server
-				const createRes = await fetch('/api/create-payment', {
+				const res = await fetch('/api/create-event-payment', {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({ duesType: 'event', eventTicketPrice: ticket.price, eventName: ticket.name })
+					body: JSON.stringify({
+						eventId: event.sf_event_id,
+						ticketTypeId: ticket.sf_ticket_type_id,
+						ticketName: ticket.name,
+						amount: ticket.price
+					})
 				});
 
-				// Fallback: just show the payment step
+				if (!res.ok) {
+					const err = await res.json();
+					registrationError = err.message || 'Failed to create payment';
+					processing = false;
+					return;
+				}
+
+				const data = await res.json();
+				clientSecret = data.clientSecret;
+				currentPaymentIntentId = data.paymentIntentId;
+
+				// Mount Stripe Elements
+				elements = stripe.elements({
+					clientSecret,
+					appearance: {
+						theme: 'stripe',
+						variables: { colorPrimary: '#8B0000', fontFamily: 'Inter, sans-serif' }
+					}
+				});
 				step = 'pay';
-				clientSecret = ''; // Will be set when we have proper endpoint
 				processing = false;
+
+				// Wait for DOM to update, then mount
+				setTimeout(() => {
+					const paymentEl = elements.create('payment');
+					paymentEl.mount('#event-payment-element');
+					paymentEl.on('ready', () => { stripeReady = true; });
+				}, 100);
 
 			} catch (err: any) {
 				registrationError = err.message || 'Failed to start payment';
@@ -283,13 +282,22 @@
 					{/each}
 				</div>
 
-				{#if step === 'pay' && clientSecret}
+				{#if step === 'pay'}
+					<div style="background:var(--cream); border-radius:10px; padding:20px; margin-bottom:20px;">
+						<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+							<span style="font-weight:600;">{getSelectedTicket()?.name}</span>
+							<span style="font-family:var(--font-serif); font-size:1.2rem; font-weight:700; color:var(--crimson);">${getSelectedTicket()?.price?.toFixed(2)}</span>
+						</div>
+					</div>
 					<form onsubmit={handlePayment}>
-						<div id="payment-element" style="margin-bottom:20px;"></div>
-						<button type="submit" disabled={processing} class="btn btn--primary" style="width:100%; justify-content:center; padding:14px; font-size:1rem;">
+						<div id="event-payment-element" style="margin-bottom:20px;"></div>
+						<button type="submit" disabled={processing || !stripeReady} class="btn btn--primary" style="width:100%; justify-content:center; padding:14px; font-size:1rem;">
 							{processing ? 'Processing...' : `Pay $${getSelectedTicket()?.price?.toFixed(2)} & Register`}
 						</button>
 					</form>
+					<button onclick={() => { step = 'select'; selectedTicket = ''; }} style="display:block; margin:12px auto 0; background:none; border:none; color:var(--gray-500); font-size:0.82rem; cursor:pointer;">
+						Cancel
+					</button>
 				{:else}
 					<button
 						disabled={!selectedTicket || processing}

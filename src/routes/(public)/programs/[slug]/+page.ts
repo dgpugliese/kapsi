@@ -2,9 +2,10 @@ import { error } from '@sveltejs/kit';
 import type { PageLoad } from './$types';
 
 // Static program data — will be pulled from Supabase `programs` table once seeded
-const programs: Record<string, { name: string; description: string; content: string }> = {
+const programs: Record<string, { name: string; description: string; content: string; icon?: string }> = {
 	'guide-right': {
 		name: 'Guide Right',
+		icon: '/images/programs/Guide-Right-200.png',
 		description: 'Kappa Alpha Psi\'s national service initiative focused on youth development through mentoring and guidance.',
 		content: `<p>Guide Right is a program of the educational and occupational guidance of youth, primarily inspirational and informative in character. Conceived by Leon W. Stewart in 1922, the program was presented at the fraternity's twelfth Grand Chapter gathering.</p>
 <p>Working with J. Jerome Peters in the St. Louis Alumni Chapter, Stewart researched programs addressing underachievement in Black youth communities. The resulting program focused on providing scholarships to talented, economically disadvantaged students while informing them about career pathways and professional opportunities.</p>
@@ -21,6 +22,7 @@ const programs: Record<string, { name: string; description: string; content: str
 	},
 	'kappa-league': {
 		name: 'Kappa League',
+		icon: '/images/programs/KappaLeague-200.png',
 		description: 'Youth development program for male students in grades 6-12, a subset of the Guide Right initiative.',
 		content: `<p>Kappa League is a subset of Guide Right, the fraternity's National Service Initiative. The program focuses on educational, occupational, and social guidance for male students in grades 6-12.</p>
 <p>Founded on February 12, 1969, by the Los Angeles Alumni Chapter at Alain LeRoy Locke High School, the program was originally called the Kappa Instructional Leadership League and was adopted by the Grand Chapter in 1970. Founders: Mel L. Davis and Edgar H. Bishop.</p>
@@ -31,6 +33,7 @@ const programs: Record<string, { name: string; description: string; content: str
 	},
 	'achievement-academy': {
 		name: 'Achievement Academy',
+		icon: '/images/programs/AcheivementAcademy-200.png',
 		description: 'Academic and leadership development program fostering achievement among young people.',
 		content: `<p>The Achievement Academy is Kappa Alpha Psi's program dedicated to academic excellence and leadership development. The program provides structured learning experiences that prepare young people for success in education and professional life.</p>
 <p>Through workshops, seminars, and mentoring relationships, the Achievement Academy instills the fraternity's core principle of achievement in every field of human endeavor.</p>`
@@ -43,24 +46,28 @@ const programs: Record<string, { name: string; description: string; content: str
 	},
 	'learn-to-live': {
 		name: 'Learn 2 Live',
+		icon: '/images/programs/Learn2Live-200.png',
 		description: 'Health and wellness initiative promoting physical and mental well-being in communities.',
 		content: `<p>Learn 2 Live is Kappa Alpha Psi's health and wellness initiative that focuses on promoting physical and mental well-being in the communities the fraternity serves.</p>
 <p>The program addresses health disparities in African American communities through health screenings, wellness workshops, fitness challenges, and partnerships with healthcare organizations.</p>`
 	},
 	'uli': {
 		name: 'Undergraduate Leadership Institute',
+		icon: '/images/programs/ULI-200.png',
 		description: 'Leadership development program designed specifically for undergraduate members of Kappa Alpha Psi.',
 		content: `<p>The Undergraduate Leadership Institute (ULI) is designed to develop the leadership capacity of undergraduate members of Kappa Alpha Psi. The program provides intensive training in organizational leadership, personal development, and professional skills.</p>
 <p>Through workshops, keynote sessions, and peer networking, ULI prepares young Kappa men to lead on their campuses, in their communities, and in their future careers.</p>`
 	},
 	'lead-kappa': {
 		name: 'Lead Kappa',
+		icon: '/images/programs/LEADKappa-200.png',
 		description: 'Leadership training program developing the next generation of fraternity and community leaders.',
 		content: `<p>Lead Kappa is a comprehensive leadership training program that develops the next generation of leaders within Kappa Alpha Psi and the broader community.</p>
 <p>The program covers essential leadership competencies including strategic thinking, effective communication, conflict resolution, and community engagement. Participants emerge equipped to lead chapters, provinces, and community organizations.</p>`
 	},
 	'glad': {
 		name: 'G.L.A.D.',
+		icon: '/images/programs/GLAD-200.png',
 		description: 'Community service initiative bringing together brothers for impactful local service projects.',
 		content: `<p>G.L.A.D. (Greeks Lending A Difference) is Kappa Alpha Psi's community service initiative that mobilizes brothers for impactful service projects in their local communities.</p>
 <p>The program coordinates service efforts across chapters, creating a unified approach to addressing community needs including food insecurity, housing, education access, and environmental stewardship.</p>`

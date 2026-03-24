@@ -2,12 +2,12 @@
 	import { onMount } from 'svelte';
 
 	const programs = [
-		{ icon: '🎯', name: 'Guide Right', slug: 'guide-right', stat: '500K+', statLabel: 'Youth Mentored', desc: 'Our flagship service initiative providing educational and occupational guidance to youth across 400+ communities.' },
-		{ icon: '⭐', name: 'Kappa League', slug: 'kappa-league', stat: '6–12', statLabel: 'Grades Served', desc: 'A structured leadership development program building the next generation of Black male leaders.' },
-		{ icon: '🎓', name: 'Achievement Academy', slug: 'achievement-academy', stat: '700+', statLabel: 'Chapters Active', desc: 'Enhancing the collegiate experience through mentoring, coaching, and professional development.' },
-		{ icon: '📚', name: 'Room To Read', slug: 'room-to-read', stat: '32K+', statLabel: 'Books Donated', desc: 'Bringing literacy resources to under-resourced schools in partnership with Room to Read.' },
-		{ icon: '⚖️', name: 'Learn 2 Live', slug: 'learn-to-live', stat: '70K+', statLabel: 'Students Trained', desc: 'Educating youth on constitutional rights and safe interactions with law enforcement.' },
-		{ icon: '💚', name: 'Are You OK?', slug: 'are-you-ok', stat: 'J&J', statLabel: 'Partnership', desc: 'A national mental health initiative for Black men in partnership with Johnson & Johnson.' },
+		{ img: '/images/programs/Guide-Right-200.png', name: 'Guide Right', slug: 'guide-right', stat: '500K+', statLabel: 'Youth Mentored', desc: 'Our flagship service initiative providing educational and occupational guidance to youth across 400+ communities.' },
+		{ img: '/images/programs/KappaLeague-200.png', name: 'Kappa League', slug: 'kappa-league', stat: '6–12', statLabel: 'Grades Served', desc: 'A structured leadership development program building the next generation of Black male leaders.' },
+		{ img: '/images/programs/AcheivementAcademy-200.png', name: 'Achievement Academy', slug: 'achievement-academy', stat: '700+', statLabel: 'Chapters Active', desc: 'Enhancing the collegiate experience through mentoring, coaching, and professional development.' },
+		{ img: null, name: 'Room To Read', slug: 'room-to-read', stat: '32K+', statLabel: 'Books Donated', desc: 'Bringing literacy resources to under-resourced schools in partnership with Room to Read.' },
+		{ img: '/images/programs/Learn2Live-200.png', name: 'Learn 2 Live', slug: 'learn-to-live', stat: '70K+', statLabel: 'Students Trained', desc: 'Educating youth on constitutional rights and safe interactions with law enforcement.' },
+		{ img: null, name: 'Are You OK?', slug: 'are-you-ok', stat: 'J&J', statLabel: 'Partnership', desc: 'A national mental health initiative for Black men in partnership with Johnson & Johnson.' },
 	];
 
 	const events = [
@@ -230,15 +230,24 @@
 		<div class="prog-rows">
 			{#each programs as p, i}
 				<a href="/programs/{p.slug}" class="prog-row reveal" class:prog-row--reverse={i % 2 === 1} style="transition-delay:{i * 0.08}s">
-					<div class="prog-row-stat">
-						<div class="prog-row-stat-num">{p.stat}</div>
-						<div class="prog-row-stat-label">{p.statLabel}</div>
+					<div class="prog-row-icon">
+						{#if p.img}
+							<img src={p.img} alt="{p.name} logo" class="prog-row-icon-img" />
+						{:else}
+							<div class="prog-row-icon-placeholder">{p.name[0]}</div>
+						{/if}
 					</div>
 					<div class="prog-row-content">
 						<h3 class="prog-row-name">{p.name}</h3>
 						<div class="prog-row-rule"></div>
 						<p class="prog-row-desc">{p.desc}</p>
-						<span class="prog-row-cta">Learn More →</span>
+						<div class="prog-row-footer">
+							<div class="prog-row-stat-inline">
+								<span class="prog-row-stat-num">{p.stat}</span>
+								<span class="prog-row-stat-label">{p.statLabel}</span>
+							</div>
+							<span class="prog-row-cta">Learn More →</span>
+						</div>
 					</div>
 				</a>
 			{/each}
@@ -512,7 +521,7 @@
 	/* ===== PROGRAMS (Full-width rows) ===== */
 	.prog-rows { display: flex; flex-direction: column; gap: 20px; }
 	.prog-row {
-		display: grid; grid-template-columns: 200px 1fr; gap: 0;
+		display: grid; grid-template-columns: 160px 1fr; gap: 0;
 		background: var(--white); border-radius: 16px; overflow: hidden;
 		text-decoration: none; color: inherit;
 		box-shadow: 0 2px 12px rgba(0,0,0,0.04);
@@ -526,19 +535,21 @@
 	}
 	.prog-row--reverse { direction: rtl; }
 	.prog-row--reverse > * { direction: ltr; }
-	.prog-row-stat {
+	.prog-row-icon {
 		background: linear-gradient(160deg, #5C0000, #8B0000);
-		display: flex; flex-direction: column;
-		align-items: center; justify-content: center;
-		padding: 32px 24px; text-align: center;
+		display: flex; align-items: center; justify-content: center;
+		padding: 24px;
 	}
-	.prog-row-stat-num {
-		font-family: var(--font-serif); font-size: 2.5rem; font-weight: 700;
-		color: var(--gold); line-height: 1; margin-bottom: 4px;
+	.prog-row-icon-img {
+		width: 110px; height: 110px; object-fit: contain;
+		filter: drop-shadow(0 2px 8px rgba(0,0,0,0.3));
 	}
-	.prog-row-stat-label {
-		font-size: 0.65rem; font-weight: 700; text-transform: uppercase;
-		letter-spacing: 1.5px; color: rgba(255,255,255,0.5);
+	.prog-row-icon-placeholder {
+		width: 80px; height: 80px; border-radius: 50%;
+		background: rgba(255,255,255,0.1); border: 2px solid rgba(201,168,76,0.4);
+		display: flex; align-items: center; justify-content: center;
+		font-family: var(--font-serif); font-size: 2rem; font-weight: 700;
+		color: var(--gold);
 	}
 	.prog-row-content {
 		padding: 28px 32px; display: flex; flex-direction: column; justify-content: center;
@@ -554,6 +565,20 @@
 	.prog-row-desc {
 		font-size: 0.9rem; color: var(--gray-600); line-height: 1.75;
 		margin-bottom: 14px;
+	}
+	.prog-row-footer {
+		display: flex; align-items: center; justify-content: space-between; gap: 16px;
+	}
+	.prog-row-stat-inline {
+		display: flex; align-items: baseline; gap: 6px;
+	}
+	.prog-row-stat-num {
+		font-family: var(--font-serif); font-size: 1.3rem; font-weight: 700;
+		color: var(--crimson); line-height: 1;
+	}
+	.prog-row-stat-label {
+		font-size: 0.65rem; font-weight: 700; text-transform: uppercase;
+		letter-spacing: 1px; color: var(--gray-400);
 	}
 	.prog-row-cta {
 		font-size: 0.8rem; font-weight: 700; color: var(--crimson);
@@ -686,8 +711,8 @@
 		.stats-bar-item { padding: 12px 20px; }
 		.prog-row { grid-template-columns: 1fr; }
 		.prog-row--reverse { direction: ltr; }
-		.prog-row-stat { padding: 24px; flex-direction: row; gap: 8px; }
-		.prog-row-stat-num { font-size: 2rem; }
+		.prog-row-icon { padding: 20px; flex-direction: row; }
+		.prog-row-icon-img { width: 80px; height: 80px; }
 		.membership-cta-inner { flex-direction: column; }
 	}
 	@media (max-width: 640px) {

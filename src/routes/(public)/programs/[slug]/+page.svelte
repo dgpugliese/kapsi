@@ -11,6 +11,9 @@
 
 <section class="page-hero">
 	<div class="container">
+		{#if data.program.icon}
+			<img src={data.program.icon} alt="{data.program.name} logo" class="program-hero-icon" />
+		{/if}
 		<h1>{data.program.name}</h1>
 		<div class="hero-divider"><span>&#9670;</span></div>
 		<p>{data.program.description}</p>
@@ -55,6 +58,13 @@
 </section>
 
 <style>
+	.program-hero-icon {
+		width: 120px;
+		height: 120px;
+		object-fit: contain;
+		margin-bottom: 20px;
+		filter: drop-shadow(0 4px 12px rgba(0,0,0,0.2));
+	}
 	.prog-pill:hover {
 		background: var(--crimson) !important;
 		color: var(--white) !important;

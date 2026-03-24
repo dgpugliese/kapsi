@@ -158,6 +158,22 @@ export async function sfApexRest(path: string, method: string = 'POST', body?: a
 }
 
 /**
+ * Describe a Salesforce object — returns field metadata (name, type, writable, etc.)
+ */
+export async function sfDescribe(sobject: string): Promise<any> {
+	const token = await getSFToken();
+	const res = await fetch(
+		`${token.instance_url}/services/data/v62.0/sobjects/${sobject}/describe`,
+		{ headers: { Authorization: `Bearer ${token.access_token}`, 'Content-Type': 'application/json' } }
+	);
+	if (!res.ok) {
+		const body = await res.text();
+		throw new Error(`SF describe ${sobject} failed (${res.status}): ${body}`);
+	}
+	return res.json();
+}
+
+/**
  * Look up a Salesforce Contact by email address.
  */
 export async function findContactByEmail(email: string): Promise<Record<string, any> | null> {

@@ -14,7 +14,12 @@ export const handle: Handle = async ({ event, resolve }) => {
 	const supabase = createSupabaseServerClient(event.cookies);
 	event.locals.supabase = supabase;
 
+	// Cache the session result so multiple calls don't re-fetch
+	let cachedSession: { session: any; user: any } | null = null;
+
 	event.locals.safeGetSession = async () => {
+		if (cachedSession) return cachedSession;
+
 		// Try cookie-based session first (web app)
 		const {
 			data: { session }
@@ -27,7 +32,8 @@ export const handle: Handle = async ({ event, resolve }) => {
 			} = await supabase.auth.getUser();
 
 			if (!error && user) {
-				return { session, user };
+				cachedSession = { session, user };
+				return cachedSession;
 			}
 		}
 
@@ -37,12 +43,13 @@ export const handle: Handle = async ({ event, resolve }) => {
 			const token = authHeader.slice(7);
 			const { data: { user }, error } = await supabase.auth.getUser(token);
 			if (!error && user) {
-				// Create a minimal session object for API compatibility
-				return { session: { access_token: token } as any, user };
+				cachedSession = { session: { access_token: token } as any, user };
+				return cachedSession;
 			}
 		}
 
-		return { session: null, user: null };
+		cachedSession = { session: null, user: null };
+		return cachedSession;
 	};
 
 	// Protect /portal/* routes

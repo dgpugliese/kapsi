@@ -55,6 +55,10 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			OrderApi__Total__c: amount,
 			OrderApi__Date__c: today,
 			OrderApi__Is_Posted__c: true,
+			OrderApi__Payment_Type__c: 'Credit Card',
+			OrderApi__Payment_Gateway__c: gatewayId,
+			OrderApi__Gateway_Transaction_Id__c: paymentIntentId,
+			OrderApi__Reference_Number__c: paymentIntentId,
 			...(ePaymentId ? { OrderApi__EPayment__c: ePaymentId } : {})
 		});
 		steps.receipt = { ok: true, id: receiptId };

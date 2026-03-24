@@ -32,17 +32,22 @@ export const load: PageServerLoad = async ({ locals, parent }) => {
 				contactId = contact.Id;
 				accountId = contact.AccountId;
 
-				const [m, b, h, items] = await Promise.all([
+				const [m, b, h, items] = await Promise.allSettled([
 					getMembership(contact.Id),
 					getDuesBalance(contact.Id),
 					getPaymentHistory(contact.Id),
 					getDuesItems()
 				]);
 
-				membership = m;
-				balance = b;
-				history = h;
-				duesItems = items;
+				membership = m.status === 'fulfilled' ? m.value : null;
+				balance = b.status === 'fulfilled' ? b.value : [];
+				history = h.status === 'fulfilled' ? h.value : [];
+				duesItems = items.status === 'fulfilled' ? items.value : [];
+
+				if (m.status === 'rejected') console.error('getMembership failed:', m.reason);
+				if (b.status === 'rejected') console.error('getDuesBalance failed:', b.reason);
+				if (h.status === 'rejected') console.error('getPaymentHistory failed:', h.reason);
+				if (items.status === 'rejected') console.error('getDuesItems failed:', items.reason);
 			}
 		}
 	} catch (err) {

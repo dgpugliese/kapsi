@@ -54,6 +54,7 @@ export interface PaymentReceipt {
 
 /**
  * Fetch the active (or most recent) membership for a Contact.
+ * Fonteva tracks memberships via OrderApi__Subscription__c, not a separate Membership object.
  */
 export async function getMembership(contactId: string): Promise<Membership | null> {
 	const records = await sfQuery<any>(`
@@ -61,11 +62,11 @@ export async function getMembership(contactId: string): Promise<Membership | nul
 			Id,
 			Name,
 			OrderApi__Status__c,
-			OrderApi__Type__c,
+			OrderApi__Subscription_Plan__r.Name,
 			OrderApi__Activated_Date__c,
-			OrderApi__End_Date__c,
+			OrderApi__Term_End_Date__c,
 			OrderApi__Is_Active__c
-		FROM OrderApi__Membership__c
+		FROM OrderApi__Subscription__c
 		WHERE OrderApi__Contact__c = '${contactId}'
 		ORDER BY OrderApi__Is_Active__c DESC, OrderApi__Activated_Date__c DESC
 		LIMIT 1
@@ -78,9 +79,9 @@ export async function getMembership(contactId: string): Promise<Membership | nul
 		id: r.Id,
 		name: r.Name,
 		status: r.OrderApi__Status__c ?? 'Unknown',
-		type: r.OrderApi__Type__c ?? 'Unknown',
+		type: r.OrderApi__Subscription_Plan__r?.Name ?? 'Unknown',
 		startDate: r.OrderApi__Activated_Date__c ?? null,
-		endDate: r.OrderApi__End_Date__c ?? null,
+		endDate: r.OrderApi__Term_End_Date__c ?? null,
 		isActive: r.OrderApi__Is_Active__c === true
 	};
 }
@@ -142,9 +143,9 @@ export async function getPaymentHistory(contactId: string): Promise<PaymentRecei
 			Name,
 			OrderApi__Total__c,
 			OrderApi__Date__c,
-			OrderApi__Payment_Method__c,
-			OrderApi__Status__c,
-			OrderApi__Sales_Order__r.Name
+			OrderApi__Is_Posted__c,
+			OrderApi__Payment_Type__c,
+			OrderApi__Sales_Order__c
 		FROM OrderApi__Receipt__c
 		WHERE OrderApi__Contact__c = '${contactId}'
 		ORDER BY OrderApi__Date__c DESC
@@ -156,9 +157,9 @@ export async function getPaymentHistory(contactId: string): Promise<PaymentRecei
 		receiptName: r.Name,
 		amount: r.OrderApi__Total__c ?? 0,
 		paymentDate: r.OrderApi__Date__c ?? '',
-		method: r.OrderApi__Payment_Method__c ?? '',
-		status: r.OrderApi__Status__c ?? 'Unknown',
-		orderName: r.OrderApi__Sales_Order__r?.Name ?? ''
+		method: r.OrderApi__Payment_Type__c ?? 'Credit Card',
+		status: r.OrderApi__Is_Posted__c ? 'Completed' : 'Pending',
+		orderName: r.OrderApi__Sales_Order__c ?? ''
 	}));
 }
 

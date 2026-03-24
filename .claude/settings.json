@@ -29,7 +29,22 @@
       "Bash(curl -sL \"https://www.kappaalphapsi1911.com/wp-content/uploads/2023/09/Northern_Province.png\" -o northern.png)",
       "Bash(curl -sL \"https://www.kappaalphapsi1911.com/wp-content/uploads/2023/09/Eastern_Province.png\" -o eastern.png)",
       "Bash(curl -sL \"https://www.kappaalphapsi1911.com/wp-content/uploads/2023/09/Southern_Province.png\" -o southern.png)",
-      "Bash(curl -sL \"https://www.kappaalphapsi1911.com/wp-content/uploads/2023/09/Western_Province.png\" -o western.png)"
+      "Bash(curl -sL \"https://www.kappaalphapsi1911.com/wp-content/uploads/2023/09/Western_Province.png\" -o western.png)",
+      "Bash(cp \"g:/My Drive/Projects/KAPSI/Website/.env.local\" C:/Users/david/kapsi-build/)",
+      "Bash(cp \"g:/My Drive/Projects/KAPSI/Website/src/routes/api/sync-directory/+server.ts\" C:/Users/david/kapsi-build/src/routes/api/sync-directory/)",
+      "WebFetch(domain:kappaalphapsifraternity--newfull24.sandbox.my.site.com)",
+      "Bash(curl -s -L -k https://kappaalphapsifraternity--newfull24.sandbox.my.site.com/kapsi/s/)",
+      "Bash(curl -s -L -k \"https://kappaalphapsifraternity--newfull24.sandbox.my.site.com/kapsi/s/login?ec=302&startURL=%2Fkapsi%2Fs%2F\")",
+      "Read(//tmp/**)",
+      "Bash(grep -oP 'pk_\\(test|live\\)_[A-Za-z0-9_]{10,}' /tmp/kapsi_login.html)",
+      "Bash(grep -oE 'pk_\\(test|live\\)_[A-Za-z0-9_]{10,}' /tmp/kapsi_login.html)",
+      "Bash(grep -i -o '.\\\\{0,80\\\\}stripe.\\\\{0,80\\\\}' /tmp/kapsi_login.html)",
+      "Bash(npx --version)",
+      "Bash(npx expo:*)"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\david\\kapsi-mobile\\src\\lib",
+      "C:\\Users\\david\\kapsi-mobile\\src\\screens"
     ]
   }
 }

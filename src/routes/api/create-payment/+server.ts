@@ -59,6 +59,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		const orderId = await sfCreate('OrderApi__Sales_Order__c', {
 			OrderApi__Contact__c: contact.Id,
 			OrderApi__Account__c: contact.AccountId,
+			OrderApi__Entity__c: 'Contact',
 			OrderApi__Posting_Entity__c: 'Receipt',
 			OrderApi__Is_Posted__c: false
 		});

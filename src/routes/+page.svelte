@@ -422,6 +422,11 @@
 		object-fit: contain;
 		object-position: center;
 	}
+	@media (max-width: 768px) {
+		.banner-image-slide img {
+			object-fit: cover;
+		}
+	}
 
 	/* Navigation arrows */
 	.banner-arrow {
@@ -721,7 +726,12 @@
 		.message-photo { max-width: 300px; margin: 0 auto; }
 	}
 	@media (max-width: 768px) {
-		.banner { aspect-ratio: auto; min-height: 400px; max-height: 70svh; }
+		.banner { aspect-ratio: 16 / 9; min-height: auto; max-height: 60svh; }
+		.hero-achievement { display: none; }
+		.hero-desc { display: none; }
+		.hero-inner { padding: 24px 0; }
+		.hero-eyebrow { margin-bottom: 16px; }
+		.hero-title { margin-bottom: 16px; }
 		.banner-arrow { width: 36px; height: 36px; }
 		.banner-arrow--prev { left: 12px; }
 		.banner-arrow--next { right: 12px; }
@@ -734,12 +744,11 @@
 		.membership-cta-inner { flex-direction: column; }
 	}
 	@media (max-width: 640px) {
-		.banner { min-height: 320px; }
-		.hero-title { font-size: 2.2rem; }
-		.hero-desc { font-size: 0.85rem; margin-bottom: 20px; }
-		.hero-eyebrow { flex-wrap: wrap; font-size: 0.7rem; }
-		.hero-actions { flex-direction: column; }
-		.hero-actions :global(.btn) { width: 100%; justify-content: center; }
+		.banner { aspect-ratio: 4 / 3; max-height: 50svh; }
+		.hero-title { font-size: 1.8rem; }
+		.hero-eyebrow { flex-wrap: wrap; font-size: 0.65rem; gap: 6px; }
+		.hero-actions { flex-direction: column; gap: 10px; }
+		.hero-actions :global(.btn) { width: 100%; justify-content: center; font-size: 0.85rem; padding: 10px 20px; }
 		.banner-arrow { width: 32px; height: 32px; }
 		.banner-arrow--prev { left: 8px; }
 		.banner-arrow--next { right: 8px; }

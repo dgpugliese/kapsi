@@ -204,7 +204,7 @@
 				</p>
 			{:else}
 				<div class="card-value" style="color:var(--gray-400);">
-					{sfLinked ? 'No Membership Found' : '—'}
+					{sfLinked ? 'Not Financial' : '—'}
 				</div>
 			{/if}
 		</div>

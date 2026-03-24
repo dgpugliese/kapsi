@@ -155,7 +155,12 @@
 				registrationSuccess = true;
 				step = 'done';
 			} else {
-				registrationError = result.message || 'Registration failed after payment';
+				// Show which steps failed
+				const failedSteps = Object.entries(result.steps || {})
+					.filter(([, v]: [string, any]) => !v.ok)
+					.map(([k, v]: [string, any]) => `${k}: ${v.error}`)
+					.join('; ');
+				registrationError = failedSteps || result.message || 'Registration failed after payment';
 			}
 		} catch (err: any) {
 			registrationError = err.message;

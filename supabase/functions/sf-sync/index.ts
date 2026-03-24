@@ -77,7 +77,7 @@ Deno.serve(async (req) => {
     return errorResponse("Unauthorized", 401);
   }
 
-  let body: { type?: string; full?: boolean; letterRange?: string; object?: string; soql?: string; fields?: Record<string, unknown> };
+  let body: { type?: string; full?: boolean; letterRange?: string; object?: string; soql?: string; fields?: Record<string, unknown>; recordId?: string };
   try {
     body = await req.json();
   } catch {
@@ -112,6 +112,17 @@ Deno.serve(async (req) => {
 
     if (syncType === "events" || syncType === "all") {
       results.events = await syncEvents();
+    }
+
+    // Admin: update a SF record
+    if (syncType === "update" && body.object && body.fields && body.recordId) {
+      const token = await getSFToken();
+      const res = await fetch(
+        `${token.instance_url}/services/data/v62.0/sobjects/${body.object}/${body.recordId}`,
+        { method: "PATCH", headers: { Authorization: `Bearer ${token.access_token}`, "Content-Type": "application/json" }, body: JSON.stringify(body.fields) }
+      );
+      if (!res.ok) return errorResponse(`Update failed: ${await res.text()}`);
+      results.update = { success: true, id: body.recordId };
     }
 
     // Admin: create a SF record

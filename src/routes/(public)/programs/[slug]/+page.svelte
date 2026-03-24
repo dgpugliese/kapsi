@@ -59,10 +59,11 @@
 
 <style>
 	.program-hero-icon {
+		display: block;
+		margin: 0 auto 20px;
 		width: 120px;
 		height: 120px;
 		object-fit: contain;
-		margin-bottom: 20px;
 		filter: drop-shadow(0 4px 12px rgba(0,0,0,0.2));
 	}
 	.prog-pill:hover {

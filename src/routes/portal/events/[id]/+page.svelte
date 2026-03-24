@@ -355,6 +355,33 @@
 	}
 	.event-section p, .event-section :global(p) {
 		font-size: 0.92rem; color: var(--gray-600); line-height: 1.8;
+		margin-bottom: 12px;
+	}
+	.event-section :global(h3) {
+		font-family: var(--font-serif); font-size: 1rem; font-weight: 700;
+		color: var(--black); margin: 20px 0 10px; padding-top: 16px;
+		border-top: 1px solid var(--gray-100);
+	}
+	.event-section :global(h3:first-child) {
+		margin-top: 0; padding-top: 0; border-top: none;
+	}
+	.event-section :global(ul) {
+		list-style: none; padding: 0; margin: 0 0 16px;
+	}
+	.event-section :global(li) {
+		position: relative; padding: 5px 0 5px 20px;
+		font-size: 0.88rem; color: var(--gray-600); line-height: 1.6;
+	}
+	.event-section :global(li)::before {
+		content: ''; position: absolute; left: 0; top: 13px;
+		width: 6px; height: 6px; border-radius: 50%;
+		background: var(--gold);
+	}
+	.event-section :global(strong) {
+		color: var(--black);
+	}
+	.event-section :global(em) {
+		color: var(--gray-500); font-style: italic;
 	}
 
 	.ticket-option {

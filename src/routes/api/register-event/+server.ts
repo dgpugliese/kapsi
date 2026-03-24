@@ -104,8 +104,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 					OrderApi__Date__c: today,
 					OrderApi__Payment_Method_Token__c: paymentIntentId,
 					OrderApi__Reference_Token__c: paymentIntentId,
-					OrderApi__Transaction_Id__c: paymentIntentId,
-					OrderApi__Card_Number__c: cardLast4 ? `xxxx-xxxx-xxxx-${cardLast4}` : null,
+										OrderApi__Card_Number__c: cardLast4 ? `xxxx-xxxx-xxxx-${cardLast4}` : null,
 					OrderApi__Card_Type__c: cardBrand ? cardBrand.charAt(0).toUpperCase() + cardBrand.slice(1) : null,
 					OrderApi__Full_Name__c: cardholderName || null
 				});

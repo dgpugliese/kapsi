@@ -79,57 +79,62 @@
 			<h2 class="section-title">Major Awards</h2>
 		</div>
 
-		<div class="awards-list">
+		<div class="grid grid--2">
 			{#each awards as award, i}
 				<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-				<div class="award-block" class:award-block--open={openAward === i}>
-					<div class="award-header" onclick={() => toggle(i)}>
-						<div class="award-header-left">
-							<h3 class="award-name">{award.name}</h3>
-							<p class="award-meta">Since {award.since} &middot; {award.count} Recipients</p>
-						</div>
-						<div class="award-header-right">
-							<span class="award-count">{award.count}</span>
-							<svg class="award-chevron" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+				<div class="card award-card" class:award-card--active={openAward === i} onclick={() => toggle(i)}>
+					<div class="card-body">
+						<p style="font-size:0.72rem; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--gold); margin-bottom:8px;">
+							Since {award.since} &middot; {award.count} Recipients
+						</p>
+						<h3 style="color:var(--crimson); margin-bottom:10px;">{award.name}</h3>
+						<p style="color:var(--gray-600); font-size:0.95rem; line-height:1.7;">
+							{award.description}
+						</p>
+						<div style="margin-top:14px; font-size:0.78rem; color:var(--crimson); font-weight:600; display:flex; align-items:center; gap:6px;">
+							{openAward === i ? 'Hide' : 'View'} All {award.count} Recipients
+							<svg class="award-chevron" class:award-chevron--open={openAward === i} width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
 								<path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
 							</svg>
 						</div>
 					</div>
-
-					{#if openAward === i}
-						<div class="award-body">
-							<p class="award-desc">{award.description}</p>
-
-							<input type="text" bind:value={searchQuery} placeholder="Search awardees..." class="form-control" style="margin-bottom:16px; max-width:400px;" />
-
-							<div class="award-table-wrap">
-								<table class="award-table">
-									<thead>
-										<tr>
-											{#each award.cols as col}
-												<th>{col}</th>
-											{/each}
-										</tr>
-									</thead>
-									<tbody>
-										{#each filteredData(award) as row}
-											<tr>
-												{#each row as cell, ci}
-													<td class:td-num={ci === 0} class:td-year={ci === 1} class:td-name={ci === 2}>
-														{cell}
-													</td>
-												{/each}
-											</tr>
-										{/each}
-									</tbody>
-								</table>
-							</div>
-							<p style="font-size:0.72rem; color:var(--gray-400); margin-top:12px;">* Chapter Invisible &nbsp; ** Posthumous</p>
-						</div>
-					{/if}
 				</div>
 			{/each}
 		</div>
+
+		<!-- Expanded table below the grid -->
+		{#if openAward !== null}
+			{@const award = awards[openAward]}
+			<div class="award-expanded">
+				<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
+					<h3 style="font-family:var(--font-serif); font-size:1.15rem; color:var(--crimson);">{award.name} — All Recipients</h3>
+					<input type="text" bind:value={searchQuery} placeholder="Search..." class="form-control" style="max-width:280px; margin:0;" />
+				</div>
+				<div class="award-table-wrap">
+					<table class="award-table">
+						<thead>
+							<tr>
+								{#each award.cols as col}
+									<th>{col}</th>
+								{/each}
+							</tr>
+						</thead>
+						<tbody>
+							{#each filteredData(award) as row}
+								<tr>
+									{#each row as cell, ci}
+										<td class:td-num={ci === 0} class:td-year={ci === 1} class:td-name={ci === 2}>
+											{cell}
+										</td>
+									{/each}
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+				</div>
+				<p style="font-size:0.72rem; color:var(--gray-400); margin-top:12px;">* Chapter Invisible &nbsp; ** Posthumous</p>
+			</div>
+		{/if}
 	</div>
 </section>
 
@@ -182,42 +187,14 @@
 </section>
 
 <style>
-	.awards-list { display: flex; flex-direction: column; gap: 12px; }
-
-	.award-block {
-		background: var(--white); border: 1px solid var(--gray-100);
-		border-radius: 14px; overflow: hidden; transition: all 0.3s ease;
-	}
-	.award-block:hover { border-color: var(--crimson); }
-	.award-block--open { border-color: var(--crimson); box-shadow: 0 4px 20px rgba(139,0,0,0.08); }
-
-	.award-header {
-		display: flex; align-items: center; justify-content: space-between;
-		padding: 20px 24px; cursor: pointer; gap: 16px;
-	}
-	.award-header-left { flex: 1; }
-	.award-name {
-		font-family: var(--font-serif); font-size: 1.15rem; font-weight: 700;
-		color: var(--crimson); margin-bottom: 4px;
-	}
-	.award-meta { font-size: 0.78rem; color: var(--gray-500); }
-	.award-header-right { display: flex; align-items: center; gap: 12px; }
-	.award-count {
-		font-family: var(--font-serif); font-size: 1.5rem; font-weight: 700;
-		color: var(--gold);
-	}
-	.award-chevron {
-		color: var(--gray-400); transition: transform 0.3s ease;
-	}
-	.award-block--open .award-chevron { transform: rotate(180deg); }
-
-	.award-body {
-		padding: 0 24px 24px; border-top: 1px solid var(--gray-100);
-		padding-top: 20px;
-	}
-	.award-desc {
-		font-size: 0.9rem; color: var(--gray-600); line-height: 1.7;
-		margin-bottom: 20px; max-width: 700px;
+	.award-card { cursor: pointer; transition: all 0.3s ease; }
+	.award-card:hover { border-color: var(--crimson); }
+	.award-card--active { border-color: var(--crimson); box-shadow: 0 4px 20px rgba(139,0,0,0.1); }
+	.award-chevron { color: var(--crimson); transition: transform 0.3s ease; }
+	.award-chevron--open { transform: rotate(180deg); }
+	.award-expanded {
+		margin-top: 24px; background: var(--white); border: 1px solid var(--crimson);
+		border-radius: 14px; padding: 24px; box-shadow: 0 4px 20px rgba(139,0,0,0.06);
 	}
 
 	.award-table-wrap { overflow-x: auto; }

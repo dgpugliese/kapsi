@@ -189,7 +189,7 @@
 </section>
 
 <!-- GRAND POLEMARCH MESSAGE -->
-<section class="section" style="background:var(--cream); color:var(--black);">
+<section class="section" style="background:linear-gradient(160deg, #5C0000, #8B0000); color:var(--white);">
 	<div class="container">
 		<div class="message-grid">
 			<div class="message-photo reveal">
@@ -199,19 +199,19 @@
 				<div class="message-photo-accent"></div>
 			</div>
 			<div class="message-body reveal" style="transition-delay:0.15s">
-				<div class="section-label" style="color:var(--crimson);">Grand Polemarch's Welcome</div>
-				<div class="rule"></div>
-			<h2 class="section-title" style="color:var(--black);">A Message from<br/>Our Grand Polemarch</h2>
-				<p style="color:var(--charcoal); line-height:1.85; margin-bottom:18px; font-size:1.025rem;">
+				<div class="section-label" style="color:var(--gold);">Grand Polemarch's Welcome</div>
+				<div class="rule" style="background:var(--gold);"></div>
+			<h2 class="section-title" style="color:var(--white);">A Message from<br/>Our Grand Polemarch</h2>
+				<p style="color:rgba(255,255,255,0.85); line-height:1.85; margin-bottom:18px; font-size:1.025rem;">
 					Welcome to the website of Kappa Alpha Psi® Fraternity, Inc. It is my honor to serve as the Grand Polemarch of an organization comprised of a dynamic collection of college educated men, a literal "Who's Who" rolodex of the risk takers, trailblazers and changemakers that exist in the world today. We are delighted to offer you a glimpse into the window of our illustrious fraternal history and a closer look at our empowering, living, and active representation of achievement. Whether you're a member, prospective member, corporate or university partner, stakeholder or just interested in learning more about what fuels our passion to achieve, the pages of this site will familiarize you with our commitment to serve and create transformational change across the globe!
 				</p>
-				<p style="color:var(--gray-600); line-height:1.85; margin-bottom:18px; font-size:1.025rem;">
+				<p style="color:rgba(255,255,255,0.7); line-height:1.85; margin-bottom:18px; font-size:1.025rem;">
 					Since January 5, 1911, the men of Kappa Alpha Psi® have represented the very essence of achievement, in every field of human endeavor. We have grown to enjoy a footprint of close to 700 chapters in 400+ communities across the continental United States and in 13 overseas territories. Kappa men remain busy uplifting communities and developing our current and next generation of leaders in alignment with the spirit of our founding ideals, that we may raise the sights of all in our ecosystem to heights higher than previously imagined, to change the narrative of what's possible through belief and the relentless dedication to achieve.
 				</p>
-				<p style="color:var(--gray-500); line-height:1.85; margin-bottom:28px; font-size:1.025rem;">
+				<p style="color:rgba(255,255,255,0.55); line-height:1.85; margin-bottom:28px; font-size:1.025rem;">
 					I invite you to explore the pages of our website and discover for yourselves what makes our organization special and unique in the chronicles of Greek Letter Organizations. Thanks for visiting us!
 				</p>
-				<a href="/leadership/grand-chapter" class="btn btn--primary">Meet Our Leadership</a>
+				<a href="/leadership/grand-chapter" class="btn btn--white">Meet Our Leadership</a>
 			</div>
 		</div>
 	</div>
@@ -507,15 +507,16 @@
 	.message-photo { position: relative; }
 	.message-photo-frame {
 		aspect-ratio: 3/4; border-radius: 20px; overflow: hidden; position: relative; z-index: 1;
+		background: var(--cream);
 		transition: transform 0.4s ease, box-shadow 0.4s ease;
-		box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+		box-shadow: 0 8px 30px rgba(0,0,0,0.3);
 	}
 	.message-photo:hover .message-photo-frame {
 		transform: translateY(-8px);
 		box-shadow: 0 20px 50px rgba(0,0,0,0.2);
 	}
 	.message-photo-img { width: 100%; height: 100%; object-fit: cover; object-position: top center; display: block; }
-	.message-photo-accent { position: absolute; top: 16px; right: -16px; bottom: -16px; left: 16px; border: 2px solid var(--crimson); border-radius: 20px; opacity: 0.2; z-index: 0; }
+	.message-photo-accent { position: absolute; top: 16px; right: -16px; bottom: -16px; left: 16px; border: 2px solid var(--gold); border-radius: 20px; opacity: 0.3; z-index: 0; }
 	.message-quote { font-family: 'Cormorant Garamond', Georgia, serif; font-size: 1.2rem; font-style: italic; line-height: 1.75; color: rgba(255,255,255,0.9); border-left: 4px solid var(--gold); padding: 16px 24px; background: rgba(255,255,255,0.06); border-radius: 0 12px 12px 0; margin-bottom: 24px; }
 
 	/* ===== PROGRAMS (Full-width rows) ===== */

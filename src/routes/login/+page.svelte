@@ -6,6 +6,7 @@
 	let email = $state('');
 	let password = $state('');
 	let loading = $state(false);
+	let ssoLoading = $state(false);
 	let error = $state('');
 
 	const redirectTo = $derived($page.url.searchParams.get('redirect') || '/portal');
@@ -27,6 +28,23 @@
 		}
 
 		goto(redirectTo);
+	}
+
+	async function handleSalesforceSSO() {
+		ssoLoading = true;
+		error = '';
+
+		const { error: ssoError } = await supabase.auth.signInWithOAuth({
+			provider: 'custom:salesforce' as any,
+			options: {
+				redirectTo: window.location.origin + redirectTo
+			}
+		});
+
+		if (ssoError) {
+			error = ssoError.message;
+			ssoLoading = false;
+		}
 	}
 </script>
 
@@ -54,6 +72,20 @@
 			{#if error}
 				<div class="form-error">{error}</div>
 			{/if}
+
+			<!-- Salesforce SSO -->
+			<button
+				onclick={handleSalesforceSSO}
+				disabled={ssoLoading}
+				class="sso-btn"
+			>
+				<img src="/images/crest.png" alt="" class="sso-icon" />
+				{ssoLoading ? 'Redirecting...' : 'Sign in with Kappa Credentials'}
+			</button>
+
+			<div class="divider">
+				<span>or sign in with email</span>
+			</div>
 
 			<form onsubmit={handleLogin}>
 				<div style="margin-bottom:20px;">
@@ -125,6 +157,32 @@
 		transition: color var(--transition);
 	}
 	.auth-link:hover { color: var(--crimson-dark); }
+
+	/* SSO Button */
+	.sso-btn {
+		width: 100%; display: flex; align-items: center; justify-content: center;
+		gap: 12px; padding: 14px 24px; border-radius: var(--radius);
+		background: linear-gradient(160deg, var(--crimson-dark), var(--crimson));
+		color: var(--white); font-size: 0.95rem; font-weight: 600;
+		border: none; cursor: pointer; transition: all 0.25s ease;
+		box-shadow: 0 4px 12px rgba(139, 0, 0, 0.25);
+	}
+	.sso-btn:hover {
+		transform: translateY(-1px);
+		box-shadow: 0 6px 20px rgba(139, 0, 0, 0.35);
+	}
+	.sso-btn:disabled { opacity: 0.7; cursor: not-allowed; transform: none; }
+	.sso-icon { width: 24px; height: 24px; object-fit: contain; }
+
+	/* Divider */
+	.divider {
+		display: flex; align-items: center; gap: 16px;
+		margin: 24px 0; color: var(--gray-400); font-size: 0.8rem;
+		text-transform: uppercase; letter-spacing: 0.5px;
+	}
+	.divider::before, .divider::after {
+		content: ''; flex: 1; height: 1px; background: var(--gray-200);
+	}
 
 	@media (max-width: 480px) {
 		.auth-card { padding: 28px 20px; }

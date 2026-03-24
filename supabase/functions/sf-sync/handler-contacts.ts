@@ -62,11 +62,21 @@ const CONTACT_FIELDS = `
   FON_Show_Email__c, FON_Show_Phone__c, FON_Show_Address__c
 `;
 
-export async function syncContacts(full = false): Promise<{
+/**
+ * For full syncs, pass a letter range (e.g. "A-F") to chunk the work
+ * across multiple invocations. Delta syncs don't need this.
+ */
+export async function syncContacts(
+  full = false,
+  letterRange?: string
+): Promise<{
   status: string;
   records: number;
 }> {
-  const logId = await createSyncLog(full ? "contacts-full" : "contacts-delta");
+  const label = full
+    ? `contacts-full${letterRange ? `-${letterRange}` : ""}`
+    : "contacts-delta";
+  const logId = await createSyncLog(label);
   const startTime = Date.now();
   let totalProcessed = 0;
   let totalUpserted = 0;
@@ -79,6 +89,16 @@ export async function syncContacts(full = false): Promise<{
     if (!full) {
       const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
       whereClause += ` AND LastModifiedDate >= ${yesterday}`;
+    }
+
+    // Letter range filter for chunked full syncs (e.g. "A-F", "G-M", "N-S", "T-Z")
+    if (letterRange && full) {
+      const [start, end] = letterRange.split("-");
+      if (start && end) {
+        // LastName >= 'A' AND LastName < chr(ord('F')+1) = 'G'
+        const endNext = String.fromCharCode(end.charCodeAt(0) + 1);
+        whereClause += ` AND LastName >= '${start}' AND LastName < '${endNext}'`;
+      }
     }
 
     const soql = `

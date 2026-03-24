@@ -75,7 +75,7 @@ Deno.serve(async (req) => {
     return errorResponse("Unauthorized", 401);
   }
 
-  let body: { type?: string; full?: boolean };
+  let body: { type?: string; full?: boolean; letterRange?: string };
   try {
     body = await req.json();
   } catch {
@@ -84,6 +84,7 @@ Deno.serve(async (req) => {
 
   const syncType = body.type;
   const full = body.full ?? false;
+  const letterRange = body.letterRange;
 
   if (!syncType) {
     return errorResponse('Missing "type" in request body', 400);
@@ -103,8 +104,8 @@ Deno.serve(async (req) => {
     }
 
     if (syncType === "contacts" || syncType === "all") {
-      console.log(`Starting contacts sync (full=${full})...`);
-      results.contacts = await syncContacts(full);
+      console.log(`Starting contacts sync (full=${full}, range=${letterRange ?? "all"})...`);
+      results.contacts = await syncContacts(full, letterRange);
     }
 
     if (!results.chapters && !results.tiers && !results.contacts) {

@@ -332,6 +332,7 @@
 						<div style="font-family:var(--font-serif); font-size:1.3rem; font-weight:700; color:var(--crimson);">$200.00</div>
 					</label>
 
+					<!-- Undergraduate dues hidden for now
 					<label class="dues-option" class:dues-option--selected={selectedDuesType === 'undergraduate'}>
 						<input type="radio" name="duesType" value="undergraduate" bind:group={selectedDuesType} style="accent-color:var(--crimson);" />
 						<div style="flex:1;">
@@ -340,6 +341,7 @@
 						</div>
 						<div style="font-family:var(--font-serif); font-size:1.3rem; font-weight:700; color:var(--crimson);">$200.00</div>
 					</label>
+					-->
 				</div>
 
 				<button

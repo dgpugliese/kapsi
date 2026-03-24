@@ -27,6 +27,29 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	// Track each step's result
 	const steps: Record<string, { ok: boolean; id?: string; error?: string }> = {};
 
+	// Step 0: Retrieve Stripe PaymentIntent for card details
+	let cardLast4 = '';
+	let cardBrand = '';
+	let cardholderName = '';
+	try {
+		const stripeKey = env.STRIPE_SECRET_KEY;
+		if (stripeKey) {
+			const piRes = await fetch(`https://api.stripe.com/v1/payment_intents/${paymentIntentId}?expand[]=payment_method`, {
+				headers: { Authorization: `Bearer ${stripeKey}` }
+			});
+			if (piRes.ok) {
+				const pi = await piRes.json();
+				const card = pi.payment_method?.card;
+				cardLast4 = card?.last4 ?? '';
+				cardBrand = card?.brand ?? '';
+				cardholderName = pi.payment_method?.billing_details?.name
+					?? `${contact.FirstName} ${contact.LastName}`;
+			}
+		}
+	} catch (err: any) {
+		console.error('Stripe lookup failed (non-blocking):', err.message);
+	}
+
 	// Step 1: Create ePayment
 	let ePaymentId = '';
 	try {
@@ -37,7 +60,11 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			OrderApi__Sales_Order__c: orderId,
 			OrderApi__Date__c: today,
 			OrderApi__Payment_Method_Token__c: paymentIntentId,
-			OrderApi__Reference_Token__c: paymentIntentId
+			OrderApi__Reference_Token__c: paymentIntentId,
+			OrderApi__Card_Number__c: cardLast4 ? `xxxx-xxxx-xxxx-${cardLast4}` : null,
+			OrderApi__Card_Type__c: cardBrand ? cardBrand.charAt(0).toUpperCase() + cardBrand.slice(1) : null,
+			OrderApi__Full_Name__c: cardholderName || null,
+			OrderApi__Transaction_Id__c: paymentIntentId
 		});
 		steps.ePayment = { ok: true, id: ePaymentId };
 	} catch (err: any) {
@@ -71,12 +98,24 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	try {
 		await sfUpdate('OrderApi__Sales_Order__c', orderId, {
 			OrderApi__Status__c: 'Closed',
-			OrderApi__Is_Posted__c: true
+			OrderApi__Posting_Status__c: 'Posted',
+			OrderApi__Is_Posted__c: true,
+			OrderApi__Balance_Due__c: 0
 		});
 		steps.closeOrder = { ok: true };
 	} catch (err: any) {
-		console.error('Step 3 (Close SO) failed:', err.message);
-		steps.closeOrder = { ok: false, error: err.message };
+		// If Balance_Due is read-only, retry without it
+		try {
+			await sfUpdate('OrderApi__Sales_Order__c', orderId, {
+				OrderApi__Status__c: 'Closed',
+				OrderApi__Posting_Status__c: 'Posted',
+				OrderApi__Is_Posted__c: true
+			});
+			steps.closeOrder = { ok: true, error: 'Balance_Due read-only, closed without it' };
+		} catch (retryErr: any) {
+			console.error('Step 3 (Close SO) failed:', retryErr.message);
+			steps.closeOrder = { ok: false, error: retryErr.message };
+		}
 	}
 
 	// Step 4: Update Contact membership

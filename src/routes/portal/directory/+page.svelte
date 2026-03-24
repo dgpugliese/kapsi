@@ -1,13 +1,14 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
-	let contacts = $derived(data.contacts);
-	let total = $derived(data.total);
-	let page = $derived(data.page);
-	let perPage = $derived(data.perPage);
+
+	let contacts = $state(data.contacts ?? []);
+	let total = $state(data.total ?? 0);
+	let currentPage = $state(data.page ?? 1);
+	let perPage = 20;
 	let totalPages = $derived(Math.ceil(total / perPage));
+	let loading = $state(false);
 
 	let q = $state(data.filters.q);
 	let stateFilter = $state(data.filters.state);
@@ -15,28 +16,45 @@
 	let typeFilter = $state(data.filters.type);
 	let chapterFilter = $state(data.filters.chapter);
 
-	// Selected member detail
 	let selected = $state<any>(null);
+	let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
-	function search() {
+	async function fetchResults(page = 1) {
+		loading = true;
 		const params = new URLSearchParams();
 		if (q) params.set('q', q);
 		if (stateFilter) params.set('state', stateFilter);
 		if (statusFilter) params.set('status', statusFilter);
 		if (typeFilter) params.set('type', typeFilter);
 		if (chapterFilter) params.set('chapter', chapterFilter);
-		goto(`/portal/directory?${params.toString()}`);
+		params.set('page', page.toString());
+
+		try {
+			const res = await fetch(`/api/search-directory?${params.toString()}`);
+			if (res.ok) {
+				const data = await res.json();
+				contacts = data.contacts;
+				total = data.total;
+				currentPage = data.page;
+			}
+		} catch (err) {
+			console.error('Search failed:', err);
+		} finally {
+			loading = false;
+		}
+	}
+
+	function debouncedSearch() {
+		if (debounceTimer) clearTimeout(debounceTimer);
+		debounceTimer = setTimeout(() => fetchResults(1), 300);
+	}
+
+	function onFilterChange() {
+		fetchResults(1);
 	}
 
 	function goToPage(p: number) {
-		const params = new URLSearchParams();
-		if (q) params.set('q', q);
-		if (stateFilter) params.set('state', stateFilter);
-		if (statusFilter) params.set('status', statusFilter);
-		if (typeFilter) params.set('type', typeFilter);
-		if (chapterFilter) params.set('chapter', chapterFilter);
-		params.set('page', p.toString());
-		goto(`/portal/directory?${params.toString()}`);
+		fetchResults(p);
 	}
 
 	const states = ['AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY','DC'];
@@ -54,29 +72,31 @@
 	<h1 style="font-family:var(--font-serif); font-size:1.6rem; color:var(--crimson); margin-bottom:24px;">Member Directory</h1>
 
 	<!-- Search -->
-	<form onsubmit={(e) => { e.preventDefault(); search(); }} style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; padding:20px; margin-bottom:24px;">
-		<div style="display:grid; grid-template-columns:1fr auto; gap:12px; margin-bottom:12px;">
-			<input type="text" bind:value={q} placeholder="Search by name, city, chapter, profession, membership #..." class="form-control" />
-			<button type="submit" class="btn btn--primary" style="padding:10px 24px;">Search</button>
+	<div style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; padding:20px; margin-bottom:24px;">
+		<div style="position:relative; margin-bottom:12px;">
+			<input type="text" bind:value={q} oninput={debouncedSearch} placeholder="Search by name, city, chapter, profession, membership #..." class="form-control" style="padding-right:40px;" />
+			{#if loading}
+				<div style="position:absolute; right:12px; top:50%; transform:translateY(-50%); width:18px; height:18px; border:2px solid var(--gray-200); border-top-color:var(--crimson); border-radius:50%; animation:spin 0.6s linear infinite;"></div>
+			{/if}
 		</div>
 		<div style="display:flex; gap:12px; flex-wrap:wrap;">
-			<select bind:value={stateFilter} onchange={search} class="form-control" style="width:auto; min-width:120px;">
+			<select bind:value={stateFilter} onchange={onFilterChange} class="form-control" style="width:auto; min-width:120px;">
 				<option value="">All States</option>
 				{#each states as st}<option value={st}>{st}</option>{/each}
 			</select>
-			<select bind:value={statusFilter} onchange={search} class="form-control" style="width:auto; min-width:160px;">
+			<select bind:value={statusFilter} onchange={onFilterChange} class="form-control" style="width:auto; min-width:160px;">
 				<option value="">All Status</option>
 				<option value="In Good Standing">In Good Standing</option>
 				<option value="Not In Good Standing">Not In Good Standing</option>
 			</select>
-			<select bind:value={typeFilter} onchange={search} class="form-control" style="width:auto; min-width:140px;">
+			<select bind:value={typeFilter} onchange={onFilterChange} class="form-control" style="width:auto; min-width:140px;">
 				<option value="">All Types</option>
 				<option value="Alumni">Alumni</option>
 				<option value="Undergraduate">Undergraduate</option>
 			</select>
-			<input type="text" bind:value={chapterFilter} onchange={search} class="form-control" style="width:auto; min-width:160px;" placeholder="Chapter name..." />
+			<input type="text" bind:value={chapterFilter} oninput={debouncedSearch} class="form-control" style="width:auto; min-width:160px;" placeholder="Chapter name..." />
 		</div>
-	</form>
+	</div>
 
 	<p style="font-size:0.82rem; color:var(--gray-600); margin-bottom:16px;">{total} member{total !== 1 ? 's' : ''} found</p>
 
@@ -178,12 +198,12 @@
 		<!-- Pagination -->
 		{#if totalPages > 1}
 			<div style="display:flex; justify-content:center; gap:8px; margin-top:32px; align-items:center;">
-				{#if page > 1}
-					<button class="btn btn--outline" style="padding:8px 16px; font-size:0.82rem;" onclick={() => goToPage(page - 1)}>Previous</button>
+				{#if currentPage > 1}
+					<button class="btn btn--outline" style="padding:8px 16px; font-size:0.82rem;" onclick={() => goToPage(currentPage - 1)}>Previous</button>
 				{/if}
-				<span style="padding:8px 16px; font-size:0.82rem; color:var(--gray-600);">Page {page} of {totalPages}</span>
-				{#if page < totalPages}
-					<button class="btn btn--outline" style="padding:8px 16px; font-size:0.82rem;" onclick={() => goToPage(page + 1)}>Next</button>
+				<span style="padding:8px 16px; font-size:0.82rem; color:var(--gray-600);">Page {currentPage} of {totalPages}</span>
+				{#if currentPage < totalPages}
+					<button class="btn btn--outline" style="padding:8px 16px; font-size:0.82rem;" onclick={() => goToPage(currentPage + 1)}>Next</button>
 				{/if}
 			</div>
 		{/if}
@@ -227,6 +247,8 @@
 		white-space: nowrap;
 	}
 	.dir-badge--good { background: #ECFDF5; color: #065F46; }
+
+	@keyframes spin { to { transform: translateY(-50%) rotate(360deg); } }
 
 	@media (max-width: 640px) {
 		.dir-badge { display: none; }

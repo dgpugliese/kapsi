@@ -1,6 +1,4 @@
 <script lang="ts">
-	import { supabase } from '$lib/supabase';
-
 	let searchQuery = $state('');
 	let stateFilter = $state('');
 	let typeFilter = $state('');
@@ -10,6 +8,7 @@
 	let totalCount = $state(0);
 	let searched = $state(false);
 	let selectedChapter = $state<any>(null);
+	let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
 	const states = [
 		'AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY',
@@ -17,34 +16,38 @@
 		'OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY','DC'
 	];
 
-	async function handleSearch(e?: Event) {
-		e?.preventDefault();
+	async function fetchChapters() {
 		loading = true;
 		searched = true;
 
+		const params = new URLSearchParams();
+		if (searchQuery) params.set('q', searchQuery);
+		if (stateFilter) params.set('state', stateFilter);
+		if (typeFilter) params.set('type', typeFilter);
+		if (statusFilter) params.set('status', statusFilter);
+
 		try {
-			let query = supabase
-				.from('directory_chapters')
-				.select('*', { count: 'exact' });
-
-			if (searchQuery) {
-				query = query.or(`name.ilike.%${searchQuery}%,billing_city.ilike.%${searchQuery}%,province.ilike.%${searchQuery}%,chapter_id.ilike.%${searchQuery}%`);
+			const res = await fetch(`/api/search-chapters?${params.toString()}`);
+			if (res.ok) {
+				const data = await res.json();
+				chapters = data.chapters;
+				totalCount = data.total;
 			}
-			if (stateFilter) query = query.eq('billing_state', stateFilter);
-			if (typeFilter) query = query.eq('chapter_type', typeFilter);
-			if (statusFilter) query = query.eq('chapter_status', statusFilter);
-
-			query = query.order('name').limit(50);
-
-			const { data, count } = await query;
-			chapters = data ?? [];
-			totalCount = count ?? 0;
 		} catch {
 			chapters = [];
 			totalCount = 0;
 		}
 
 		loading = false;
+	}
+
+	function debouncedSearch() {
+		if (debounceTimer) clearTimeout(debounceTimer);
+		debounceTimer = setTimeout(() => fetchChapters(), 300);
+	}
+
+	function onFilterChange() {
+		fetchChapters();
 	}
 </script>
 
@@ -64,34 +67,36 @@
 <section class="section">
 	<div class="container">
 		<!-- Search Form -->
-		<form onsubmit={handleSearch} style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; padding:20px; margin-bottom:24px; box-shadow:var(--shadow-sm);">
-			<div style="display:grid; grid-template-columns:1fr auto; gap:12px; margin-bottom:12px;">
+		<div style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; padding:20px; margin-bottom:24px; box-shadow:var(--shadow-sm);">
+			<div style="position:relative; margin-bottom:12px;">
 				<input
 					type="text"
 					bind:value={searchQuery}
+					oninput={debouncedSearch}
 					placeholder="Search by chapter name, city, or province..."
 					class="form-control"
+					style="padding-right:40px;"
 				/>
-				<button type="submit" disabled={loading} class="btn btn--primary" style="padding:10px 24px;">
-					{loading ? 'Searching...' : 'Search'}
-				</button>
+				{#if loading}
+					<div class="search-spinner"></div>
+				{/if}
 			</div>
 			<div style="display:flex; gap:12px; flex-wrap:wrap;">
-				<select bind:value={stateFilter} onchange={() => handleSearch()} class="form-control" style="width:auto; min-width:120px;">
+				<select bind:value={stateFilter} onchange={onFilterChange} class="form-control" style="width:auto; min-width:120px;">
 					<option value="">All States</option>
 					{#each states as st}<option value={st}>{st}</option>{/each}
 				</select>
-				<select bind:value={typeFilter} onchange={() => handleSearch()} class="form-control" style="width:auto; min-width:160px;">
+				<select bind:value={typeFilter} onchange={onFilterChange} class="form-control" style="width:auto; min-width:160px;">
 					<option value="">All Types</option>
 					<option value="Undergraduate">Undergraduate</option>
 					<option value="Alumni">Alumni</option>
 				</select>
-				<select bind:value={statusFilter} onchange={() => handleSearch()} class="form-control" style="width:auto; min-width:140px;">
+				<select bind:value={statusFilter} onchange={onFilterChange} class="form-control" style="width:auto; min-width:140px;">
 					<option value="Active">Active Only</option>
 					<option value="">All Status</option>
 				</select>
 			</div>
-		</form>
+		</div>
 
 		<!-- Results -->
 		{#if searched}
@@ -194,4 +199,11 @@
 		box-shadow: 0 4px 20px rgba(0,0,0,0.08);
 		transform: translateX(4px);
 	}
+	.search-spinner {
+		position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+		width: 18px; height: 18px; border: 2px solid var(--gray-200);
+		border-top-color: var(--crimson); border-radius: 50%;
+		animation: spin 0.6s linear infinite;
+	}
+	@keyframes spin { to { transform: translateY(-50%) rotate(360deg); } }
 </style>

@@ -14,6 +14,7 @@
 import { syncChapters } from "./handler-chapters.ts";
 import { syncTiers } from "./handler-tiers.ts";
 import { syncContacts } from "./handler-contacts.ts";
+import { syncEvents } from "./handler-events.ts";
 import { getSFToken } from "./salesforce.ts";
 
 const corsHeaders = {
@@ -76,7 +77,7 @@ Deno.serve(async (req) => {
     return errorResponse("Unauthorized", 401);
   }
 
-  let body: { type?: string; full?: boolean; letterRange?: string; object?: string; soql?: string };
+  let body: { type?: string; full?: boolean; letterRange?: string; object?: string; soql?: string; fields?: Record<string, unknown> };
   try {
     body = await req.json();
   } catch {
@@ -107,6 +108,22 @@ Deno.serve(async (req) => {
     if (syncType === "contacts" || syncType === "all") {
       console.log(`Starting contacts sync (full=${full}, range=${letterRange ?? "all"})...`);
       results.contacts = await syncContacts(full, letterRange);
+    }
+
+    if (syncType === "events" || syncType === "all") {
+      results.events = await syncEvents();
+    }
+
+    // Admin: create a SF record
+    if (syncType === "create" && body.object && body.fields) {
+      const token = await getSFToken();
+      const res = await fetch(
+        `${token.instance_url}/services/data/v62.0/sobjects/${body.object}`,
+        { method: "POST", headers: { Authorization: `Bearer ${token.access_token}`, "Content-Type": "application/json" }, body: JSON.stringify(body.fields) }
+      );
+      if (!res.ok) return errorResponse(`Create failed: ${await res.text()}`);
+      const data = await res.json();
+      results.create = { id: data.id, success: data.success };
     }
 
     // Admin: describe a SF object

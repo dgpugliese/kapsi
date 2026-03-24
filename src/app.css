@@ -152,37 +152,42 @@ html { scroll-behavior: smooth; }
 
 /* ===== PAGE HERO ===== */
 .page-hero {
-	background: var(--white);
-	color: var(--black);
-	padding: clamp(48px, 7vw, 80px) 0;
+	background: linear-gradient(135deg, #1a0000 0%, #3D0000 40%, #5C0000 100%);
+	color: var(--white);
+	padding: clamp(52px, 8vw, 88px) 0;
 	position: relative; overflow: hidden;
-	border-bottom: 1px solid var(--gray-100);
 }
 .page-hero::before {
-	content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 4px;
-	background: linear-gradient(90deg, var(--crimson), var(--gold), var(--crimson));
+	content: ''; position: absolute; inset: 0; z-index: 0;
+	background:
+		radial-gradient(ellipse at 20% 80%, rgba(201,168,76,0.08) 0%, transparent 50%),
+		radial-gradient(ellipse at 80% 20%, rgba(255,255,255,0.04) 0%, transparent 40%);
 }
 .page-hero::after {
-	content: none;
+	content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 3px;
+	background: linear-gradient(90deg, transparent, var(--gold), transparent);
 }
 .page-hero h1 {
-	font-size: clamp(2rem, 4.5vw, 3rem); color: var(--black);
+	font-size: clamp(2rem, 4.5vw, 3rem); color: var(--white);
 	margin-bottom: 0; font-weight: 700; letter-spacing: -0.5px;
 }
 .page-hero .hero-divider {
 	display: flex; align-items: center; justify-content: center; gap: 12px;
-	margin: 14px auto; width: 120px;
+	margin: 16px auto; width: 140px;
 }
 .page-hero .hero-divider::before,
 .page-hero .hero-divider::after {
-	content: ''; flex: 1; height: 2px;
-	background: var(--crimson); opacity: 0.2;
+	content: ''; flex: 1; height: 1px;
+	background: linear-gradient(to right, transparent, rgba(201,168,76,0.5));
+}
+.page-hero .hero-divider::after {
+	background: linear-gradient(to left, transparent, rgba(201,168,76,0.5));
 }
 .page-hero .hero-divider span {
-	color: var(--crimson); font-size: 0.7rem; line-height: 1;
+	color: var(--gold); font-size: 0.8rem; line-height: 1;
 }
 .page-hero p {
-	font-size: 0.95rem; color: var(--gray-500); max-width: 580px;
+	font-size: 0.95rem; color: rgba(255,255,255,0.65); max-width: 580px;
 	font-weight: 400; margin: 0 auto; font-family: var(--font-sans);
 	letter-spacing: 0.2px; line-height: 1.7;
 }
@@ -263,5 +268,5 @@ textarea.form-control { resize: vertical; min-height: 120px; }
 
 /* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
-	.page-hero { padding: clamp(36px, 6vw, 56px) 0; }
+	.page-hero { padding: clamp(40px, 6vw, 60px) 0; }
 }

@@ -11,9 +11,9 @@
 	];
 
 	const events = [
-		{ month: 'Jul', day: '6', year: '2027', title: '88th Grand Chapter Meeting', location: 'Baltimore, Maryland' },
-		{ month: 'Apr', day: '17', year: '2026', title: 'Southern Province Council', location: 'Miami, Florida' },
-		{ month: 'Apr', day: '22', year: '2026', title: 'North Central Province Council', location: 'TBD' },
+		{ month: 'Jul', day: '6', year: '2027', title: '88th Grand Chapter Meeting', location: 'Baltimore, Maryland', img: '/images/calendar/88th grand chapter meeting.jpg' },
+		{ month: 'Apr', day: '17', year: '2026', title: 'Southern Province Council', location: 'Miami, Florida', img: '/images/province-seals/southern.png' },
+		{ month: 'Apr', day: '22', year: '2026', title: 'North Central Province Council', location: 'TBD', img: '/images/province-seals/north-central.png' },
 	];
 
 	const bannerSlides = [
@@ -300,12 +300,19 @@
 		<div class="evt-grid reveal" style="transition-delay:0.1s">
 			{#each events as e, i}
 				<div class="evt-card" class:evt-card--featured={i === 0}>
-					<div class="evt-card-date">
-						<div class="evt-month">{e.month}</div>
-						<div class="evt-day">{e.day}</div>
-						<div class="evt-year">{e.year}</div>
-					</div>
+					{#if e.img}
+						<div class="evt-card-img">
+							<img src={e.img} alt={e.title} />
+						</div>
+					{:else}
+						<div class="evt-card-date">
+							<div class="evt-month">{e.month}</div>
+							<div class="evt-day">{e.day}</div>
+							<div class="evt-year">{e.year}</div>
+						</div>
+					{/if}
 					<div class="evt-card-body">
+						<div class="evt-date-text">{e.month} {e.day}, {e.year}</div>
 						<h3 class="evt-title">{e.title}</h3>
 						<div class="evt-location">
 							<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="flex-shrink:0; opacity:0.5;">
@@ -654,6 +661,18 @@
 	}
 	.evt-card--featured {
 		border: 2px solid var(--gold);
+	}
+	.evt-card-img {
+		padding: 24px; text-align: center; background: var(--white);
+		display: flex; align-items: center; justify-content: center;
+		min-height: 140px;
+	}
+	.evt-card-img img {
+		max-width: 100%; max-height: 120px; object-fit: contain;
+	}
+	.evt-date-text {
+		font-size: 0.72rem; font-weight: 600; text-transform: uppercase;
+		letter-spacing: 0.8px; color: var(--crimson); margin-bottom: 6px;
 	}
 	.evt-card-date {
 		background: linear-gradient(160deg, #5C0000, #8B0000);

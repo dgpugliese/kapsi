@@ -5,9 +5,9 @@
 		{ img: '/images/programs/Guide-Right-200.png', name: 'Guide Right', slug: 'guide-right', stat: '500K+', statLabel: 'Youth Mentored', desc: 'Our flagship service initiative providing educational and occupational guidance to youth across 400+ communities.' },
 		{ img: '/images/programs/KappaLeague-200.png', name: 'Kappa League', slug: 'kappa-league', stat: '6–12', statLabel: 'Grades Served', desc: 'A structured leadership development program building the next generation of Black male leaders.' },
 		{ img: '/images/programs/AcheivementAcademy-200.png', name: 'Achievement Academy', slug: 'achievement-academy', stat: '700+', statLabel: 'Chapters Active', desc: 'Enhancing the collegiate experience through mentoring, coaching, and professional development.' },
-		{ img: null, name: 'Room To Read', slug: 'room-to-read', stat: '32K+', statLabel: 'Books Donated', desc: 'Bringing literacy resources to under-resourced schools in partnership with Room to Read.' },
+		{ img: '/images/programs/RTR-Logo-Primary-RGB-FullColor-r6v55a3137bq2nefd4d02px2f2hf6dt8zs0lzwf26k.png', name: 'Room To Read', slug: 'room-to-read', stat: '32K+', statLabel: 'Books Donated', desc: 'Bringing literacy resources to under-resourced schools in partnership with Room to Read.' },
 		{ img: '/images/programs/Learn2Live-200.png', name: 'Learn 2 Live', slug: 'learn-to-live', stat: '70K+', statLabel: 'Students Trained', desc: 'Educating youth on constitutional rights and safe interactions with law enforcement.' },
-		{ img: null, name: 'Are You OK?', slug: 'are-you-ok', stat: 'J&J', statLabel: 'Partnership', desc: 'A national mental health initiative for Black men in partnership with Johnson & Johnson.' },
+		{ img: '/images/programs/AreYouOKDark.png', name: 'Are You OK?', slug: 'are-you-ok', stat: 'J&J', statLabel: 'Partnership', desc: 'A national mental health initiative for Black men in partnership with Johnson & Johnson.' },
 	];
 
 	const events = [
@@ -189,7 +189,7 @@
 </section>
 
 <!-- GRAND POLEMARCH MESSAGE -->
-<section class="section" style="background:linear-gradient(160deg, #5C0000, #8B0000); color:var(--white);">
+<section class="section" style="background:var(--cream); color:var(--black);">
 	<div class="container">
 		<div class="message-grid">
 			<div class="message-photo reveal">
@@ -199,20 +199,19 @@
 				<div class="message-photo-accent"></div>
 			</div>
 			<div class="message-body reveal" style="transition-delay:0.15s">
-				<div class="section-label" style="color:var(--gold);">Grand Polemarch's Welcome</div>
+				<div class="section-label" style="color:var(--crimson);">Grand Polemarch's Welcome</div>
 				<div class="rule"></div>
-				<div class="rule" style="background:var(--gold);"></div>
-			<h2 class="section-title" style="color:var(--white);">A Message from<br/>Our Grand Polemarch</h2>
-				<p style="color:rgba(255,255,255,0.85); line-height:1.85; margin-bottom:18px; font-size:1.025rem;">
+			<h2 class="section-title" style="color:var(--black);">A Message from<br/>Our Grand Polemarch</h2>
+				<p style="color:var(--charcoal); line-height:1.85; margin-bottom:18px; font-size:1.025rem;">
 					Welcome to the website of Kappa Alpha Psi® Fraternity, Inc. It is my honor to serve as the Grand Polemarch of an organization comprised of a dynamic collection of college educated men, a literal "Who's Who" rolodex of the risk takers, trailblazers and changemakers that exist in the world today. We are delighted to offer you a glimpse into the window of our illustrious fraternal history and a closer look at our empowering, living, and active representation of achievement. Whether you're a member, prospective member, corporate or university partner, stakeholder or just interested in learning more about what fuels our passion to achieve, the pages of this site will familiarize you with our commitment to serve and create transformational change across the globe!
 				</p>
-				<p style="color:rgba(255,255,255,0.7); line-height:1.85; margin-bottom:18px; font-size:1.025rem;">
+				<p style="color:var(--gray-600); line-height:1.85; margin-bottom:18px; font-size:1.025rem;">
 					Since January 5, 1911, the men of Kappa Alpha Psi® have represented the very essence of achievement, in every field of human endeavor. We have grown to enjoy a footprint of close to 700 chapters in 400+ communities across the continental United States and in 13 overseas territories. Kappa men remain busy uplifting communities and developing our current and next generation of leaders in alignment with the spirit of our founding ideals, that we may raise the sights of all in our ecosystem to heights higher than previously imagined, to change the narrative of what's possible through belief and the relentless dedication to achieve.
 				</p>
-				<p style="color:var(--gray-600); line-height:1.85; margin-bottom:28px; font-size:1.025rem;">
+				<p style="color:var(--gray-500); line-height:1.85; margin-bottom:28px; font-size:1.025rem;">
 					I invite you to explore the pages of our website and discover for yourselves what makes our organization special and unique in the chronicles of Greek Letter Organizations. Thanks for visiting us!
 				</p>
-				<a href="/leadership/grand-chapter" class="btn btn--white">Meet Our Leadership</a>
+				<a href="/leadership/grand-chapter" class="btn btn--primary">Meet Our Leadership</a>
 			</div>
 		</div>
 	</div>
@@ -384,11 +383,12 @@
 		background: linear-gradient(150deg, #3D0000 0%, #5C0000 30%, #8B0000 70%, #700000 100%);
 	}
 	.hero-achievement {
-		position: absolute; right: -5%; top: 50%; transform: translateY(-50%);
-		width: 500px; height: 500px; z-index: 0;
-		background: url('/images/achievement.png') center center / contain no-repeat;
-		opacity: 0.08;
-		filter: brightness(2);
+		position: absolute; right: 2%; top: 50%; transform: translateY(-50%);
+		width: 420px; height: 420px; z-index: 0;
+		background: url('/images/crest.png') center center / contain no-repeat;
+		opacity: 0.12;
+		filter: brightness(1.8) saturate(0);
+		mix-blend-mode: soft-light;
 	}
 	.hero-inner { position: relative; z-index: 1; display: flex; align-items: center; padding-top: 40px; padding-bottom: 40px; }
 	.hero-content { max-width: 640px; }
@@ -515,7 +515,7 @@
 		box-shadow: 0 20px 50px rgba(0,0,0,0.2);
 	}
 	.message-photo-img { width: 100%; height: 100%; object-fit: cover; object-position: top center; display: block; }
-	.message-photo-accent { position: absolute; top: 16px; right: -16px; bottom: -16px; left: 16px; border: 2px solid #C9A84C; border-radius: 20px; opacity: 0.3; z-index: 0; }
+	.message-photo-accent { position: absolute; top: 16px; right: -16px; bottom: -16px; left: 16px; border: 2px solid var(--crimson); border-radius: 20px; opacity: 0.2; z-index: 0; }
 	.message-quote { font-family: 'Cormorant Garamond', Georgia, serif; font-size: 1.2rem; font-style: italic; line-height: 1.75; color: rgba(255,255,255,0.9); border-left: 4px solid var(--gold); padding: 16px 24px; background: rgba(255,255,255,0.06); border-radius: 0 12px 12px 0; margin-bottom: 24px; }
 
 	/* ===== PROGRAMS (Full-width rows) ===== */
@@ -536,20 +536,18 @@
 	.prog-row--reverse { direction: rtl; }
 	.prog-row--reverse > * { direction: ltr; }
 	.prog-row-icon {
-		background: linear-gradient(160deg, #5C0000, #8B0000);
 		display: flex; align-items: center; justify-content: center;
 		padding: 24px;
 	}
 	.prog-row-icon-img {
-		width: 110px; height: 110px; object-fit: contain;
-		filter: drop-shadow(0 2px 8px rgba(0,0,0,0.3));
+		width: 120px; height: 120px; object-fit: contain;
 	}
 	.prog-row-icon-placeholder {
 		width: 80px; height: 80px; border-radius: 50%;
-		background: rgba(255,255,255,0.1); border: 2px solid rgba(201,168,76,0.4);
+		background: var(--cream); border: 2px solid rgba(139,0,0,0.15);
 		display: flex; align-items: center; justify-content: center;
 		font-family: var(--font-serif); font-size: 2rem; font-weight: 700;
-		color: var(--gold);
+		color: var(--crimson);
 	}
 	.prog-row-content {
 		padding: 28px 32px; display: flex; flex-direction: column; justify-content: center;

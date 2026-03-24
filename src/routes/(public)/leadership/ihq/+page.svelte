@@ -238,16 +238,11 @@
 		max-height: 280px; opacity: 1;
 	}
 	.director-duties {
-		list-style: none; padding: 0; margin: 12px 0 0; text-align: left;
+		list-style: none; padding: 0; margin: 12px 0 0; text-align: center;
 	}
 	.director-duties li {
-		font-size: 0.78rem; color: var(--gray-600); padding: 3px 0 3px 16px;
-		position: relative; line-height: 1.5;
-	}
-	.director-duties li::before {
-		content: ''; position: absolute; left: 0; top: 10px;
-		width: 5px; height: 5px; border-radius: 50%;
-		background: var(--gold);
+		font-size: 0.78rem; color: var(--gray-600); padding: 3px 0;
+		line-height: 1.5;
 	}
 	.director-contact {
 		font-size: 0.75rem; color: var(--gray-400); line-height: 1.6; margin-top: 10px;
@@ -293,16 +288,11 @@
 		max-height: 200px; opacity: 1;
 	}
 	.staff-duties {
-		list-style: none; padding: 0; margin: 8px 0 0; text-align: left;
+		list-style: none; padding: 0; margin: 8px 0 0; text-align: center;
 	}
 	.staff-duties li {
-		font-size: 0.7rem; color: var(--gray-600); padding: 2px 0 2px 12px;
-		position: relative; line-height: 1.5;
-	}
-	.staff-duties li::before {
-		content: ''; position: absolute; left: 0; top: 8px;
-		width: 4px; height: 4px; border-radius: 50%;
-		background: var(--gold);
+		font-size: 0.7rem; color: var(--gray-600); padding: 2px 0;
+		line-height: 1.5;
 	}
 	.staff-contact {
 		font-size: 0.7rem; color: var(--gray-400); margin-top: 8px; text-align: center;

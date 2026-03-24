@@ -1,347 +1,250 @@
 <script lang="ts">
-	const laureates = [
-		{ num: '1st', year: 1924, name: 'Elder Watson Diggs', profession: 'Educator', achievement: 'Fraternity', deceased: true },
-		{ num: '2nd', year: 1924, name: 'Robert Sengstacke Abbott', profession: 'Newspaper Publisher', achievement: 'Journalism', deceased: true },
-		{ num: '3rd', year: 1926, name: 'T. Giles Nutter', profession: 'Attorney', achievement: 'Politics', deceased: true },
-		{ num: '4th', year: 1926, name: 'Archie A. Alexander', profession: 'Civil Engineer', achievement: 'Engineering', deceased: true },
-		{ num: '5th', year: 1929, name: 'J. Ernest Wilkins', profession: 'Attorney', achievement: 'Academics & Fraternity', deceased: true },
-		{ num: '6th', year: 1935, name: 'Byron Kenneth Armstrong', profession: 'College Professor', achievement: 'Fraternity', deceased: true },
-		{ num: '7th', year: 1936, name: 'Armond W. Scott', profession: 'Attorney', achievement: 'Judiciary', deceased: true },
-		{ num: '8th', year: 1940, name: 'Lionel F. Artis', profession: 'Housing Administrator', achievement: 'Journal Editor', deceased: true },
-		{ num: '9th', year: 1944, name: 'Clarence Leon Wilson', profession: 'Obstetrician', achievement: 'Medicine', deceased: true },
-		{ num: '10th', year: 1945, name: 'W. Ellis Stewart', profession: 'Insurance Executive', achievement: 'Business', deceased: true },
-		{ num: '11th', year: 1945, name: 'C. C. Spaulding', profession: 'Insurance Executive', achievement: 'Business', deceased: true },
-		{ num: '12th', year: 1946, name: 'R. J. Jones', profession: 'Physician', achievement: 'Business', deceased: true },
-		{ num: '13th', year: 1947, name: 'Leon A. Ransom', profession: 'Attorney', achievement: 'Academics', deceased: true },
-		{ num: '14th', year: 1948, name: 'Earl B. Dickerson', profession: 'Attorney', achievement: 'Business', deceased: true },
-		{ num: '15th', year: 1950, name: 'George E. C. Hayes', profession: 'Attorney', achievement: 'Civil Rights Law', deceased: true },
-		{ num: '16th', year: 1950, name: 'Percy H. Lee', profession: 'Educator', achievement: 'Fraternity', deceased: true },
-		{ num: '17th', year: 1954, name: 'Jesse M. Tinsley', profession: 'Dentist', achievement: 'Civil Rights', deceased: true },
-		{ num: '18th', year: 1968, name: 'Donald L. Hollowell', profession: 'Attorney', achievement: 'Civil Rights', deceased: true },
-		{ num: '19th', year: 1968, name: 'C. Rodger Wilson', profession: 'Public Administrator', achievement: 'Fraternity', deceased: true },
-		{ num: '20th', year: 1970, name: 'Allison B. Henderson', profession: 'Physician', achievement: 'Medicine', deceased: true },
-		{ num: '21st', year: 1970, name: 'W. Henry Greene', profession: 'Physician', achievement: 'Fraternity', deceased: true },
-		{ num: '22nd', year: 1974, name: 'Thomas Bradley', profession: 'Attorney', achievement: 'Politics', deceased: true },
-		{ num: '23rd', year: 1974, name: 'James J. Henderson', profession: 'Insurance Executive', achievement: 'Finance', deceased: true },
-		{ num: '24th', year: 1976, name: 'Edward Giles Irvin', profession: 'Journalist', achievement: 'Fraternity', deceased: true },
-		{ num: '25th', year: 1976, name: 'Samuel P. Massie', profession: 'College Professor', achievement: 'Chemical Research', deceased: true },
-		{ num: '26th', year: 1977, name: 'W. Thomas Carter', profession: 'College Professor', achievement: 'Fraternity', deceased: true },
-		{ num: '27th', year: 1977, name: 'C. Felton Gayles', profession: 'College Athletics', achievement: 'Sports', deceased: true },
-		{ num: '28th', year: 1979, name: 'Leon H. Sullivan', profession: 'Clergyman', achievement: 'Business & Civic', deceased: true },
-		{ num: '29th', year: 1979, name: 'Daniel James Jr.', profession: 'Military – USAF General', achievement: 'Military', deceased: true },
-		{ num: '30th', year: 1980, name: 'G. James Fleming', profession: 'Journalist', achievement: 'Fraternity', deceased: true },
-		{ num: '31st', year: 1982, name: 'Howard C. Barnhill', profession: 'Educator', achievement: 'Fraternity', deceased: true },
-		{ num: '32nd', year: 1982, name: 'Richard B. Millspaugh', profession: 'Attorney', achievement: 'Fraternity', deceased: false },
-		{ num: '33rd', year: 1983, name: 'Hilliary H. Holloway', profession: 'Attorney', achievement: 'Fraternity', deceased: true },
-		{ num: '34th', year: 1983, name: 'A. Maceo Walker', profession: 'Insurance Executive', achievement: 'Civil Rights', deceased: true },
-		{ num: '35th', year: 1985, name: 'Elbert E. Allen', profession: 'Dental Surgeon', achievement: 'Fraternity', deceased: true },
-		{ num: '36th', year: 1985, name: 'Ernest H. Davenport', profession: 'CPA', achievement: 'Fraternity', deceased: true },
-		{ num: '37th', year: 1986, name: 'Irven Armstrong', profession: 'Educator', achievement: 'Fraternity', deceased: true },
-		{ num: '38th', year: 1986, name: 'George W. Crockett, Jr.', profession: 'US Congressman', achievement: 'Politics', deceased: true },
-		{ num: '39th', year: 1986, name: 'Arthur R. Ashe', profession: 'Tennis Professional', achievement: 'Civil Rights', deceased: true },
-		{ num: '40th', year: 1988, name: 'Frank M. Summers', profession: 'Attorney', achievement: 'Fraternity', deceased: false },
-		{ num: '41st', year: 1991, name: 'Edward L. Ellois', profession: 'College Administrator', achievement: 'Civic', deceased: true },
-		{ num: '42nd', year: 1991, name: 'William L. Crump', profession: 'College Professor', achievement: 'Fraternity', deceased: true },
-		{ num: '43rd', year: 1993, name: 'Edward J. Perkins', profession: 'US Foreign Service', achievement: 'Government & Politics', deceased: true },
-		{ num: '44th', year: 1995, name: 'Paul P. Cooke', profession: 'College Administrator', achievement: 'Civic & Fraternity', deceased: true },
-		{ num: '45th', year: 1999, name: 'Johnnie L. Cochran, Esq.', profession: 'Attorney', achievement: 'Law', deceased: true },
-		{ num: '46th', year: 1999, name: 'Ullysess McBride', profession: 'College Administrator', achievement: 'Fraternity', deceased: false },
-		{ num: '47th', year: 1999, name: 'Samuel D. Proctor', profession: 'College Professor', achievement: 'Civic', deceased: true },
-		{ num: '48th', year: 1999, name: 'Oba B. White', profession: 'Physician', achievement: 'Fraternity', deceased: true },
-		{ num: '49th', year: 2001, name: 'Randall C. Bacon', profession: 'Public Administrator', achievement: 'Fraternity', deceased: true },
-		{ num: '50th', year: 2001, name: 'Bernard C. Harris, Jr.', profession: 'Astronaut', achievement: 'Aviation Science', deceased: false },
-		{ num: '51st', year: 2001, name: 'Louis B. Stokes', profession: 'Attorney', achievement: 'Politics', deceased: true },
-		{ num: '52nd', year: 2003, name: 'John Conyers', profession: 'US Congressman', achievement: 'Politics', deceased: true },
-		{ num: '53rd', year: 2003, name: 'Henry E. Frye', profession: 'Judge', achievement: 'Government', deceased: false },
-		{ num: '54th', year: 2003, name: 'Wellington E. Webb', profession: 'Mayor', achievement: 'Politics', deceased: false },
-		{ num: '55th', year: 2005, name: 'Cornelius W. Grant', profession: 'College Professor', achievement: 'Civic', deceased: true },
-		{ num: '56th', year: 2005, name: 'Robert L. Harris', profession: 'Lawyer', achievement: 'Law', deceased: false },
-		{ num: '57th', year: 2005, name: 'Carl Ware', profession: 'Corporate Executive', achievement: 'Business', deceased: false },
-		{ num: '58th', year: 2005, name: 'Dr. Bobby L. Wilson', profession: 'Academics', achievement: 'Scientific Research', deceased: false },
-		{ num: '59th', year: 2007, name: 'Alcee L. Hastings', profession: 'US Congressman', achievement: 'Politics & Welfare', deceased: true },
-		{ num: '60th', year: 2007, name: 'John E. Jacob', profession: 'Corporate Executive', achievement: 'Business & Civil Rights', deceased: false },
-		{ num: '61st', year: 2007, name: 'Williams G. Mays', profession: 'Industrial', achievement: 'Business & Fraternity', deceased: true },
-		{ num: '62nd', year: 2007, name: 'George L. Russell, Jr., Esq.', profession: 'Lawyer', achievement: 'Law', deceased: false },
-		{ num: '63rd', year: 2009, name: 'Dr. Carl E. Anderson', profession: 'College Administrator', achievement: 'Civic', deceased: false },
-		{ num: '64th', year: 2009, name: 'Dr. Ralph J. Bryson', profession: 'College Professor', achievement: 'Fraternity', deceased: true },
-		{ num: '65th', year: 2009, name: 'Judge Nathaniel R. Jones', profession: 'Judge', achievement: 'Law', deceased: false },
-		{ num: '66th', year: 2009, name: 'Dr. Thomas A. Moorehead', profession: 'Business Entrepreneur', achievement: 'Business & Entrepreneur', deceased: false },
-		{ num: '67th', year: 2011, name: 'Arthur Lloyd Carter', profession: 'Federal Government', achievement: 'Civic', deceased: true },
-		{ num: '68th', year: 2011, name: 'Michael Victor Roberts', profession: 'Entrepreneur', achievement: 'Business', deceased: false },
-		{ num: '69th', year: 2011, name: 'Ronald Young', profession: 'Corporate Executive', achievement: 'Fraternity', deceased: true },
-		{ num: '70th', year: 2013, name: 'Alvin H. Crawford, MD', profession: 'Physician', achievement: 'Medicine', deceased: false },
-		{ num: '71st', year: 2013, name: 'Bennie G. Thompson', profession: 'US Congressman', achievement: 'Politics', deceased: false },
-		{ num: '72nd', year: 2015, name: 'General Dennis L. Via', profession: 'Military', achievement: 'Military', deceased: false },
-		{ num: '73rd', year: 2017, name: 'Rodney C. Adkins', profession: 'Corporate Executive', achievement: 'Business & Entrepreneur', deceased: false },
-		{ num: '74th', year: 2017, name: 'Dr. Julian M. Earls', profession: 'Physicist', achievement: 'Science', deceased: false },
-		{ num: '75th', year: 2019, name: 'Samuel C. Hamilton', profession: 'Corporate Executive', achievement: 'Business and Fraternity', deceased: true },
-		{ num: '76th', year: 2021, name: 'Dwayne M. Murray, Esq.', profession: 'Lawyer', achievement: 'Business and Fraternity', deceased: false },
-		{ num: '77th', year: 2021, name: 'Cleophus Thomas Jr.', profession: 'Lawyer', achievement: 'Business and Fraternity', deceased: false },
-		{ num: '78th', year: 2021, name: 'Rev. Dr. Howard-John Wesley', profession: 'Clergyman', achievement: 'Civic', deceased: false },
-		{ num: '79th', year: 2023, name: 'Gregory Jackson', profession: 'Entrepreneur', achievement: 'Business', deceased: false },
-		{ num: '80th', year: 2023, name: 'Edward Moore, Jr.', profession: 'Military', achievement: 'Military', deceased: false },
-		{ num: '81st', year: 2023, name: "Amos-León' Otis", profession: 'Entrepreneur', achievement: 'Business', deceased: false },
+	const awards = [
+		{
+			name: 'Laurel Wreath Award',
+			since: 1924,
+			count: 81,
+			description: 'The highest award available to a member of the Fraternity for extra meritorious achievement that is at least national in scope and effect. The award consists of the Fraternity coat of arms enwreathed in laurel leaves and a framed certificate of merit.',
+			cols: ['#', 'Year', 'Name', 'Profession', 'Achievement'],
+			data: [
+				[1,1924,'Elder Watson Diggs*','Educator','Fraternity'],[2,1924,'Robert Sengstacke Abbott*','Newspaper Publisher','Journalism'],[3,1926,'T. Giles Nutter*','Attorney','Politics'],[4,1926,'Archie A. Alexander*','Civil Engineer','Engineering'],[5,1929,'J. Ernest Wilkins*','Attorney','Academics & Fraternity'],[6,1935,'Byron Kenneth Armstrong*','College Professor','Fraternity'],[7,1936,'Armond W. Scott*','Attorney','Judiciary'],[8,1940,'Lionel F. Artis*','Housing Administrator','Journal Editor'],[9,1944,'Clarence Leon Wilson*','Obstetrician','Medicine'],[10,1945,'W. Ellis Stewart*','Insurance Executive','Business'],[11,1945,'C. C. Spaulding*','Insurance Executive','Business'],[12,1946,'R. J. Jones*','Physician','Business'],[13,1947,'Leon A. Ransom*','Attorney','Academics'],[14,1948,'Earl B. Dickerson*','Attorney','Business'],[15,1950,'George E. C. Hayes*','Attorney','Civil Rights Law'],[16,1950,'Percy H. Lee*','Educator','Fraternity'],[17,1954,'Jesse M. Tinsley*','Dentist','Civil Rights'],[18,1968,'Donald L. Hollowell*','Attorney','Civil Rights'],[19,1968,'C. Rodger Wilson*','Public Administrator','Fraternity'],[20,1970,'Allison B. Henderson*','Physician','Medicine'],[21,1970,'W. Henry Greene*','Physician','Fraternity'],[22,1974,'Thomas Bradley*','Attorney','Politics'],[23,1974,'James J. Henderson*','Insurance Executive','Finance'],[24,1976,'Edward Giles Irvin*','Journalist','Fraternity'],[25,1976,'Samuel P. Massie*','College Professor','Chemical Research'],[26,1977,'W. Thomas Carter*','College Professor','Fraternity'],[27,1977,'C. Felton Gayles*','College Athletics','Sports'],[28,1979,'Leon H. Sullivan*','Clergyman','Business & Civic'],[29,1979,'Daniel James Jr.**','Military – USAF General','Military'],[30,1980,'G. James Fleming*','Journalist','Fraternity'],[31,1982,'Howard C. Barnhill*','Educator','Fraternity'],[32,1982,'Richard B. Millspaugh','Attorney','Fraternity'],[33,1983,'Hilliary H. Holloway*','Attorney','Fraternity'],[34,1983,'A. Maceo Walker*','Insurance Executive','Civil Rights'],[35,1985,'Elbert E. Allen*','Dental Surgeon','Fraternity'],[36,1985,'Ernest H. Davenport*','CPA','Fraternity'],[37,1986,'Irven Armstrong*','Educator','Fraternity'],[38,1986,'George W. Crockett, Jr.*','US Congressman','Politics'],[39,1986,'Arthur R. Ashe*','Tennis Professional','Civil Rights'],[40,1988,'Frank M. Summers**','Attorney','Fraternity'],[41,1991,'Edward L. Ellois*','College Administrator','Civic'],[42,1991,'William L. Crump*','College Professor','Fraternity'],[43,1993,'Edward J. Perkins*','US Foreign Service','Government & Politics'],[44,1995,'Paul P. Cooke*','College Administrator','Civic & Fraternity'],[45,1999,'Johnnie L. Cochran, Esq.*','Attorney','Law'],[46,1999,'Ullysess McBride','College Administrator','Fraternity'],[47,1999,'Samuel D. Proctor**','College Professor','Civic'],[48,1999,'Oba B. White**','Physician','Fraternity'],[49,2001,'Randall C. Bacon*','Public Administrator','Fraternity'],[50,2001,'Bernard C. Harris, Jr.','Astronaut','Aviation Science'],[51,2001,'Louis B. Stokes*','Attorney','Politics'],[52,2003,'John Conyers*','US Congressman','Politics'],[53,2003,'Henry E. Frye','Judge','Government'],[54,2003,'Wellington E. Webb','Mayor','Politics'],[55,2005,'Cornelius W. Grant*','College Professor','Civic'],[56,2005,'Robert L. Harris','Lawyer','Law'],[57,2005,'Carl Ware','Corporate Executive','Business'],[58,2005,'Dr. Bobby L. Wilson','Academics','Scientific Research'],[59,2007,'Alcee L. Hastings*','US Congressman','Politics & Welfare'],[60,2007,'John E. Jacob','Corporate Executive','Business & Civil Rights'],[61,2007,'Williams G. Mays*','Industrial','Business & Fraternity'],[62,2007,'George L. Russell, Jr., Esq.','Lawyer','Law'],[63,2009,'Dr. Carl E. Anderson','College Administrator','Civic'],[64,2009,'Dr. Ralph J. Bryson*','College Professor','Fraternity'],[65,2009,'Judge Nathaniel R. Jones','Judge','Law'],[66,2009,'Dr. Thomas A. Moorehead','Business Entrepreneur','Business'],[67,2011,'Arthur Lloyd Carter*','Federal Government','Civic'],[68,2011,'Michael Victor Roberts','Entrepreneur','Business'],[69,2011,'Ronald Young*','Corporate Executive','Fraternity'],[70,2013,'Alvin H. Crawford, MD','Physician','Medicine'],[71,2013,'Bennie G. Thompson','US Congressman','Politics'],[72,2015,'General Dennis L. Via','Military','Military'],[73,2017,'Rodney C. Adkins','Corporate Executive','Business'],[74,2017,'Dr. Julian M. Earls','Physicist','Science'],[75,2019,'Samuel C. Hamilton*','Corporate Executive','Business & Fraternity'],[76,2021,'Dwayne M. Murray, Esq.','Lawyer','Business & Fraternity'],[77,2021,'Cleophus Thomas Jr.','Lawyer','Business & Fraternity'],[78,2021,'Rev. Dr. Howard-John Wesley','Clergyman','Civic'],[79,2023,'Gregory Jackson','Entrepreneur','Business'],[80,2023,'Edward Moore, Jr.','Military','Military'],[81,2023,"Amos-León' Otis",'Entrepreneur','Business']
+			]
+		},
+		{
+			name: 'Elder Watson Diggs Award',
+			since: 1958,
+			count: 122,
+			description: 'The second highest award available to a member for meritorious achievement. The award consists of a gold medallion bearing a likeness of Founder Elder Watson Diggs and a framed certificate.',
+			cols: ['#', 'Year', 'Name', 'Chapter'],
+			data: [
+				[1,1958,'Dr. John N. Williams','Philadelphia (PA) Alumni'],[2,1958,'Dr. Emmett T. Scales','Des Moines (IA) Alumni'],[3,1958,'Atty. Ulysses Plummer','Portland (OR) Alumni'],[4,1961,'C. Felton Gayles','Langston (OK) Alumni'],[5,1961,'Dr. W. Henry Greene','Washington (DC) Alumni'],[6,1961,'Dr. I. W. E. Taylor','Baltimore (MD) Alumni'],[7,1973,'Dr. William L. Crump','Washington (DC) Alumni'],[8,1973,'William R. Ford','Flint (MI) Alumni'],[9,1973,'Murray E. Jackson','Detroit (MI) Alumni'],[10,1973,'LaMont H. Lawson','Washington (DC) Alumni'],[11,1973,'Dr. Oba B. White','Little Rock (AR) Alumni'],[12,1974,'Charles J. Sudduth','Berkeley (CA) Alumni'],[13,1974,'Bert V. Wadkins','Oklahoma City (OK) Alumni'],[14,1976,'Thomas E. Ashe Jr.','Beckley (WVA) Alumni'],[15,1976,'Joseph R. Jenkins','Savannah (GA) Alumni'],[16,1976,'Dr. Charles O. Stout','Philadelphia (PA) Alumni'],[17,1977,'Sanford D. Bishop','Mobile (AL) Alumni'],[18,1977,'William H. Smith','Princess Anne (MD) Alumni'],[19,1977,'James O. Whaley','San Diego (CA) Alumni'],[20,1979,'Dr. E. Albert Dumas','Chicago (IL) Alumni'],[21,1979,'C. Clifford Washington','Philadelphia (PA) Alumni'],[22,1979,'Art S. Williams','Tulsa (OK) Alumni'],[23,1980,'Dr. James Egert Allen','New York (NY) Alumni'],[24,1980,'Toussaint L. Hale','Birmingham (AL) Alumni'],[25,1980,'Dr. Herman J. Tyrance','Washington (DC) Alumni'],[26,1980,'Robert L. Williams','Indianapolis (IN) Alumni'],[27,1982,'Lenzi Barnes','Durham (NC) Alumni'],[28,1982,'James L. Bradford','Berkeley (CA) Alumni'],[29,1982,'Carlyle H. Chapman','Baton Rouge (LA) Alumni'],[30,1982,'Jay Crosby','Dayton (OH) Alumni'],[31,1982,'Woodrow W. Walston','Richmond (VA) Alumni'],[32,1983,'Dr. Herman P. Bailey','El Paso/Las Cruces Alumni'],[33,1983,'Edgar H. Bishop','Los Angeles (CA) Alumni'],[34,1983,'Sylvester R. Hall','Washington (DC) Alumni'],[35,1983,'Herbert C. King','Lawton/Fort Sill (OK) Alumni'],[36,1985,'James Carter Jr.','Washington (DC) Alumni'],[37,1985,'George W. Cathcart','Detroit (MI) Alumni'],[38,1985,'Everharding Pruitt','Birmingham (AL) Alumni'],[39,1986,'Arthur L. Carter','Indianapolis (IN) Alumni'],[40,1986,'George N. Charlton Jr.','Pittsburgh (PA) Alumni'],[41,1986,'Thomas E. Howard','Shreveport (LA) Alumni'],[42,1988,'Henry E. Bennett Sr.','Gary (IN) Alumni'],[43,1988,'Dr. Cornelius W. Grant','Albany (GA) Alumni'],[44,1988,'Charles G. Tildon','Baltimore (MD) Alumni'],[45,1989,'Peter Butler','Los Angeles (CA) Alumni'],[46,1989,'Nathan J. Cooley','Gary (IN) Alumni'],[47,1989,'Julius A. Lockett','Atlanta (GA) Alumni'],[48,1989,'Judge James A. Overton','Norfolk (VA) Alumni'],[49,1991,'William G. Mays','Indianapolis (IN) Alumni'],[50,1993,'Dr. Joseph Bruton','Washington (DC) Alumni'],[51,1993,'Donald E. Grace','Austin (TX) Alumni'],[52,1993,'Crawford E. Lane','Rocky Mount (NC) Alumni'],[53,1993,'Edward Shelton Jr','Vallejo-Fairfield (CA) Alumni'],[54,1993,'Louis N. Willis','Louisville (KY) Alumni'],[55,1995,'Dr. James B. Abram Jr.','Oklahoma City (OK) Alumni'],[56,1995,'Dr. Ralph T. Bryson','Montgomery (AL) Alumni'],[57,1995,'James M. Graves','Charleston (SC) Alumni'],[58,1995,'Dr. Oscar L. Mims','Washington (DC) Alumni'],[59,1997,'Dr. K. Bernard Chase','Hyattsville/Landover (MD) Alumni'],[60,1997,'Sterling H. Dover','Seattle (WA) Alumni'],[61,1997,'Dr. Ivory Johnson','St Louis (MO) Alumni'],[62,1997,'William H. Lockhart','Opelousas (LA) Alumni'],[63,1999,'Atty. Richard Clark','Washington (DC) Alumni'],[64,1999,'Dr. Melvin Jackson','Philadelphia (PA) Alumni'],[65,1999,'James Mosby','Indianapolis (IN) Alumni'],[66,1999,'Samuel F. Sampson','San Antonio (TX) Alumni'],[67,1999,'Charles Smith','Detroit (MI) Alumni'],[68,2001,'William M. Blakeney','Charlotte (NC) Alumni'],[69,2001,'Mark Canty Jr.','Philadelphia (PA) Alumni'],[70,2001,'Willard H. Douglas Jr.','Richmond (VA) Alumni'],[71,2001,'Leonard H. Morton','Nashville (TN) Alumni'],[72,2001,'Judge Carl Walker Jr.','Houston (TX) Alumni'],[73,2003,'Dr. David M. Dupree','Augusta (GA) Alumni'],[74,2003,'Myron L. Hardiman','Indianapolis (IN) Alumni'],[75,2003,'Thomas E. Howard, Jr.','Detroit (MI) Alumni'],[76,2003,'Winfred R. Mundle, Sr., Esq.','Washington (DC) Alumni'],[77,2003,'Cleophus Thomas, Jr.','Anniston-Piedmont Alumni'],[78,2005,'Rev. Raymond A. Booton','Charlotte (NC) Alumni'],[79,2005,'Calvin D. Heard','Dayton (OH) Alumni'],[80,2005,'W. Kenneth Jackson','Atlanta (GA) Alumni'],[81,2005,'Emerson A. Lattimore','Dallas (TX) Alumni'],[82,2005,'Dr. Keflyn X. Reed','Mobile (AL) Alumni'],[83,2007,'Rhen C. Bass','Ventura (CA) Alumni'],[84,2007,'William E. Hooker','Raleigh (NC) Alumni'],[85,2007,'James C. Mitchell','Dallas (TX) Alumni'],[86,2007,'Eric S. Morris','Pittsburgh (PA) Alumni'],[87,2007,'Mark A. Scott, Esq.','Atlanta (GA) Alumni'],[88,2009,'Donald C. Bland','Fayetteville (AR) Alumni'],[89,2009,'Dr. Chuck Carr Brown','Baton Rouge (LA) Alumni'],[90,2009,'Willie H. Coleman, Jr., Esq.','Houston (TX) Alumni'],[91,2009,'Dr. Frank S. Emanuel','Jacksonville (FL) Alumni'],[92,2009,'Clarence F. Nelson, Jr.','Norfolk (VA) Alumni'],[93,2011,'Terrance G. Blount','Washington (DC) Alumni'],[94,2011,'William B. Croom','Woodbridge (VA) Alumni'],[95,2011,'Charles W. Morgan III','Wichita (KS) Alumni'],[96,2011,'Earl B. Tildon','Winter Park (FL) Alumni'],[97,2011,'Alfred E. White','Winston-Salem (NC) Alumni'],[98,2013,'George F. David III','Baltimore (MD) Alumni'],[99,2013,'Jonathan P. Hicks','New York (NY) Alumni'],[100,2013,'Col. John M. Jenkins, Ph.D.','Bowie/Mitchellville (MD) Alumni'],[101,2013,'Ocie C. Pleasant, Jr.','Memphis (TN) Alumni'],[102,2015,'Alvin L. Barrington','New Orleans (LA) Alumni'],[103,2017,'Kevin C. Cox','Oklahoma City (OK) Alumni'],[104,2017,'Michael J. Dubose','Decatur (GA) Alumni'],[105,2017,'Sheldon McAlpin','Charlotte (NC) Alumni'],[106,2017,'Dr. Edward Scott II','Tallahassee (FL) Alumni'],[107,2017,'Melvin Solomon','Atlanta (GA) Alumni'],[108,2019,'Willie F. Brooks Jr.','Memphis (TN) Alumni'],[109,2019,'John F. Burrell','Jacksonville (FL) Alumni'],[110,2019,'Edward K. Glass, Jr.','Detroit (MI) Alumni'],[111,2019,'Robert W. Scales, Jr.','Murfreesboro (TN) Alumni'],[112,2019,'Richard Lee Snow','Philadelphia (PA) Alumni'],[113,2021,'Joseph K. Davis Jr.','Durham (NC) Alumni'],[114,2021,'William H. Fields','Columbus (OH) Alumni'],[115,2021,'Warren D. Miller','Jackson (MS) Alumni'],[116,2021,'Johnny S. Newman II','Danville (VA) Alumni'],[117,2021,'Ronald E. Range','Northport (AL) Alumni'],[118,2023,'Kevin Lenel Burnett','Richardson Plano (TX) Alumni'],[119,2023,'Linnes W. Finney Jr., Esq.','Fort Pierce (FL) Alumni'],[120,2023,'Kevin J. Johnson','Pontiac (MI) Alumni'],[121,2023,'Earl F. Merritt','Harrisburg (PA) Alumni'],[122,2023,'Curtis R. Silvers Jr.','Pasadena (CA) Alumni']
+			]
+		},
+		{
+			name: 'Guy Levis Grant Award',
+			since: 1976,
+			count: 106,
+			description: 'The highest award available exclusively to a non-alumni member for meritorious achievement. The award consists of a gold medallion bearing a likeness of Founder Guy Levis Grant and a certificate.',
+			cols: ['#', 'Year', 'Name', 'Chapter'],
+			data: [
+				[1,1976,'Stephen Alexander','Alpha Pi'],[2,1976,'Joseph Jimerson','Beta Omega'],[3,1976,'Walter L. Peacock','Alpha Omicron'],[4,1976,'Cleophus Thomas Jr.','Eta Chi'],[5,1977,'Donald Davis','Alpha Lambda'],[6,1977,'Henry Lewis','Alpha Iota'],[7,1979,'S. Andre Rice','Alpha Lambda'],[8,1980,'Anthony Hill','Alpha Pi'],[9,1980,'Collis Ivery III','Beta Zeta'],[10,1982,'Thomas A. George III','Epsilon Rho'],[11,1982,'Gary D. Gold','Alpha'],[12,1982,'Keflyn Reed','Eta Chi'],[13,1983,'Aaron L. Addrow-Pierson','Kappa Upsilon'],[14,1983,'Mark D. Rigsby','Beta Upsilon'],[15,1985,'Robert I. Mayes','Delta Delta'],[16,1986,'Murrell W. Blackburn','Iota Omega'],[17,1986,'Richard A. Naylor II','Kappa Chi'],[18,1988,'D. Jason DeSousa','Alpha Iota'],[19,1988,'Christopher W. C. Salley','Delta Eta'],[20,1988,'Karl E. White','Alpha Xi'],[21,1989,'David Ramon Adams','Theta Iota'],[22,1989,'Richard Edwards','Beta Chi'],[23,1991,'Willie H. Harris Jr.','Beta Zeta'],[24,1991,'Kenneth S. Pugh','Theta Omicron'],[25,1991,'Tarrus Richardson','Nu'],[26,1991,'Derrick Williams','Nu Gamma'],[27,1993,'Gregory B. Atkins','Eta Sigma'],[28,1993,'Samuel J. Boyd Jr.','Alpha Nu'],[29,1993,'Reginald R. Jackson','Zeta Iota'],[30,1995,'Damon O. Barry','Gamma Eta'],[31,1995,'Craig A. Robinson','Nu Delta'],[32,1997,'Terry B. Greene','Gamma Nu'],[33,1997,'Jwyanza B. Nuriddin','Theta Eta'],[34,1997,'Anthony F. Powell','Theta Eta'],[35,1999,'Terry Eaton','Zeta Delta'],[36,1999,'John Kuykendall III','Gamma Sigma'],[37,1999,'Uhriel Wood','Gamma Nu'],[38,2001,'Travis D. Boyce','Gamma Nu'],[39,2001,'Sean E. Bradley','Mu Sigma'],[40,2001,'Aaron J. Burt','Alpha Iota'],[41,2001,'Brett D. Cook','Theta Eta'],[42,2001,'Andy S. Heniquez','Theta Eta'],[43,2001,'Christopher R. Wilks','Epsilon Beta'],[44,2003,'Enyinna O. Anthony','Alpha Iota'],[45,2003,'Nathaniel Frederick, II','Gamma Nu'],[46,2003,'Dramaine Irions','Delta Alpha'],[47,2003,'Steven J. Pritchett','Theta Eta'],[48,2003,'Steven A. Smith','Theta Eta'],[49,2003,'Walter H. Zinn, II','Omicron Omicron'],[50,2005,'Olaolu O. Davis-Balogun','Omicron Xi'],[51,2005,'Anthony Nelson Hylick','Lambda Delta'],[52,2005,'Samuel James Laurencin','Delta Eta'],[53,2005,'Larry L. London, Jr.','Beta'],[54,2005,'Gary Wayne Overstreet, Jr.','Alpha Omicron'],[55,2005,'Tourgee D. Simpson, Jr.','Kappa Theta'],[56,2007,'Jason A. Caraballo','Kappa Chi'],[57,2007,'Charles H.F. Davis','Theta Eta'],[58,2007,'Jared J. Dawson','Alpha'],[59,2007,'Mark C. McLawhorn','Zeta Epsilon'],[60,2007,'Nikul A. Parikh','Zeta Iota'],[61,2007,'O. Jerome Stewart','Psi'],[62,2009,'Michael J.A. Davis','Mu Mu'],[63,2009,'Myron L. Rolle','Theta Eta'],[64,2009,'Charles E. Morris Sims','Alpha Iota'],[65,2009,'Michael A. Thomas, Jr.','Epsilon Psi'],[66,2009,'Darryl Tricksey','Zeta Iota'],[67,2009,'Edward H. Williams','Xi'],[68,2011,'Marvin Desmond Carr','Alpha Iota'],[69,2011,'Darius Law','Zeta Delta'],[70,2011,'Amar Parikh','Zeta Iota'],[71,2011,'Danny A. Rojas','Chi'],[72,2011,'Kristerpher J. Smith','Eta Gamma'],[73,2013,'Terry L. Allen','Gamma Alpha'],[74,2013,'Christopher A. Grant','Theta Theta'],[75,2013,'Cordy B. McGill Scarlett','Theta Eta'],[76,2013,'Brennan McMurry','Mu Rho'],[77,2013,'Marcellus C. Taylor','Pi Psi'],[78,2013,'Jeremy L. Williams','Theta Theta'],[79,2015,'Wilton C. Jackson II','Kappa Iota'],[80,2015,'Kyle Julien Henley Majors','Gamma Phi'],[81,2015,'Damariye LaQuan Smith','Iota Beta'],[82,2015,'Ryan Edward Tucker','Alpha Sigma'],[83,2017,'Aaron Dwayne Dixon','Gamma Phi'],[84,2017,'Shyheme T. McElroy','Gamma'],[85,2017,'Solomon Puryear','Eta Gamma'],[86,2017,'Chase Rollins','Xi Rho'],[87,2017,'Robert Seniors III','Alpha Xi'],[88,2017,'Denzel Washington','Nu Rho'],[89,2019,'Frank Burns Jr.','Theta Beta'],[90,2019,'Christopher G. Cross','Lambda Pi'],[91,2019,'Alexander Dawes','Pi Mu'],[92,2019,'Ivan Garcia','Kappa Alpha'],[93,2019,'Cody E. Mitchell','Alpha Phi'],[94,2019,'Dominique W. Riggins','Gamma Nu'],[95,2021,'Elijah C. Vaughn, Jr.','Theta Iota'],[96,2021,'Jeremias E. Elston','Alpha Theta'],[97,2021,"Tre'R. Jeter",'Gamma Nu'],[98,2021,'Daniel I. Nixon','Omega'],[99,2021,'Traelon T. Rodgers','Beta Gamma'],[100,2021,'Micheal N. Weaver','Alpha Upsilon'],[101,2023,'Bryce T. Dickerson','Alpha Nu'],[102,2023,'Evan R. Jackson','Lambda Xi'],[103,2023,'Kevin Taylor-Jarrell II','Alpha Sigma'],[104,2023,'Austyn D. Lee','Gamma Iota'],[105,2023,'Myles Chandler Miller','Beta Xi'],[106,2023,'Jordan Ware','Alpha Omicron']
+			]
+		},
+		{
+			name: 'Byron K. Armstrong Award',
+			since: 1983,
+			count: 55,
+			description: 'The highest award available exclusively to a non-alumni member for academic excellence. Recipients receive scholarship funding provided by the Kappa Alpha Psi Foundation.',
+			cols: ['#', 'Year', 'Name', 'University'],
+			data: [
+				[1,1983,'Duane A. Cooper','Georgia Institute of Technology'],[2,1983,'Joseph W. Shepherd','Alabama State University'],[3,1983,'Bruce Porterfield','Alabama State University'],[4,1985,'Robert E. Banks','Alabama State University'],[5,1985,'Herman Jones, Jr.','Alabama State University'],[6,1985,'Leon N. Davis','Oakland University'],[7,1988,'Edward E. Dickerson, IV','West Virginia State College'],[8,1989,'Kirk Gilpin','Prairie View A&M University'],[9,1989,'Kevin Bruce','Memphis State University'],[10,1989,'Marvin Walton','North Carolina A&T University'],[11,1991,'Kevin M. Davis','University of North Carolina'],[12,1993,'Kevlin B. Sigler','Alabama State University'],[13,1995,'Shannon Rowley','Huston-Tillotson College'],[14,1995,'Craig A. Robinson','Emory University'],[15,1997,'Anthony F. Powell','Florida State University'],[16,1997,'Victor Guinyard','Claflin College'],[17,1999,'Uhriel E. Wood','Claflin College'],[18,1999,'Victor Guinyard','Claflin College'],[19,2001,'DeMarco D. Morgan','Jackson State University'],[20,2003,'Patrick D. Carpenter','Southern University'],[21,2003,'Gregory L. Starks','Claflin University'],[22,2005,'Martin Lemelle, Jr.','Grambling State University'],[23,2007,'Cedrick D. Smith','Georgia State University'],[24,2007,'L. B. Jeter, Jr.','University of LA at Monroe'],[25,2007,'Brandon L. Mack','Claflin University'],[26,2009,'Joshua Lamar Harris','Morehouse College'],[27,2009,'Charles E. Morris Sims','Morgan State University'],[28,2009,'Michael A. Thomas','Paine College'],[29,2011,'Darius Law','University of NC Charlotte'],[30,2011,'Ali Osman','Morehouse College'],[31,2011,'Clifton K. Thomas','Clemson University'],[32,2013,'Cordy Britton McGill Scarlett','Florida State University'],[33,2013,'Marckenley Isaac','Florida State University'],[34,2013,'Grady Lee Hart','Albany State College'],[35,2015,'Wilton C. Jackson II','University of Southern Mississippi'],[36,2015,'James Rhoden','Florida State University'],[37,2015,'Kyle J.H. Majors','Alabama A&M'],[38,2017,'Adebobola V. Owoseni','Paul Quinn College'],[39,2017,'Christopher Weathers II','Morehouse College'],[40,2017,'Shyheme McElroy','University of Iowa'],[41,2019,'Ivan Garcia','Illinois State University'],[42,2019,'Andre J. Earls','Wiley College'],[43,2019,'Cody E. Mitchell','Virginia State'],[44,2021,'Traelon T. Rodgers','Dillard University'],[45,2021,'Olufemi A. Olatidoye','North Carolina A&T University'],[46,2021,'Victor O. Agbar','University of Maryland College Park'],[47,2021,'Tevyn C. Johnson','Tennessee State University'],[48,2021,'Elijah C. Vaughn, Jr.','Massachusetts Institute of Technology'],[49,2021,'Zach Dampier','Georgetown College'],[50,2023,'Jhacolby D. Williams','Alcorn State University'],[51,2023,'NL Transou III','Rust College'],[52,2023,'Correggio L. Peagler Jr.','North Carolina A&T State University'],[53,2023,'Zachary LaDerek Cartledge','Clemson University'],[54,2023,'Bright Tsagli','Brown University'],[55,2023,'Myles Chandler Miller','University of Toledo']
+			]
+		}
 	];
 
+	let openAward = $state<number | null>(null);
 	let searchQuery = $state('');
-	let decadeFilter = $state('');
 
-	const decades = [...new Set(laureates.map(l => Math.floor(l.year / 10) * 10))].sort();
+	function toggle(i: number) {
+		openAward = openAward === i ? null : i;
+		searchQuery = '';
+	}
 
-	let filtered = $derived(laureates.filter(l => {
-		if (decadeFilter && Math.floor(l.year / 10) * 10 !== parseInt(decadeFilter)) return false;
-		if (searchQuery) {
-			const q = searchQuery.toLowerCase();
-			return l.name.toLowerCase().includes(q) || l.profession.toLowerCase().includes(q) || l.achievement.toLowerCase().includes(q);
-		}
-		return true;
-	}));
+	function filteredData(award: typeof awards[0]) {
+		if (!searchQuery) return award.data;
+		const q = searchQuery.toLowerCase();
+		return award.data.filter(row => row.some(cell => String(cell).toLowerCase().includes(q)));
+	}
 </script>
 
 <svelte:head>
 	<title>Grand Chapter Awardees — Kappa Alpha Psi®</title>
-	<meta name="description" content="Grand Chapter Awards of Kappa Alpha Psi Fraternity, Inc. — recognizing excellence and distinguished service within the fraternity." />
+	<meta name="description" content="Grand Chapter Awards of Kappa Alpha Psi Fraternity, Inc. — recognizing excellence and distinguished service." />
 </svelte:head>
 
 <section class="page-hero">
 	<div class="container">
 		<h1>Grand Chapter Awardees</h1>
 		<div class="hero-divider"><span>&#9670;</span></div>
-		<p>
-			Recognizing excellence and distinguished service within the fraternity.
-		</p>
+		<p>Recognizing excellence and distinguished service within the fraternity.</p>
 	</div>
 </section>
 
+<!-- Major Awards with expandable lists -->
 <section class="section">
 	<div class="container">
-		<p class="section-label">Highest Honors</p>
-		<h2 class="section-title">Major Awards</h2>
-		<div class="rule"></div>
-
-		<div class="grid grid--2">
-			<div class="card">
-				<div class="card-body">
-					<p style="font-size:0.72rem; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--gold); margin-bottom:8px;">
-						Since 1924 &middot; 81 Recipients
-					</p>
-					<h3 style="color:var(--crimson); margin-bottom:10px;">Laurel Wreath Laureate</h3>
-					<p style="color:var(--gray-600); font-size:0.95rem; line-height:1.7;">
-						The fraternity's highest honor, the Laurel Wreath is awarded to members who have
-						achieved extraordinary distinction in their chosen field of endeavor. Since its
-						inception in 1924, only 81 brothers have received this prestigious recognition.
-					</p>
-				</div>
-			</div>
-
-			<div class="card">
-				<div class="card-body">
-					<p style="font-size:0.72rem; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--gold); margin-bottom:8px;">
-						Since 1958 &middot; 122 Recipients
-					</p>
-					<h3 style="color:var(--crimson); margin-bottom:10px;">Elder Watson Diggs Award</h3>
-					<p style="color:var(--gray-600); font-size:0.95rem; line-height:1.7;">
-						The second highest award of the fraternity, named in honor of the founder and
-						Permanent Chairman. This award recognizes brothers who have rendered outstanding
-						service to the fraternity over an extended period of time. 122 brothers have been honored.
-					</p>
-				</div>
-			</div>
-
-			<div class="card">
-				<div class="card-body">
-					<p style="font-size:0.72rem; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--gold); margin-bottom:8px;">
-						Since 1976 &middot; 106 Recipients
-					</p>
-					<h3 style="color:var(--crimson); margin-bottom:10px;">Guy Levis Grant Award</h3>
-					<p style="color:var(--gray-600); font-size:0.95rem; line-height:1.7;">
-						Recognizes outstanding undergraduate members of the fraternity who exemplify the
-						ideals of achievement, leadership, and service. Named for founder Guy Levis Grant,
-						106 brothers have received this distinction.
-					</p>
-				</div>
-			</div>
-
-			<div class="card">
-				<div class="card-body">
-					<p style="font-size:0.72rem; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--gold); margin-bottom:8px;">
-						Since 1983 &middot; 55 Recipients
-					</p>
-					<h3 style="color:var(--crimson); margin-bottom:10px;">Byron K. Armstrong Award</h3>
-					<p style="color:var(--gray-600); font-size:0.95rem; line-height:1.7;">
-						Awarded for academic excellence, honoring the legacy of founder Byron Kenneth Armstrong,
-						who earned a Ph.D. from the University of Michigan. 55 brothers have received this award
-						for their scholarly achievements.
-					</p>
-				</div>
-			</div>
-		</div>
-	</div>
-</section>
-
-<!-- Laurel Wreath Laureates -->
-<section class="section section--cream">
-	<div class="container">
 		<div style="text-align:center; margin-bottom:40px;">
-			<div class="section-label">Since 1924</div>
+			<div class="section-label">Highest Honors</div>
 			<div class="rule rule--center"></div>
-			<h2 class="section-title">Laurel Wreath Laureates</h2>
-			<p style="max-width:640px; margin:12px auto 0; color:var(--gray-600); font-size:0.92rem; line-height:1.7;">
-				The Laurel Wreath Award is the highest award available to a member of Kappa Alpha Psi for extra meritorious achievement that is at least national in scope and effect. The award consists of the Fraternity coat of arms enwreathed in laurel leaves — symbolic of the wreaths used by ancient Greeks to crown the victors.
-			</p>
+			<h2 class="section-title">Major Awards</h2>
 		</div>
 
-		<!-- Search + Filter -->
-		<div style="display:flex; gap:12px; margin-bottom:24px; flex-wrap:wrap;">
-			<input type="text" bind:value={searchQuery} placeholder="Search by name, profession, or achievement..." class="form-control" style="flex:1; min-width:200px;" />
-			<select bind:value={decadeFilter} class="form-control" style="width:auto; min-width:140px;">
-				<option value="">All Decades</option>
-				{#each decades as d}<option value={d}>{d}s</option>{/each}
-			</select>
-		</div>
-
-		<p style="font-size:0.78rem; color:var(--gray-400); margin-bottom:16px;">{filtered.length} laureate{filtered.length !== 1 ? 's' : ''}</p>
-
-		<div class="laureates-list">
-			{#each filtered as l}
-				<div class="laureate-row">
-					<div class="laureate-num">{l.num}</div>
-					<div class="laureate-info">
-						<div class="laureate-name">
-							{l.name}
-							{#if l.deceased}<span class="laureate-deceased" title="Deceased">*</span>{/if}
+		<div class="awards-list">
+			{#each awards as award, i}
+				<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+				<div class="award-block" class:award-block--open={openAward === i}>
+					<div class="award-header" onclick={() => toggle(i)}>
+						<div class="award-header-left">
+							<h3 class="award-name">{award.name}</h3>
+							<p class="award-meta">Since {award.since} &middot; {award.count} Recipients</p>
 						</div>
-						<div class="laureate-detail">{l.profession}</div>
+						<div class="award-header-right">
+							<span class="award-count">{award.count}</span>
+							<svg class="award-chevron" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+								<path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+							</svg>
+						</div>
 					</div>
-					<div class="laureate-right">
-						<span class="laureate-achievement">{l.achievement}</span>
-						<span class="laureate-year">{l.year}</span>
-					</div>
+
+					{#if openAward === i}
+						<div class="award-body">
+							<p class="award-desc">{award.description}</p>
+
+							<input type="text" bind:value={searchQuery} placeholder="Search awardees..." class="form-control" style="margin-bottom:16px; max-width:400px;" />
+
+							<div class="award-table-wrap">
+								<table class="award-table">
+									<thead>
+										<tr>
+											{#each award.cols as col}
+												<th>{col}</th>
+											{/each}
+										</tr>
+									</thead>
+									<tbody>
+										{#each filteredData(award) as row}
+											<tr>
+												{#each row as cell, ci}
+													<td class:td-num={ci === 0} class:td-year={ci === 1} class:td-name={ci === 2}>
+														{cell}
+													</td>
+												{/each}
+											</tr>
+										{/each}
+									</tbody>
+								</table>
+							</div>
+							<p style="font-size:0.72rem; color:var(--gray-400); margin-top:12px;">* Chapter Invisible &nbsp; ** Posthumous</p>
+						</div>
+					{/if}
 				</div>
 			{/each}
 		</div>
-
-		<p style="font-size:0.75rem; color:var(--gray-400); margin-top:16px;">* Deceased</p>
 	</div>
 </section>
 
-<section class="section">
+<!-- Service & Community Awards -->
+<section class="section section--cream">
 	<div class="container">
-		<p class="section-label">Service &amp; Community</p>
-		<h2 class="section-title">Chapter and Service Awards</h2>
-		<div class="rule"></div>
+		<div style="text-align:center; margin-bottom:40px;">
+			<div class="section-label">Service &amp; Community</div>
+			<div class="rule rule--center"></div>
+			<h2 class="section-title">Chapter and Service Awards</h2>
+		</div>
 
 		<div class="grid grid--3">
-			<div class="card">
-				<div class="card-body">
-					<h3 style="color:var(--crimson); margin-bottom:10px;">Paul Waymond Caine Award</h3>
-					<p style="color:var(--gray-600); font-size:0.95rem; line-height:1.7;">
-						Recognizes alumni chapters for outstanding community service. Awarded in three
-						categories: large, medium, and small chapter divisions.
-					</p>
-				</div>
-			</div>
-
-			<div class="card">
-				<div class="card-body">
-					<h3 style="color:var(--crimson); margin-bottom:10px;">Edward Giles Irvin Award</h3>
-					<p style="color:var(--gray-600); font-size:0.95rem; line-height:1.7;">
-						Recognizes undergraduate chapters for outstanding community service, honoring the
-						youngest founder's spirit of youthful dedication and commitment.
-					</p>
-				</div>
-			</div>
-
-			<div class="card">
-				<div class="card-body">
-					<h3 style="color:var(--crimson); margin-bottom:10px;">Founders' Chapter Advisor Award</h3>
-					<p style="color:var(--gray-600); font-size:0.95rem; line-height:1.7;">
-						Honors alumni brothers who have demonstrated exceptional dedication as advisors
-						to undergraduate chapters.
-					</p>
-				</div>
-			</div>
+			{#each [
+				{ name: 'Paul Waymond Caine Award', desc: 'Recognizes alumni chapters for outstanding community service. Awarded in three categories: large, medium, and small chapter divisions.' },
+				{ name: 'Edward Giles Irvin Award', desc: "Recognizes undergraduate chapters for outstanding community service, honoring the youngest founder's spirit of youthful dedication." },
+				{ name: "Founders' Chapter Advisor Award", desc: 'Honors alumni brothers who have demonstrated exceptional dedication as advisors to undergraduate chapters.' }
+			] as a}
+				<div class="card"><div class="card-body">
+					<h3 style="color:var(--crimson); margin-bottom:10px;">{a.name}</h3>
+					<p style="color:var(--gray-600); font-size:0.95rem; line-height:1.7;">{a.desc}</p>
+				</div></div>
+			{/each}
 		</div>
 	</div>
 </section>
 
+<!-- Distinguished Awards -->
 <section class="section">
 	<div class="container">
-		<p class="section-label">Special Recognition</p>
-		<h2 class="section-title">Distinguished Awards</h2>
-		<div class="rule"></div>
+		<div style="text-align:center; margin-bottom:40px;">
+			<div class="section-label">Special Recognition</div>
+			<div class="rule rule--center"></div>
+			<h2 class="section-title">Distinguished Awards</h2>
+		</div>
 
 		<div class="grid grid--3">
-			<div class="card">
-				<div class="card-body">
-					<h3 style="color:var(--crimson); margin-bottom:10px;">Distinguished Citizen Award</h3>
-					<p style="color:var(--gray-600); font-size:0.95rem; line-height:1.7;">
-						Recognizes individuals — members and non-members alike — who have made exceptional
-						contributions to society and the community at large.
-					</p>
-				</div>
-			</div>
-
-			<div class="card">
-				<div class="card-body">
-					<h3 style="color:var(--crimson); margin-bottom:10px;">Humanitarian Award</h3>
-					<p style="color:var(--gray-600); font-size:0.95rem; line-height:1.7;">
-						Honors individuals who have demonstrated an extraordinary commitment to the
-						welfare and betterment of humanity through selfless service.
-					</p>
-				</div>
-			</div>
-
-			<div class="card">
-				<div class="card-body">
-					<h3 style="color:var(--crimson); margin-bottom:10px;">Ronald R. Young Website of the Year Award</h3>
-					<p style="color:var(--gray-600); font-size:0.95rem; line-height:1.7;">
-						Recognizes chapters and provinces that have developed outstanding websites
-						that effectively communicate the fraternity's mission and programs.
-					</p>
-				</div>
-			</div>
+			{#each [
+				{ name: 'Distinguished Citizen Award', desc: 'Recognizes individuals — members and non-members alike — who have made exceptional contributions to society and the community.' },
+				{ name: 'Humanitarian Award', desc: 'Honors individuals who have demonstrated an extraordinary commitment to the welfare and betterment of humanity through selfless service.' },
+				{ name: 'Ronald R. Young Website of the Year Award', desc: "Recognizes chapters and provinces that have developed outstanding websites that effectively communicate the fraternity's mission." }
+			] as a}
+				<div class="card"><div class="card-body">
+					<h3 style="color:var(--crimson); margin-bottom:10px;">{a.name}</h3>
+					<p style="color:var(--gray-600); font-size:0.95rem; line-height:1.7;">{a.desc}</p>
+				</div></div>
+			{/each}
 		</div>
 	</div>
 </section>
 
 <style>
-	.laureates-list {
-		display: flex; flex-direction: column; gap: 6px;
+	.awards-list { display: flex; flex-direction: column; gap: 12px; }
+
+	.award-block {
+		background: var(--white); border: 1px solid var(--gray-100);
+		border-radius: 14px; overflow: hidden; transition: all 0.3s ease;
 	}
-	.laureate-row {
-		display: flex; align-items: center; gap: 16px;
-		padding: 14px 18px; background: var(--white);
-		border: 1px solid var(--gray-100); border-radius: 10px;
-		transition: all 0.2s ease;
+	.award-block:hover { border-color: var(--crimson); }
+	.award-block--open { border-color: var(--crimson); box-shadow: 0 4px 20px rgba(139,0,0,0.08); }
+
+	.award-header {
+		display: flex; align-items: center; justify-content: space-between;
+		padding: 20px 24px; cursor: pointer; gap: 16px;
 	}
-	.laureate-row:hover {
-		border-color: var(--crimson);
-		box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
-		transform: translateX(4px);
+	.award-header-left { flex: 1; }
+	.award-name {
+		font-family: var(--font-serif); font-size: 1.15rem; font-weight: 700;
+		color: var(--crimson); margin-bottom: 4px;
 	}
-	.laureate-num {
-		font-family: var(--font-serif); font-size: 0.85rem; font-weight: 700;
-		color: var(--gold); min-width: 36px; text-align: center;
+	.award-meta { font-size: 0.78rem; color: var(--gray-500); }
+	.award-header-right { display: flex; align-items: center; gap: 12px; }
+	.award-count {
+		font-family: var(--font-serif); font-size: 1.5rem; font-weight: 700;
+		color: var(--gold);
 	}
-	.laureate-info { flex: 1; min-width: 0; }
-	.laureate-name {
-		font-family: var(--font-serif); font-size: 0.95rem; font-weight: 700;
-		color: var(--black);
+	.award-chevron {
+		color: var(--gray-400); transition: transform 0.3s ease;
 	}
-	.laureate-deceased { color: var(--gray-400); font-weight: 400; }
-	.laureate-detail { font-size: 0.78rem; color: var(--gray-500); margin-top: 2px; }
-	.laureate-right {
-		display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0;
+	.award-block--open .award-chevron { transform: rotate(180deg); }
+
+	.award-body {
+		padding: 0 24px 24px; border-top: 1px solid var(--gray-100);
+		padding-top: 20px;
 	}
-	.laureate-achievement {
-		font-size: 0.72rem; font-weight: 600; padding: 3px 10px;
-		border-radius: 12px; background: rgba(139, 0, 0, 0.06); color: var(--crimson); white-space: nowrap;
+	.award-desc {
+		font-size: 0.9rem; color: var(--gray-600); line-height: 1.7;
+		margin-bottom: 20px; max-width: 700px;
 	}
-	.laureate-year { font-size: 0.72rem; color: var(--gray-400); font-weight: 600; }
+
+	.award-table-wrap { overflow-x: auto; }
+	.award-table {
+		width: 100%; border-collapse: collapse; font-size: 0.85rem;
+	}
+	.award-table thead th {
+		text-align: left; padding: 10px 14px; font-size: 0.7rem;
+		font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px;
+		color: var(--gray-400); border-bottom: 2px solid var(--gray-100);
+		white-space: nowrap;
+	}
+	.award-table tbody tr {
+		border-bottom: 1px solid var(--gray-50);
+		transition: background 0.15s;
+	}
+	.award-table tbody tr:hover { background: var(--cream); }
+	.award-table td { padding: 10px 14px; color: var(--gray-600); }
+	.td-num { font-weight: 700; color: var(--gold); width: 40px; }
+	.td-year { color: var(--gray-400); font-weight: 600; width: 60px; }
+	.td-name { font-weight: 600; color: var(--black); font-family: var(--font-serif); }
 
 	@media (max-width: 640px) {
-		.laureate-row { flex-wrap: wrap; gap: 8px; }
-		.laureate-right { flex-direction: row; width: 100%; padding-left: 52px; }
+		.award-header { padding: 16px 18px; }
+		.award-body { padding: 0 18px 18px; padding-top: 16px; }
+		.award-count { display: none; }
+		.award-table { font-size: 0.78rem; }
+		.award-table td, .award-table th { padding: 8px 10px; }
 	}
 </style>

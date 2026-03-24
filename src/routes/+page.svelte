@@ -11,7 +11,7 @@
 	];
 
 	const events = [
-		{ month: 'Jul', day: '6', year: '2027', title: '88th Grand Chapter Meeting', location: 'Baltimore, Maryland', img: '/images/calendar/88th grand chapter meeting.jpg' },
+		{ month: 'Jul', day: '6', year: '2027', title: '88th Grand Chapter Meeting', location: 'Baltimore, Maryland', img: '/images/calendar/88th-GCM-Logo-1-768x899.png' },
 		{ month: 'Apr', day: '17', year: '2026', title: 'Southern Province Council', location: 'Miami, Florida', img: '/images/province-seals/southern.png' },
 		{ month: 'Apr', day: '22', year: '2026', title: 'North Central Province Council', location: 'TBD', img: '/images/province-seals/north-central.png' },
 	];

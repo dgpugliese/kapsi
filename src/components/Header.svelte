@@ -75,7 +75,12 @@
 		<span>&#922;&#913;&#936; &nbsp;&middot;&nbsp; Founded January 5, 1911 &nbsp;&middot;&nbsp; Indiana University Bloomington</span>
 		<div style="display:flex; gap:20px; align-items:center;">
 			<a href="/contact" class="hidden sm:inline">Need Assistance</a>
-			<a href="/login" class="top-cta">Brothers Only Login</a>
+			<a href="/login" class="top-cta">
+				<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="flex-shrink:0;">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+				</svg>
+				Member Portal
+			</a>
 		</div>
 	</div>
 </div>
@@ -134,7 +139,12 @@
 					<a href={link.href} onclick={closeMobile}>{link.label}</a>
 				{/if}
 			{/each}
-			<a href="/login" class="mobile-nav-highlight" onclick={closeMobile}>Brothers Only Login</a>
+			<a href="/login" class="mobile-nav-highlight" onclick={closeMobile}>
+				<svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="flex-shrink:0;">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+				</svg>
+				Member Portal
+			</a>
 		</nav>
 	{/if}
 </header>
@@ -152,16 +162,21 @@
 	.top-bar a { color: rgba(255,255,255,0.75); transition: color 0.25s; text-decoration: none; }
 	.top-bar a:hover { color: #fff; }
 	.top-cta {
-		background: #C9A84C;
+		background: linear-gradient(135deg, #C9A84C, #E2C572);
 		color: #fff !important;
-		font-weight: 600;
-		padding: 3px 12px;
+		font-weight: 700;
+		padding: 5px 16px;
 		border-radius: 20px;
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		box-shadow: 0 0 12px rgba(201, 168, 76, 0.4);
+		letter-spacing: 0.3px;
 		font-size: 0.72rem;
 		letter-spacing: 0.5px;
 		text-transform: uppercase;
 	}
-	.top-cta:hover { background: #E2C572; }
+	.top-cta:hover { background: linear-gradient(135deg, #E2C572, #C9A84C); box-shadow: 0 0 20px rgba(201, 168, 76, 0.6); }
 
 	/* ===== HEADER ===== */
 	.site-header {

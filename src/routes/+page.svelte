@@ -11,10 +11,12 @@
 	];
 
 	const events = [
-		{ month: 'Jul', day: '6', year: '2027', title: '88th Grand Chapter Meeting', location: 'Baltimore, Maryland', img: '/images/calendar/88th-GCM-Logo-1-768x899.png' },
-		{ month: 'Apr', day: '17', year: '2026', title: 'Southern Province Council', location: 'Miami, Florida', img: '/images/province-seals/southern.png' },
-		{ month: 'Apr', day: '22', year: '2026', title: 'North Central Province Council', location: 'TBD', img: '/images/province-seals/north-central.png' },
+		{ month: 'Jul', day: '6', year: '2027', title: '88th Grand Chapter Meeting', location: 'Baltimore, Maryland', img: '/images/calendar/88th-GCM-Logo-1-768x899.png', details: 'Join thousands of Kappa men in Baltimore for the 88th Grand Chapter Meeting. Business sessions, awards, community service, and brotherhood.' },
+		{ month: 'Apr', day: '17', year: '2026', title: 'Southern Province Council', location: 'Miami, Florida', img: '/images/province-seals/southern.png', details: 'The Southern Province Council convenes in Miami for province business, elections, workshops, and networking among brothers of the Southern Province.' },
+		{ month: 'Apr', day: '22', year: '2026', title: 'North Central Province Council', location: 'TBD', details: 'North Central Province brothers gather for the annual province council meeting featuring leadership development and chapter reports.', img: '/images/province-seals/north-central.png' },
 	];
+
+	let flippedCards = $state<Record<number, boolean>>({});
 
 	const bannerSlides = [
 		{
@@ -299,31 +301,53 @@
 
 		<div class="evt-grid reveal" style="transition-delay:0.1s">
 			{#each events as e, i}
-				<div class="evt-card" class:evt-card--featured={i === 0}>
-					{#if e.img}
-						<div class="evt-card-img">
-							<img src={e.img} alt={e.title} />
+				<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+				<div class="evt-flip-wrapper" class:evt-flip-wrapper--flipped={flippedCards[i]} onclick={() => (flippedCards[i] = !flippedCards[i])}>
+					<div class="evt-flip-inner">
+						<!-- FRONT -->
+						<div class="evt-card evt-flip-front" class:evt-card--featured={i === 0}>
+							{#if e.img}
+								<div class="evt-card-img">
+									<img src={e.img} alt={e.title} />
+								</div>
+							{:else}
+								<div class="evt-card-date">
+									<div class="evt-month">{e.month}</div>
+									<div class="evt-day">{e.day}</div>
+									<div class="evt-year">{e.year}</div>
+								</div>
+							{/if}
+							<div class="evt-card-body">
+								<div class="evt-date-text">{e.month} {e.day}, {e.year}</div>
+								<h3 class="evt-title">{e.title}</h3>
+								<div class="evt-location">
+									<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="flex-shrink:0; opacity:0.5;">
+										<path d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /><path d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 0 1 15 0Z" />
+									</svg>
+									<span>{e.location}</span>
+								</div>
+							</div>
+							{#if i === 0}
+								<div class="evt-card-badge">Featured</div>
+							{/if}
+							<div class="evt-flip-hint">Tap for details</div>
 						</div>
-					{:else}
-						<div class="evt-card-date">
-							<div class="evt-month">{e.month}</div>
-							<div class="evt-day">{e.day}</div>
-							<div class="evt-year">{e.year}</div>
-						</div>
-					{/if}
-					<div class="evt-card-body">
-						<div class="evt-date-text">{e.month} {e.day}, {e.year}</div>
-						<h3 class="evt-title">{e.title}</h3>
-						<div class="evt-location">
-							<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="flex-shrink:0; opacity:0.5;">
-								<path d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /><path d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 0 1 15 0Z" />
-							</svg>
-							<span>{e.location}</span>
+						<!-- BACK -->
+						<div class="evt-card evt-flip-back">
+							<div class="evt-back-content">
+								<div class="evt-date-text">{e.month} {e.day}, {e.year}</div>
+								<h3 class="evt-title" style="margin-bottom:12px;">{e.title}</h3>
+								<p class="evt-back-details">{e.details}</p>
+								<div class="evt-location" style="margin-top:auto;">
+									<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="flex-shrink:0; opacity:0.5;">
+										<path d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /><path d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 0 1 15 0Z" />
+									</svg>
+									<span>{e.location}</span>
+								</div>
+								<div class="evt-flip-hint">Tap to flip back</div>
+							</div>
 						</div>
 					</div>
-					{#if i === 0}
-						<div class="evt-card-badge">Featured</div>
-					{/if}
 				</div>
 			{/each}
 		</div>
@@ -655,13 +679,48 @@
 	.evt-grid {
 		display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;
 	}
+
+	/* Flip card container */
+	.evt-flip-wrapper {
+		perspective: 1000px; cursor: pointer;
+		height: 340px;
+	}
+	.evt-flip-inner {
+		position: relative; width: 100%; height: 100%;
+		transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+		transform-style: preserve-3d;
+	}
+	.evt-flip-wrapper--flipped .evt-flip-inner {
+		transform: rotateY(180deg);
+	}
+	.evt-flip-front, .evt-flip-back {
+		position: absolute; inset: 0;
+		backface-visibility: hidden;
+		-webkit-backface-visibility: hidden;
+	}
+	.evt-flip-back {
+		transform: rotateY(180deg);
+	}
+	.evt-back-content {
+		display: flex; flex-direction: column; height: 100%;
+		padding: 28px 24px;
+	}
+	.evt-back-details {
+		font-size: 0.9rem; color: var(--gray-600); line-height: 1.7;
+		margin-bottom: 16px;
+	}
+	.evt-flip-hint {
+		font-size: 0.68rem; color: var(--gray-400); text-align: center;
+		padding: 8px; letter-spacing: 0.5px; text-transform: uppercase;
+	}
+
 	.evt-card {
 		position: relative; background: var(--white); border-radius: 16px;
-		overflow: hidden; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+		overflow: hidden;
 		box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+		height: 100%;
 	}
-	.evt-card:hover {
-		transform: translateY(-6px);
+	.evt-flip-wrapper:hover .evt-flip-front {
 		box-shadow: 0 16px 48px rgba(0,0,0,0.1);
 	}
 	.evt-card--featured {

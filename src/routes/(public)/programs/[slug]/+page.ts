@@ -40,6 +40,7 @@ const programs: Record<string, { name: string; description: string; content: str
 	},
 	'room-to-read': {
 		name: 'Room To Read',
+		icon: '/images/programs/RTR-Logo-Primary-RGB-FullColor-r6v55a3137bq2nefd4d02px2f2hf6dt8zs0lzwf26k.png',
 		description: 'Literacy initiative partnership promoting reading and educational development.',
 		content: `<p>Room To Read is Kappa Alpha Psi's literacy initiative, partnering with communities to promote reading and educational development among young people. The program recognizes that literacy is the foundation for all achievement.</p>
 <p>Through book drives, reading programs, and library initiatives, chapters across the country work to ensure that every child has access to books and the support to become lifelong readers.</p>`
@@ -74,6 +75,7 @@ const programs: Record<string, { name: string; description: string; content: str
 	},
 	'are-you-ok': {
 		name: 'Are You OK?',
+		icon: '/images/programs/AreYouOKDark.png',
 		description: 'Mental health awareness and support program prioritizing mental well-being in the African American community.',
 		content: `<p>Are You OK? is Kappa Alpha Psi's mental health awareness and support program. The initiative encourages conversations about mental health, promotes access to resources, and works to reduce stigma around seeking help.</p>
 <p>Let's prioritize mental health in the African American community. Encourage conversations, seek help when needed, and advocate for accessible, culturally sensitive mental health services. Your mental health matters!</p>

@@ -5,9 +5,9 @@
 		{ img: '/images/programs/Guide-Right-200.png', name: 'Guide Right', slug: 'guide-right', stat: '500K+', statLabel: 'Youth Mentored', desc: 'Our flagship service initiative providing educational and occupational guidance to youth across 400+ communities.' },
 		{ img: '/images/programs/KappaLeague-200.png', name: 'Kappa League', slug: 'kappa-league', stat: '6–12', statLabel: 'Grades Served', desc: 'A structured leadership development program building the next generation of Black male leaders.' },
 		{ img: '/images/programs/AcheivementAcademy-200.png', name: 'Achievement Academy', slug: 'achievement-academy', stat: '700+', statLabel: 'Chapters Active', desc: 'Enhancing the collegiate experience through mentoring, coaching, and professional development.' },
-		{ img: null, name: 'Room To Read', slug: 'room-to-read', stat: '32K+', statLabel: 'Books Donated', desc: 'Bringing literacy resources to under-resourced schools in partnership with Room to Read.' },
+		{ img: '/images/programs/RTR-Logo-Primary-RGB-FullColor-r6v55a3137bq2nefd4d02px2f2hf6dt8zs0lzwf26k.png', name: 'Room To Read', slug: 'room-to-read', stat: '32K+', statLabel: 'Books Donated', desc: 'Bringing literacy resources to under-resourced schools in partnership with Room to Read.' },
 		{ img: '/images/programs/Learn2Live-200.png', name: 'Learn 2 Live', slug: 'learn-to-live', stat: '70K+', statLabel: 'Students Trained', desc: 'Educating youth on constitutional rights and safe interactions with law enforcement.' },
-		{ img: null, name: 'Are You OK?', slug: 'are-you-ok', stat: 'J&J', statLabel: 'Partnership', desc: 'A national mental health initiative for Black men in partnership with Johnson & Johnson.' },
+		{ img: '/images/programs/AreYouOKDark.png', name: 'Are You OK?', slug: 'are-you-ok', stat: 'J&J', statLabel: 'Partnership', desc: 'A national mental health initiative for Black men in partnership with Johnson & Johnson.' },
 	];
 
 	const events = [

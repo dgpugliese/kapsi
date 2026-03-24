@@ -16,12 +16,66 @@
 		{ month: 'Apr', day: '22', year: '2026', title: 'North Central Province Council', location: 'TBD' },
 	];
 
+	const bannerSlides = [
+		{
+			type: 'hero' as const,
+		},
+		{
+			type: 'image' as const,
+			src: '/images/banners/ulf-phase-ii.png',
+			alt: 'Undergrad Loyalty Fund — Phase II now available to undergraduate chapters',
+			link: '/programs'
+		},
+		{
+			type: 'image' as const,
+			src: '/images/banners/gp-print-banner.jpg',
+			alt: 'Limited edition Grand Polemarch print featuring all 35 Grand Polemarchs',
+			link: '/store'
+		},
+		{
+			type: 'image' as const,
+			src: '/images/banners/kappa-loop-app.jpg',
+			alt: 'Kappa Loop Mobile App — Download on the App Store and Google Play',
+			link: '/portal'
+		}
+	];
+
+	let currentSlide = $state(0);
+	let paused = $state(false);
+	let slideInterval: ReturnType<typeof setInterval> | null = null;
+
+	function goToSlide(index: number) {
+		currentSlide = index;
+		resetTimer();
+	}
+
+	function nextSlide() {
+		currentSlide = (currentSlide + 1) % bannerSlides.length;
+	}
+
+	function prevSlide() {
+		currentSlide = (currentSlide - 1 + bannerSlides.length) % bannerSlides.length;
+	}
+
+	function resetTimer() {
+		if (slideInterval) clearInterval(slideInterval);
+		if (!paused) {
+			slideInterval = setInterval(nextSlide, 6000);
+		}
+	}
+
 	onMount(() => {
+		slideInterval = setInterval(nextSlide, 6000);
+
 		const observer = new IntersectionObserver(
 			(entries) => entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); } }),
 			{ threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
 		);
 		document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+		return () => {
+			if (slideInterval) clearInterval(slideInterval);
+		};
 	});
 </script>
 
@@ -29,32 +83,93 @@
 	<title>Kappa Alpha Psi Fraternity, Inc. — Achievement In Every Field of Human Endeavor</title>
 </svelte:head>
 
-<!-- HERO -->
-<section class="hero">
-	<div class="hero-achievement" aria-hidden="true"></div>
-	<div class="container hero-inner">
-		<div class="hero-content">
-			<div class="hero-eyebrow">
-				<span class="hero-since">Founded January 5, 1911</span>
-				<span class="hero-sep" aria-hidden="true">&middot;</span>
-				<span>Indiana University Bloomington</span>
+<!-- BANNER CAROUSEL -->
+<section
+	class="banner"
+	role="region"
+	aria-label="Homepage banner carousel"
+	onmouseenter={() => { paused = true; if (slideInterval) clearInterval(slideInterval); }}
+	onmouseleave={() => { paused = false; resetTimer(); }}
+>
+	<div class="banner-track">
+		{#each bannerSlides as slide, i}
+			<div
+				class="banner-slide"
+				class:banner-slide--active={i === currentSlide}
+				aria-hidden={i !== currentSlide}
+			>
+				{#if slide.type === 'hero'}
+					<!-- Original hero content -->
+					<div class="hero-slide">
+						<div class="hero-achievement" aria-hidden="true"></div>
+						<div class="container hero-inner">
+							<div class="hero-content">
+								<div class="hero-eyebrow">
+									<span class="hero-since">Founded January 5, 1911</span>
+									<span class="hero-sep" aria-hidden="true">&middot;</span>
+									<span>Indiana University Bloomington</span>
+								</div>
+								<h1 class="hero-title">
+									Achievement<br />
+									<em>in Every Field</em><br />
+									of Human Endeavor
+								</h1>
+								<p class="hero-desc">
+									Kappa Alpha Psi® Fraternity, Inc. (&#922;&#913;&#936;) is a collegiate Greek-letter fraternity, founded on January 5, 1911 at Indiana University Bloomington. The fraternity has over 150,000 members with 700 undergraduate and alumni chapters in every state of the United States, and international chapters in the United Kingdom, Germany, Korea, Japan, the Caribbean, Saint Thomas, Saint Croix, U.S. Virgin Islands, Nigeria, Bermuda, Canada, Dubai, Dominican Republic and South Africa.
+								</p>
+								<div class="hero-actions">
+									<a href="/about/membership" class="btn btn--white">Explore Membership</a>
+									<a href="/about/chapter-locator" class="btn btn--outline-white">Find a Chapter</a>
+								</div>
+							</div>
+						</div>
+					</div>
+				{:else}
+					<!-- Image banner slide -->
+					<a href={slide.link} class="banner-image-slide">
+						<img
+							src={slide.src}
+							alt={slide.alt}
+							loading={i <= 1 ? 'eager' : 'lazy'}
+						/>
+					</a>
+				{/if}
 			</div>
-			<h1 class="hero-title">
-				Achievement<br />
-				<em>in Every Field</em><br />
-				of Human Endeavor
-			</h1>
-			<p class="hero-desc">
-				Kappa Alpha Psi® Fraternity, Inc. (&#922;&#913;&#936;) is a collegiate Greek-letter fraternity, founded on January 5, 1911 at Indiana University Bloomington. The fraternity has over 150,000 members with 700 undergraduate and alumni chapters in every state of the United States, and international chapters in the United Kingdom, Germany, Korea, Japan, the Caribbean, Saint Thomas, Saint Croix, U.S. Virgin Islands, Nigeria, Bermuda, Canada, Dubai, Dominican Republic and South Africa.
-			</p>
-			<div class="hero-actions">
-				<a href="/about/membership" class="btn btn--white">Explore Membership</a>
-				<a href="/about/chapter-locator" class="btn btn--outline-white">Find a Chapter</a>
-			</div>
-		</div>
+		{/each}
 	</div>
-	<div class="hero-scroll-indicator" aria-hidden="true">
-		<div class="hero-scroll-line"></div>
+
+	<!-- Navigation arrows -->
+	<button class="banner-arrow banner-arrow--prev" onclick={prevSlide} aria-label="Previous slide">
+		<svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+			<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+		</svg>
+	</button>
+	<button class="banner-arrow banner-arrow--next" onclick={nextSlide} aria-label="Next slide">
+		<svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+			<path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+		</svg>
+	</button>
+
+	<!-- Dots -->
+	<div class="banner-dots">
+		{#each bannerSlides as _, i}
+			<button
+				class="banner-dot"
+				class:banner-dot--active={i === currentSlide}
+				onclick={() => goToSlide(i)}
+				aria-label="Go to slide {i + 1}"
+			></button>
+		{/each}
+	</div>
+
+	<!-- Progress bar -->
+	<div class="banner-progress">
+		<div
+			class="banner-progress-bar"
+			class:banner-progress-bar--paused={paused}
+			style="animation-duration:6s;"
+			key={currentSlide}
+		></div>
 	</div>
 </section>
 
@@ -222,8 +337,43 @@
 </section>
 
 <style>
-	/* ===== HERO ===== */
-	.hero { position: relative; min-height: 100svh; display: flex; align-items: center; overflow: hidden; background: linear-gradient(150deg, #3D0000 0%, #5C0000 30%, #8B0000 70%, #700000 100%); }
+	/* ===== BANNER CAROUSEL ===== */
+	.banner {
+		position: relative;
+		width: 100%;
+		aspect-ratio: 2 / 1;
+		min-height: 480px;
+		max-height: 100svh;
+		overflow: hidden;
+		background: #1a0000;
+	}
+	.banner-track {
+		position: relative;
+		width: 100%;
+		height: 100%;
+	}
+	.banner-slide {
+		position: absolute;
+		inset: 0;
+		opacity: 0;
+		transition: opacity 0.8s ease;
+		pointer-events: none;
+	}
+	.banner-slide--active {
+		opacity: 1;
+		pointer-events: auto;
+		z-index: 1;
+	}
+
+	/* Hero text slide */
+	.hero-slide {
+		position: relative;
+		width: 100%;
+		height: 100%;
+		display: flex;
+		align-items: center;
+		background: linear-gradient(150deg, #3D0000 0%, #5C0000 30%, #8B0000 70%, #700000 100%);
+	}
 	.hero-achievement {
 		position: absolute; right: -5%; top: 50%; transform: translateY(-50%);
 		width: 500px; height: 500px; z-index: 0;
@@ -231,17 +381,111 @@
 		opacity: 0.08;
 		filter: brightness(2);
 	}
-	.hero-inner { position: relative; z-index: 1; display: flex; align-items: center; padding-top: 80px; padding-bottom: 80px; }
+	.hero-inner { position: relative; z-index: 1; display: flex; align-items: center; padding-top: 40px; padding-bottom: 40px; }
 	.hero-content { max-width: 640px; }
 	.hero-eyebrow { display: flex; align-items: center; gap: 10px; font-size: 0.78rem; font-weight: 500; color: rgba(255,255,255,0.5); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 24px; }
 	.hero-since { color: #C9A84C; font-weight: 600; }
-	.hero-title { font-family: 'Cormorant Garamond', Georgia, serif; font-size: clamp(3rem, 7vw, 6rem); font-weight: 700; color: #fff; line-height: 1.05; margin-bottom: 24px; letter-spacing: -1px; }
+	.hero-title { font-family: 'Cormorant Garamond', Georgia, serif; font-size: clamp(2.4rem, 5.5vw, 5rem); font-weight: 700; color: #fff; line-height: 1.05; margin-bottom: 20px; letter-spacing: -1px; }
 	.hero-title em { font-style: italic; color: #C9A84C; font-weight: 400; }
-	.hero-desc { font-size: 1rem; color: rgba(255,255,255,0.75); line-height: 1.8; margin-bottom: 36px; font-weight: 300; max-width: 640px; }
+	.hero-desc { font-size: 0.92rem; color: rgba(255,255,255,0.75); line-height: 1.8; margin-bottom: 28px; font-weight: 300; max-width: 600px; }
 	.hero-actions { display: flex; gap: 14px; flex-wrap: wrap; }
-	.hero-scroll-indicator { position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%); }
-	.hero-scroll-line { width: 1px; height: 56px; background: linear-gradient(to bottom, rgba(255,255,255,0.4), transparent); animation: scrollPulse 2s ease-in-out infinite; }
-	@keyframes scrollPulse { 0%, 100% { opacity: 0.4; transform: scaleY(1); } 50% { opacity: 1; transform: scaleY(1.2); } }
+
+	/* Image slides */
+	.banner-image-slide {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 100%;
+		height: 100%;
+		background: #1a0000;
+		text-decoration: none;
+	}
+	.banner-image-slide img {
+		width: 100%;
+		height: 100%;
+		object-fit: contain;
+		object-position: center;
+	}
+
+	/* Navigation arrows */
+	.banner-arrow {
+		position: absolute;
+		top: 50%;
+		transform: translateY(-50%);
+		z-index: 10;
+		width: 44px;
+		height: 44px;
+		border-radius: 50%;
+		border: none;
+		background: rgba(0, 0, 0, 0.45);
+		color: white;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		transition: all 0.25s ease;
+		backdrop-filter: blur(4px);
+	}
+	.banner-arrow:hover {
+		background: rgba(139, 0, 0, 0.85);
+		transform: translateY(-50%) scale(1.1);
+	}
+	.banner-arrow--prev { left: 20px; }
+	.banner-arrow--next { right: 20px; }
+
+	/* Dots */
+	.banner-dots {
+		position: absolute;
+		bottom: 24px;
+		left: 50%;
+		transform: translateX(-50%);
+		z-index: 10;
+		display: flex;
+		gap: 10px;
+	}
+	.banner-dot {
+		width: 10px;
+		height: 10px;
+		border-radius: 50%;
+		border: 2px solid rgba(255, 255, 255, 0.6);
+		background: transparent;
+		cursor: pointer;
+		transition: all 0.25s ease;
+		padding: 0;
+	}
+	.banner-dot:hover {
+		border-color: white;
+		background: rgba(255, 255, 255, 0.3);
+	}
+	.banner-dot--active {
+		background: white;
+		border-color: white;
+		transform: scale(1.2);
+	}
+
+	/* Progress bar */
+	.banner-progress {
+		position: absolute;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		height: 3px;
+		background: rgba(255, 255, 255, 0.15);
+		z-index: 10;
+	}
+	.banner-progress-bar {
+		height: 100%;
+		background: linear-gradient(90deg, var(--gold), #E2C572);
+		animation: progressFill 6s linear;
+		transform-origin: left;
+	}
+	.banner-progress-bar--paused {
+		animation-play-state: paused;
+	}
+	@keyframes progressFill {
+		from { width: 0; }
+		to { width: 100%; }
+	}
 
 	/* ===== STATS BAR ===== */
 	.stats-bar { background: #fff; border-bottom: 1px solid #F0F0F0; padding: 48px 0; }
@@ -434,6 +678,10 @@
 		.message-photo { max-width: 300px; margin: 0 auto; }
 	}
 	@media (max-width: 768px) {
+		.banner { aspect-ratio: auto; min-height: 400px; max-height: 70svh; }
+		.banner-arrow { width: 36px; height: 36px; }
+		.banner-arrow--prev { left: 12px; }
+		.banner-arrow--next { right: 12px; }
 		.stats-bar-divider { display: none; }
 		.stats-bar-item { padding: 12px 20px; }
 		.prog-row { grid-template-columns: 1fr; }
@@ -443,8 +691,16 @@
 		.membership-cta-inner { flex-direction: column; }
 	}
 	@media (max-width: 640px) {
-		.hero-title { font-size: 2.8rem; }
+		.banner { min-height: 320px; }
+		.hero-title { font-size: 2.2rem; }
+		.hero-desc { font-size: 0.85rem; margin-bottom: 20px; }
+		.hero-eyebrow { flex-wrap: wrap; font-size: 0.7rem; }
 		.hero-actions { flex-direction: column; }
 		.hero-actions :global(.btn) { width: 100%; justify-content: center; }
+		.banner-arrow { width: 32px; height: 32px; }
+		.banner-arrow--prev { left: 8px; }
+		.banner-arrow--next { right: 8px; }
+		.banner-dots { bottom: 16px; gap: 8px; }
+		.banner-dot { width: 8px; height: 8px; }
 	}
 </style>

@@ -507,6 +507,7 @@
 	.message-photo { position: relative; }
 	.message-photo-frame {
 		aspect-ratio: 3/4; border-radius: 20px; overflow: hidden; position: relative; z-index: 1;
+		background: linear-gradient(160deg, #5C0000, #8B0000);
 		transition: transform 0.4s ease, box-shadow 0.4s ease;
 		box-shadow: 0 8px 30px rgba(0,0,0,0.15);
 	}

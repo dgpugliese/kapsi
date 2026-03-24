@@ -3,4 +3,4 @@ Allow: /
 Disallow: /portal/
 Disallow: /admin/
 
-Sitemap: https://kappaalphapsi1911.com/sitemap.xml
+Sitemap: https://kapsi.pages.dev/sitemap.xml

@@ -61,10 +61,9 @@
 	.program-hero-icon {
 		display: block;
 		margin: 0 auto 20px;
-		width: 120px;
-		height: 120px;
+		width: 100px;
+		height: 100px;
 		object-fit: contain;
-		filter: drop-shadow(0 4px 12px rgba(0,0,0,0.2));
 	}
 	.prog-pill:hover {
 		background: var(--crimson) !important;

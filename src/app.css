@@ -152,46 +152,40 @@ html { scroll-behavior: smooth; }
 
 /* ===== PAGE HERO ===== */
 .page-hero {
-	background: linear-gradient(150deg, #3D0000 0%, #5C0000 30%, #8B0000 60%, #700000 100%);
-	background-size: 200% 200%;
-	animation: heroGradient 12s ease infinite;
-	color: var(--white); padding: clamp(72px, 10vw, 120px) 0;
+	background: var(--white);
+	color: var(--black);
+	padding: clamp(48px, 7vw, 80px) 0;
 	position: relative; overflow: hidden;
-}
-@keyframes heroGradient {
-	0%, 100% { background-position: 0% 50%; }
-	50% { background-position: 100% 50%; }
+	border-bottom: 1px solid var(--gray-100);
 }
 .page-hero::before {
-	content: ''; position: absolute; inset: 0; z-index: 0;
-	background:
-		radial-gradient(ellipse at 15% 50%, rgba(201,168,76,0.1) 0%, transparent 50%),
-		radial-gradient(ellipse at 85% 30%, rgba(255,255,255,0.05) 0%, transparent 40%),
-		repeating-linear-gradient(60deg, transparent, transparent 30px, rgba(255,255,255,0.012) 30px, rgba(255,255,255,0.012) 31px),
-		repeating-linear-gradient(-60deg, transparent, transparent 30px, rgba(255,255,255,0.012) 30px, rgba(255,255,255,0.012) 31px);
+	content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 4px;
+	background: linear-gradient(90deg, var(--crimson), var(--gold), var(--crimson));
 }
 .page-hero::after {
-	content: ''; position: absolute; bottom: -1px; left: 0; right: 0;
-	height: 60px; background: var(--white);
-	clip-path: ellipse(60% 100% at 50% 100%);
+	content: none;
 }
-.page-hero h1 { font-size: clamp(1.8rem, 4vw, 2.8rem); color: var(--white); margin-bottom: 0; font-weight: 700; letter-spacing: -0.5px; }
+.page-hero h1 {
+	font-size: clamp(2rem, 4.5vw, 3rem); color: var(--black);
+	margin-bottom: 0; font-weight: 700; letter-spacing: -0.5px;
+}
 .page-hero .hero-divider {
-	display: flex; align-items: center; justify-content: center; gap: 16px;
-	margin: 20px auto; width: 200px;
+	display: flex; align-items: center; justify-content: center; gap: 12px;
+	margin: 14px auto; width: 120px;
 }
 .page-hero .hero-divider::before,
 .page-hero .hero-divider::after {
-	content: ''; flex: 1; height: 1px;
-	background: linear-gradient(to right, transparent, rgba(201,168,76,0.6));
-}
-.page-hero .hero-divider::after {
-	background: linear-gradient(to left, transparent, rgba(201,168,76,0.6));
+	content: ''; flex: 1; height: 2px;
+	background: var(--crimson); opacity: 0.2;
 }
 .page-hero .hero-divider span {
-	color: var(--gold); font-size: 0.9rem; line-height: 1;
+	color: var(--crimson); font-size: 0.7rem; line-height: 1;
 }
-.page-hero p { font-size: 0.95rem; opacity: 0.75; max-width: 640px; font-weight: 400; margin: 0 auto; font-family: var(--font-sans); letter-spacing: 0.2px; line-height: 1.7; }
+.page-hero p {
+	font-size: 0.95rem; color: var(--gray-500); max-width: 580px;
+	font-weight: 400; margin: 0 auto; font-family: var(--font-sans);
+	letter-spacing: 0.2px; line-height: 1.7;
+}
 .page-hero .container { text-align: center; position: relative; z-index: 1; }
 .page-hero + .section { padding-top: clamp(32px, 4vw, 56px); }
 
@@ -269,5 +263,5 @@ textarea.form-control { resize: vertical; min-height: 120px; }
 
 /* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
-	.page-hero::after { height: 30px; }
+	.page-hero { padding: clamp(36px, 6vw, 56px) 0; }
 }

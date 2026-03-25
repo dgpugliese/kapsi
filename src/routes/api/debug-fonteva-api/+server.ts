@@ -87,5 +87,25 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 		results.latestEPayment = { error: err.message };
 	}
 
+	// 5. ePayment field describe — find writable amount fields
+	try {
+		const desc = await sfDescribe('OrderApi__EPayment__c');
+		results.ePaymentFields = desc.fields
+			.filter((f: any) =>
+				f.name.includes('Amount') || f.name.includes('Total') ||
+				f.name.includes('Payment_Amount') || f.name.includes('Charge') ||
+				f.name.includes('Price') || f.name.includes('Value')
+			)
+			.map((f: any) => ({
+				name: f.name,
+				label: f.label,
+				type: f.type,
+				writable: f.createable,
+				updatable: f.updateable
+			}));
+	} catch (err: any) {
+		results.ePaymentFields = { error: err.message };
+	}
+
 	return json(results);
 };

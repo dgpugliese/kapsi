@@ -21,7 +21,9 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	const contact = await findContactByEmail(user.email!);
 	if (!contact) throw error(404, 'No Salesforce contact found');
 
-	const today = new Date().toISOString().split('T')[0];
+	// Use US Eastern time to avoid UTC date being a day ahead when testing in the evening
+	const today = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }))
+		.toISOString().split('T')[0];
 	const gatewayId = env.SF_GATEWAY_ID || 'a18Su000008QU13IAG';
 	const stripeKey = env.STRIPE_SECRET_KEY;
 
@@ -167,9 +169,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		steps.receipt = { ok: false, error: err.message };
 	}
 
-	// Step 4: Set Amount Paid on the Sales Order so Balance_Due formula = 0
-	// Do NOT change Status to Closed — Fonteva has a validation rule that blocks
-	// "draft to paid" transitions. Let the ePayment/Receipt triggers handle status.
+	// Step 4a: Set Amount Paid + posting fields (moves order out of "draft" state)
 	try {
 		await sfUpdate('OrderApi__Sales_Order__c', orderId, {
 			OrderApi__Is_Posted__c: true,
@@ -178,9 +178,20 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			OrderApi__Paid_Date__c: today,
 			OrderApi__Amount_Paid__c: amountPaid
 		});
+		steps.postOrder = { ok: true };
+	} catch (err: any) {
+		console.error('Step 4a (Post SO) failed:', err.message);
+		steps.postOrder = { ok: false, error: err.message };
+	}
+
+	// Step 4b: Now close the order (separate update — order is no longer in draft)
+	try {
+		await sfUpdate('OrderApi__Sales_Order__c', orderId, {
+			OrderApi__Status__c: 'Closed'
+		});
 		steps.closeOrder = { ok: true };
 	} catch (err: any) {
-		console.error('Step 4 (Update SO) failed:', err.message);
+		console.error('Step 4b (Close SO) failed:', err.message);
 		steps.closeOrder = { ok: false, error: err.message };
 	}
 

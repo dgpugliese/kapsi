@@ -80,7 +80,8 @@ async function handlePaymentSucceeded(paymentIntent: any) {
 	// Get the SF order total (includes Fonteva surcharge) so Amount_Paid matches
 	const orderTotal = orderCheck.length > 0 ? orderCheck[0].OrderApi__Total__c ?? amount : amount;
 	const amountPaid = orderTotal > 0 ? orderTotal : amount;
-	const today = new Date().toISOString().split('T')[0];
+	const today = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }))
+		.toISOString().split('T')[0];
 	const gatewayId = env.SF_GATEWAY_ID || 'a18Su000008QU13IAG';
 
 	// Get contact details for the ePayment
@@ -145,12 +146,17 @@ async function handlePaymentSucceeded(paymentIntent: any) {
 
 	// Close order
 	try {
+		// First: post the order and set amount paid (moves out of draft)
 		await sfUpdate('OrderApi__Sales_Order__c', orderId, {
 			OrderApi__Is_Posted__c: true,
 			OrderApi__Posting_Status__c: 'Posted',
 			OrderApi__Posted_Date__c: today,
 			OrderApi__Paid_Date__c: today,
 			OrderApi__Amount_Paid__c: amountPaid
+		});
+		// Then: close the order (now that it's no longer draft)
+		await sfUpdate('OrderApi__Sales_Order__c', orderId, {
+			OrderApi__Status__c: 'Closed'
 		});
 	} catch (err: any) {
 		console.error('Webhook: failed to close order:', err.message);

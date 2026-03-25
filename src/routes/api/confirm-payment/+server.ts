@@ -99,7 +99,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			ePaymentId = existing[0].Id;
 			// Update existing ePayment to mark as succeeded
 			await sfUpdate('OrderApi__EPayment__c', ePaymentId, {
-				OrderApi__Total__c: amount,
+				OrderApi__Total__c: amountPaid,
 				OrderApi__Succeeded__c: true,
 				OrderApi__Transaction_Type__c: 'card',
 				OrderApi__Gateway_Transaction_ID__c: chargeId || paymentIntentId,
@@ -115,7 +115,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 				OrderApi__Account__c: contact.AccountId,
 				OrderApi__Sales_Order__c: orderId,
 				OrderApi__Date__c: today,
-				OrderApi__Total__c: amount,
+				OrderApi__Total__c: amountPaid,
 				OrderApi__Succeeded__c: true,
 				OrderApi__Transaction_Type__c: 'card',
 				OrderApi__Gateway_Transaction_ID__c: chargeId || paymentIntentId,
@@ -125,6 +125,10 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 				OrderApi__Card_Type__c: cardBrand ? cardBrand.charAt(0).toUpperCase() + cardBrand.slice(1) : null,
 				OrderApi__Full_Name__c: cardholderName || null,
 				OrderApi__Entity__c: 'Contact'
+			});
+			// Fonteva trigger may reset Total on insert — force it back with a separate update
+			await sfUpdate('OrderApi__EPayment__c', ePaymentId, {
+				OrderApi__Total__c: amountPaid
 			});
 			steps.ePayment = { ok: true, id: ePaymentId };
 		}

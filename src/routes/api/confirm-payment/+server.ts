@@ -131,6 +131,9 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		steps.ePayment = { ok: false, error: err.message };
 	}
 
+	// Calculate amount to mark as paid — use SF order total (includes Fonteva surcharge)
+	const amountPaid = orderTotal > 0 ? orderTotal : amount;
+
 	// Step 3: Create Receipt
 	let receiptId = '';
 	try {
@@ -164,22 +167,20 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		steps.receipt = { ok: false, error: err.message };
 	}
 
-	// Step 4: Close and post the Sales Order with Amount Paid
-	// Use the SF order total (includes Fonteva's surcharge) so Balance_Due = 0
-	// which flips Sales_Order_Status__c (formula) to "Paid"
-	const amountPaid = orderTotal > 0 ? orderTotal : amount;
+	// Step 4: Set Amount Paid on the Sales Order so Balance_Due formula = 0
+	// Do NOT change Status to Closed — Fonteva has a validation rule that blocks
+	// "draft to paid" transitions. Let the ePayment/Receipt triggers handle status.
 	try {
 		await sfUpdate('OrderApi__Sales_Order__c', orderId, {
-			OrderApi__Status__c: 'Closed',
-			OrderApi__Posting_Status__c: 'Posted',
 			OrderApi__Is_Posted__c: true,
+			OrderApi__Posting_Status__c: 'Posted',
 			OrderApi__Posted_Date__c: today,
 			OrderApi__Paid_Date__c: today,
 			OrderApi__Amount_Paid__c: amountPaid
 		});
 		steps.closeOrder = { ok: true };
 	} catch (err: any) {
-		console.error('Step 4 (Close SO) failed:', err.message);
+		console.error('Step 4 (Update SO) failed:', err.message);
 		steps.closeOrder = { ok: false, error: err.message };
 	}
 

@@ -146,9 +146,8 @@ async function handlePaymentSucceeded(paymentIntent: any) {
 	// Close order
 	try {
 		await sfUpdate('OrderApi__Sales_Order__c', orderId, {
-			OrderApi__Status__c: 'Closed',
-			OrderApi__Posting_Status__c: 'Posted',
 			OrderApi__Is_Posted__c: true,
+			OrderApi__Posting_Status__c: 'Posted',
 			OrderApi__Posted_Date__c: today,
 			OrderApi__Paid_Date__c: today,
 			OrderApi__Amount_Paid__c: amountPaid

@@ -71,7 +71,7 @@
 
 <!-- Top Bar -->
 <div class="top-bar">
-	<div class="container" style="display:flex; justify-content:space-between; align-items:center;">
+	<div class="top-bar-inner">
 		<span>&#922;&#913;&#936; &nbsp;&middot;&nbsp; Founded January 5, 1911 &nbsp;&middot;&nbsp; Indiana University Bloomington</span>
 		<div style="display:flex; gap:20px; align-items:center;">
 			<a href="/contact" class="hidden sm:inline">Need Assistance</a>
@@ -87,7 +87,7 @@
 
 <!-- Header -->
 <header class="site-header" class:scrolled>
-	<div class="container">
+	<div class="header-inner">
 		<nav class="nav-main" aria-label="Main navigation">
 			<!-- Logo -->
 			<a href="/" class="nav-logo" aria-label="Home">
@@ -159,6 +159,10 @@
 		letter-spacing: 0.3px;
 		padding: 7px 0;
 	}
+	.top-bar-inner {
+		display: flex; justify-content: space-between; align-items: center;
+		padding: 0 clamp(20px, 4vw, 48px);
+	}
 	.top-bar a { color: rgba(255,255,255,0.75); transition: color 0.25s; text-decoration: none; }
 	.top-bar a:hover { color: #fff; }
 	.top-cta {
@@ -191,6 +195,9 @@
 	}
 	.scrolled { box-shadow: 0 4px 20px rgba(0,0,0,0.10); }
 
+	.header-inner {
+		padding: 0 clamp(20px, 4vw, 48px);
+	}
 	.nav-main {
 		display: flex;
 		align-items: center;

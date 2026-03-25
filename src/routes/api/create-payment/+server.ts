@@ -1,19 +1,22 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { findContactByEmail, sfCreate, sfQuery } from '$lib/salesforce';
+import { findOpenDuesOrder } from '$lib/fonteva';
 import { env } from '$env/dynamic/private';
 
 /**
  * POST /api/create-payment
- * Creates Sales Order in Fonteva + Stripe PaymentIntent.
- * Detects existing subscriptions for renewal vs new purchase.
+ * Creates (or reuses) a Sales Order in Fonteva + Stripe PaymentIntent.
+ * Deduplicates: if an open order exists for the same member/dues item, reuse it.
  */
 export const POST: RequestHandler = async ({ request, locals }) => {
 	const { session, user } = await locals.safeGetSession();
 	if (!session || !user) throw error(401, 'Unauthorized');
 
-	const { duesType } = await request.json();
+	const { duesType, paymentMethod } = await request.json();
 	if (!duesType) throw error(400, 'Missing duesType');
+	if (!paymentMethod || !['card', 'us_bank_account'].includes(paymentMethod))
+		throw error(400, 'Missing or invalid paymentMethod (card or us_bank_account)');
 
 	try {
 		const contact = await findContactByEmail(user.email!);
@@ -22,7 +25,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		const stripeSecretKey = env.STRIPE_SECRET_KEY;
 		if (!stripeSecretKey) throw error(500, 'Stripe not configured');
 
-		// Get the main Assessment item — single item = single subscription/membership
+		// Get the main Assessment item
 		const itemName = duesType === 'undergraduate'
 			? 'Undergraduate Annual Dues-Annual Assessment'
 			: 'Alumni Annual Dues-Annual Assessment';
@@ -38,9 +41,11 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		if (items.length === 0) throw error(404, 'No dues item found');
 
 		const item = items[0];
-		// Full dues amount (Assessment item carries the full price)
-		const total = duesType === 'undergraduate' ? 100 : 200;
-		const totalCents = total * 100;
+		const SURCHARGE_RATE = 0.04; // 4% credit card surcharge
+		const baseAmount = duesType === 'undergraduate' ? 100 : 200;
+		const surcharge = paymentMethod === 'card' ? Math.round(baseAmount * SURCHARGE_RATE * 100) / 100 : 0;
+		const total = baseAmount + surcharge;
+		const totalCents = Math.round(total * 100);
 
 		// Check for existing active subscription (renewal detection)
 		const existingSubs = await sfQuery<any>(
@@ -55,17 +60,34 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		const existingSubId = existingSubs.length > 0 ? existingSubs[0].OrderApi__Subscription__c : null;
 		const isRenewal = !!existingSubId;
 
-		// Step 1: Create Sales Order
-		const orderId = await sfCreate('OrderApi__Sales_Order__c', {
-			OrderApi__Contact__c: contact.Id,
-			OrderApi__Account__c: contact.AccountId,
-			OrderApi__Entity__c: 'Contact',
-			OrderApi__Posting_Entity__c: 'Receipt',
-			OrderApi__Is_Posted__c: false
-		});
+		// Step 1: Find existing open order OR create new one
+		let orderId = await findOpenDuesOrder(contact.Id);
+		let reusedOrder = false;
 
-		// Step 2: Line items + Stripe PaymentIntent in parallel
-		const stripePromise = fetch('https://api.stripe.com/v1/payment_intents', {
+		if (orderId) {
+			reusedOrder = true;
+			console.log(`Reusing existing open order ${orderId} for contact ${contact.Id}`);
+		} else {
+			orderId = await sfCreate('OrderApi__Sales_Order__c', {
+				OrderApi__Contact__c: contact.Id,
+				OrderApi__Account__c: contact.AccountId,
+				OrderApi__Entity__c: 'Contact',
+				OrderApi__Posting_Entity__c: 'Receipt',
+				OrderApi__Is_Posted__c: false
+			});
+
+			// Create line item for new orders only
+			await sfCreate('OrderApi__Sales_Order_Line__c', {
+				OrderApi__Sales_Order__c: orderId,
+				OrderApi__Item__c: item.Id,
+				OrderApi__Quantity__c: 1,
+				OrderApi__Sale_Price__c: total,
+				...(existingSubId ? { OrderApi__Subscription__c: existingSubId } : {})
+			});
+		}
+
+		// Step 2: Always create a fresh Stripe PaymentIntent (old ones auto-expire)
+		const stripeRes = await fetch('https://api.stripe.com/v1/payment_intents', {
 			method: 'POST',
 			headers: {
 				'Authorization': `Bearer ${stripeSecretKey}`,
@@ -74,25 +96,18 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			body: new URLSearchParams({
 				'amount': totalCents.toString(),
 				'currency': 'usd',
-				'automatic_payment_methods[enabled]': 'true',
+				// Lock to the selected payment method type so amount matches surcharge
+				'payment_method_types[]': paymentMethod,
 				'metadata[sf_order_id]': orderId,
 				'metadata[sf_contact_id]': contact.Id,
 				'metadata[dues_type]': duesType,
+				'metadata[payment_method]': paymentMethod,
+				'metadata[base_amount]': baseAmount.toString(),
+				'metadata[surcharge]': surcharge.toString(),
 				'metadata[is_renewal]': isRenewal ? 'true' : 'false',
 				'description': `${duesType === 'undergraduate' ? 'Undergraduate' : 'Alumni'} Annual Dues ${isRenewal ? '(Renewal)' : ''} - ${contact.FirstName} ${contact.LastName}`
 			})
 		});
-
-		// Single line item — link to existing subscription if renewing
-		const lineItemPromise = sfCreate('OrderApi__Sales_Order_Line__c', {
-			OrderApi__Sales_Order__c: orderId,
-			OrderApi__Item__c: item.Id,
-			OrderApi__Quantity__c: 1,
-			OrderApi__Sale_Price__c: total,
-			...(existingSubId ? { OrderApi__Subscription__c: existingSubId } : {})
-		});
-
-		const [stripeRes] = await Promise.all([stripePromise, lineItemPromise]);
 
 		if (!stripeRes.ok) {
 			const stripeErr = await stripeRes.json();
@@ -106,9 +121,16 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			clientSecret: paymentIntent.client_secret,
 			orderId,
 			total,
+			baseAmount,
+			surcharge,
 			isRenewal,
+			reusedOrder,
 			paymentIntentId: paymentIntent.id,
-			items: [{ name: `${duesType === 'undergraduate' ? 'Undergraduate' : 'Alumni'} Annual Dues`, price: total }]
+			paymentMethod,
+			items: [
+				{ name: `${duesType === 'undergraduate' ? 'Undergraduate' : 'Alumni'} Annual Dues`, price: baseAmount },
+				...(surcharge > 0 ? [{ name: 'Credit Card Processing Fee (4%)', price: surcharge }] : [])
+			]
 		});
 
 	} catch (err: any) {

@@ -54,20 +54,15 @@ sw.addEventListener('fetch', (event) => {
 		return;
 	}
 
-	// For page navigations: network-first with cache fallback
+	// Page navigations: always go to network (auth cookies must not be cached).
+	// Only fall back to cache when truly offline.
 	if (event.request.mode === 'navigate') {
 		event.respondWith(
-			fetch(event.request)
-				.then((response) => {
-					const clone = response.clone();
-					caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-					return response;
-				})
-				.catch(() => {
-					return caches.match(event.request).then((cached) => {
-						return cached || caches.match('/') || new Response('Offline', { status: 503 });
-					});
-				})
+			fetch(event.request).catch(() => {
+				return caches.match(event.request).then((cached) => {
+					return cached || caches.match('/') || new Response('Offline', { status: 503 });
+				});
+			})
 		);
 		return;
 	}

@@ -164,6 +164,36 @@ export async function getPaymentHistory(contactId: string): Promise<PaymentRecei
 }
 
 // ──────────────────────────────────────────────
+// Order Deduplication
+// ──────────────────────────────────────────────
+
+/**
+ * Find an existing open (unposted) Sales Order for a Contact.
+ * Returns the order ID if found (and order is < 24h old), null otherwise.
+ * Orders older than 24h are considered stale and will be skipped.
+ */
+export async function findOpenDuesOrder(contactId: string): Promise<string | null> {
+	const orders = await sfQuery<any>(`
+		SELECT Id, CreatedDate
+		FROM OrderApi__Sales_Order__c
+		WHERE OrderApi__Contact__c = '${contactId}'
+			AND OrderApi__Status__c != 'Closed'
+			AND OrderApi__Is_Posted__c = false
+		ORDER BY CreatedDate DESC
+		LIMIT 1
+	`);
+
+	if (orders.length === 0) return null;
+
+	// Skip orders older than 24 hours
+	const created = new Date(orders[0].CreatedDate);
+	const ageMs = Date.now() - created.getTime();
+	if (ageMs > 24 * 60 * 60 * 1000) return null;
+
+	return orders[0].Id;
+}
+
+// ──────────────────────────────────────────────
 // Order Creation
 // ──────────────────────────────────────────────
 

@@ -2,8 +2,21 @@
 	import '../app.css';
 	import Header from '$components/Header.svelte';
 	import Footer from '$components/Footer.svelte';
+	import { onMount } from 'svelte';
+	import { invalidateAll } from '$app/navigation';
+	import { supabase } from '$lib/supabase';
 
 	let { children } = $props();
+
+	onMount(() => {
+		const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+			if (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+				invalidateAll();
+			}
+		});
+
+		return () => subscription.unsubscribe();
+	});
 </script>
 
 <svelte:head>

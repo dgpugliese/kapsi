@@ -50,7 +50,7 @@
 </script>
 
 <svelte:head>
-	<title>Kappa Store — Member Portal — Kappa Alpha Psi®</title>
+	<title>Kappa Store — Brother's Only — Kappa Alpha Psi®</title>
 </svelte:head>
 
 <div style="max-width:1000px;">

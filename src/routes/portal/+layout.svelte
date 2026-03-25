@@ -60,7 +60,7 @@
 <div class="min-h-screen bg-gray-50">
 	<!-- Mobile header — simplified, no duplicate hamburger -->
 	<div class="lg:hidden flex items-center bg-white border-b px-4 py-3">
-		<h2 class="font-serif font-bold text-crimson-900">Member Portal</h2>
+		<h2 class="font-serif font-bold text-crimson-900">Brother's Only</h2>
 	</div>
 
 	<div class="lg:flex">

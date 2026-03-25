@@ -49,12 +49,12 @@
 </script>
 
 <svelte:head>
-	<title>Member Login — Kappa Alpha Psi®</title>
+	<title>Brother's Only — Kappa Alpha Psi®</title>
 </svelte:head>
 
 <section class="page-hero">
 	<div class="container">
-		<h1>Member Login</h1>
+		<h1>Brother's Only</h1>
 		<div class="hero-divider"><span>&#9670;</span></div>
 		<p>Sign in to your membership portal.</p>
 	</div>

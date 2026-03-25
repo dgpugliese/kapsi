@@ -96,7 +96,7 @@
 				class="block w-full text-center px-4 py-3 bg-crimson text-white font-medium rounded-lg hover:bg-crimson-700 transition-colors"
 				onclick={close}
 			>
-				Member Login
+				Brother's Only
 			</a>
 		</div>
 	</nav>

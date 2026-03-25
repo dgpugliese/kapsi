@@ -225,7 +225,7 @@
 </script>
 
 <svelte:head>
-	<title>Pay Dues — Member Portal — Kappa Alpha Psi®</title>
+	<title>Pay Dues — Brother's Only — Kappa Alpha Psi®</title>
 </svelte:head>
 
 <div class="dues-page" class:dues-page--ready={ready}>

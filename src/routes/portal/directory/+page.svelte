@@ -65,7 +65,7 @@
 </script>
 
 <svelte:head>
-	<title>Member Directory — Member Portal — Kappa Alpha Psi®</title>
+	<title>Member Directory — Brother's Only — Kappa Alpha Psi®</title>
 </svelte:head>
 
 <div style="max-width:900px;">

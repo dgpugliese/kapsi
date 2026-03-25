@@ -14,18 +14,11 @@
 
 	// Payment state
 	let selectedDuesType = $state('');
-	let selectedPaymentMethod = $state<'card' | 'us_bank_account' | ''>('');
 	let processing = $state(false);
 	let paymentError = $state('');
 	let paymentSuccess = $state(false);
 	let paymentStep = $state<'select' | 'pay' | 'done'>('select');
 	let totalBalance = $derived(balance.reduce((sum: number, b: any) => sum + (b.balance ?? 0), 0));
-
-	// Surcharge calculation
-	const SURCHARGE_RATE = 0.04;
-	let baseAmount = $derived(selectedDuesType === 'undergraduate' ? 100 : selectedDuesType === 'alumni' ? 200 : 0);
-	let surcharge = $derived(selectedPaymentMethod === 'card' ? Math.round(baseAmount * SURCHARGE_RATE * 100) / 100 : 0);
-	let estimatedTotal = $derived(baseAmount + surcharge);
 
 	// Stripe
 	let stripe: any = null;
@@ -86,7 +79,6 @@
 		orderItems = [];
 		stripeReady = false;
 		elements = null;
-		selectedPaymentMethod = '';
 	}
 
 	/** Back button handler — cancel Stripe PI and reset */
@@ -105,7 +97,7 @@
 			const res = await fetch('/api/create-payment', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ duesType: selectedDuesType, paymentMethod: selectedPaymentMethod })
+				body: JSON.stringify({ duesType: selectedDuesType })
 			});
 
 			if (!res.ok) {
@@ -144,7 +136,8 @@
 
 				setTimeout(() => {
 					const paymentElement = elements.create('payment', {
-						layout: 'tabs'
+						layout: 'tabs',
+						paymentMethodOrder: ['apple_pay', 'google_pay', 'card', 'us_bank_account']
 					});
 					paymentElement.mount('#stripe-payment-element');
 					stripeReady = true;
@@ -330,15 +323,12 @@
 				<!-- Order summary -->
 				<div class="order-summary">
 					<div class="card-label" style="margin-bottom:8px;">Order Summary</div>
-					{#each orderItems as item}
-						<div style="display:flex; justify-content:space-between; font-size:0.9rem; padding:4px 0;">
-							<span>{item.name}</span>
-							<span>${item.price.toFixed(2)}</span>
-						</div>
-					{/each}
-					<div style="display:flex; justify-content:space-between; font-size:1.05rem; font-weight:700; padding:8px 0 0; border-top:1px solid var(--gray-200); margin-top:8px;">
-						<span>Total</span>
-						<span style="color:var(--crimson);">${orderTotal.toFixed(2)}</span>
+					<div style="display:flex; justify-content:space-between; font-size:0.95rem; padding:4px 0;">
+						<span style="font-weight:600;">{selectedDuesType === 'undergraduate' ? 'Undergraduate' : 'Alumni'} Annual Dues</span>
+						<span style="font-weight:700; color:var(--crimson);">${orderTotal.toFixed(2)}</span>
+					</div>
+					<div style="font-size:0.75rem; color:var(--gray-400); margin-top:4px;">
+						Includes: {orderItems.map(i => i.name.replace(/^(Alumni|Undergrad|Undergraduate) Annual Dues\s*[-–]\s*/i, '')).join(', ')}
 					</div>
 				</div>
 
@@ -375,8 +365,6 @@
 					<div class="error-msg">{paymentError}</div>
 				{/if}
 
-				<!-- Dues Type Selection -->
-				<div class="card-label" style="margin-bottom:8px;">Select Dues Type</div>
 				<div style="display:flex; flex-direction:column; gap:12px; margin-bottom:24px;">
 					<label class="dues-option" class:dues-option--selected={selectedDuesType === 'alumni'}>
 						<input type="radio" name="duesType" value="alumni" bind:group={selectedDuesType} style="accent-color:var(--crimson);" />
@@ -399,56 +387,13 @@
 					-->
 				</div>
 
-				<!-- Payment Method Selection -->
-				{#if selectedDuesType}
-					<div class="card-label" style="margin-bottom:8px;">Payment Method</div>
-					<div style="display:flex; flex-direction:column; gap:12px; margin-bottom:24px;">
-						<label class="dues-option" class:dues-option--selected={selectedPaymentMethod === 'card'}>
-							<input type="radio" name="paymentMethod" value="card" bind:group={selectedPaymentMethod} style="accent-color:var(--crimson);" />
-							<div style="flex:1;">
-								<div style="font-weight:700; font-size:0.95rem;">Credit / Debit Card</div>
-								<div style="font-size:0.78rem; color:var(--gray-600); margin-top:2px;">Visa, Mastercard, Amex, Discover</div>
-							</div>
-							<div style="font-size:0.78rem; color:#92400E; font-weight:600;">+4% processing fee</div>
-						</label>
-						<label class="dues-option" class:dues-option--selected={selectedPaymentMethod === 'us_bank_account'}>
-							<input type="radio" name="paymentMethod" value="us_bank_account" bind:group={selectedPaymentMethod} style="accent-color:var(--crimson);" />
-							<div style="flex:1;">
-								<div style="font-weight:700; font-size:0.95rem;">Bank Account (ACH)</div>
-								<div style="font-size:0.78rem; color:var(--gray-600); margin-top:2px;">Direct bank transfer — no processing fee</div>
-							</div>
-							<div style="font-size:0.78rem; color:#065F46; font-weight:600;">No fee</div>
-						</label>
-					</div>
-				{/if}
-
-				<!-- Order Total Preview -->
-				{#if selectedDuesType && selectedPaymentMethod}
-					<div class="order-summary" style="margin-bottom:20px;">
-						<div style="display:flex; justify-content:space-between; font-size:0.9rem; padding:4px 0;">
-							<span>{selectedDuesType === 'undergraduate' ? 'Undergraduate' : 'Alumni'} Annual Dues</span>
-							<span>${baseAmount.toFixed(2)}</span>
-						</div>
-						{#if surcharge > 0}
-							<div style="display:flex; justify-content:space-between; font-size:0.9rem; padding:4px 0; color:#92400E;">
-								<span>Credit Card Processing Fee (4%)</span>
-								<span>${surcharge.toFixed(2)}</span>
-							</div>
-						{/if}
-						<div style="display:flex; justify-content:space-between; font-size:1.05rem; font-weight:700; padding:8px 0 0; border-top:1px solid var(--gray-200); margin-top:8px;">
-							<span>Total</span>
-							<span style="color:var(--crimson);">${estimatedTotal.toFixed(2)}</span>
-						</div>
-					</div>
-				{/if}
-
 				<button
-					disabled={!selectedDuesType || !selectedPaymentMethod || processing}
+					disabled={!selectedDuesType || processing}
 					class="btn btn--primary"
 					style="width:100%; justify-content:center; font-size:1rem; padding:14px;"
 					onclick={createOrder}
 				>
-					{processing ? 'Creating Order...' : `Continue to Payment — $${estimatedTotal.toFixed(2)}`}
+					{processing ? 'Creating Order...' : 'Continue to Payment'}
 				</button>
 			</div>
 		</div>

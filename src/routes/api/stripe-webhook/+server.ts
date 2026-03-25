@@ -68,7 +68,7 @@ async function handlePaymentSucceeded(paymentIntent: any) {
 
 	// Check if order is already closed (confirm-payment already handled it)
 	const orderCheck = await sfQuery<any>(
-		`SELECT Id, OrderApi__Status__c, OrderApi__Total__c FROM OrderApi__Sales_Order__c WHERE Id = '${orderId}' LIMIT 1`
+		`SELECT Id, OrderApi__Status__c FROM OrderApi__Sales_Order__c WHERE Id = '${orderId}' LIMIT 1`
 	);
 
 	if (orderCheck.length > 0 && orderCheck[0].OrderApi__Status__c === 'Closed') {
@@ -77,11 +77,7 @@ async function handlePaymentSucceeded(paymentIntent: any) {
 	}
 
 	const amount = paymentIntent.amount / 100;
-	// Get the SF order total (includes Fonteva surcharge) so Amount_Paid matches
-	const orderTotal = orderCheck.length > 0 ? orderCheck[0].OrderApi__Total__c ?? amount : amount;
-	const amountPaid = orderTotal > 0 ? orderTotal : amount;
-	const today = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }))
-		.toISOString().split('T')[0];
+	const today = new Date().toISOString().split('T')[0];
 	const gatewayId = env.SF_GATEWAY_ID || 'a18Su000008QU13IAG';
 
 	// Get contact details for the ePayment
@@ -133,7 +129,7 @@ async function handlePaymentSucceeded(paymentIntent: any) {
 			OrderApi__Sales_Order__c: orderId,
 			OrderApi__Contact__c: contactId,
 			OrderApi__Account__c: contact.AccountId,
-			OrderApi__Total__c: amountPaid,
+			OrderApi__Total__c: amount,
 			OrderApi__Date__c: today,
 			OrderApi__Is_Posted__c: true,
 			OrderApi__Payment_Type__c: 'Credit Card',
@@ -146,17 +142,10 @@ async function handlePaymentSucceeded(paymentIntent: any) {
 
 	// Close order
 	try {
-		// First: post the order and set amount paid (moves out of draft)
 		await sfUpdate('OrderApi__Sales_Order__c', orderId, {
-			OrderApi__Is_Posted__c: true,
+			OrderApi__Status__c: 'Closed',
 			OrderApi__Posting_Status__c: 'Posted',
-			OrderApi__Posted_Date__c: today,
-			OrderApi__Paid_Date__c: today,
-			OrderApi__Amount_Paid__c: amountPaid
-		});
-		// Then: close the order (now that it's no longer draft)
-		await sfUpdate('OrderApi__Sales_Order__c', orderId, {
-			OrderApi__Status__c: 'Closed'
+			OrderApi__Is_Posted__c: true
 		});
 	} catch (err: any) {
 		console.error('Webhook: failed to close order:', err.message);

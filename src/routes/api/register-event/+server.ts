@@ -159,10 +159,19 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 					OrderApi__Full_Name__c: cardholderName,
 					OrderApi__Entity__c: 'Contact'
 				});
-				// Fonteva trigger may reset Total on insert — force it back
+				// Fonteva trigger resets Total on insert — force it back with delay
 				try {
-					await sfUpdate('OrderApi__EPayment__c', ePaymentId, { OrderApi__Total__c: amountCharged });
-				} catch { /* best effort */ }
+					await new Promise(r => setTimeout(r, 1000));
+					await sfUpdate('OrderApi__EPayment__c', ePaymentId, {
+						OrderApi__Total__c: amountCharged,
+						OrderApi__Amount__c: amountCharged
+					});
+				} catch {
+					// Amount__c may not exist — try Total only
+					try {
+						await sfUpdate('OrderApi__EPayment__c', ePaymentId, { OrderApi__Total__c: amountCharged });
+					} catch { /* best effort */ }
+				}
 				steps.ePayment = { ok: true, id: ePaymentId };
 
 				// Create Receipt (reflects actual amount charged including surcharge)

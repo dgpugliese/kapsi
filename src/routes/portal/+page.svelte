@@ -198,7 +198,7 @@
 								<span class="event-day">{new Date(e.start_date).getDate()}</span>
 							</div>
 							<div class="event-info">
-								<h4 class="event-title">{e.title}</h4>
+								<h4 class="event-title">{e.display_name || e.name || e.title}</h4>
 								<p class="event-location">{e.location ?? ''}{e.city ? `, ${e.city}` : ''}{e.state ? `, ${e.state}` : ''}</p>
 							</div>
 						</a>

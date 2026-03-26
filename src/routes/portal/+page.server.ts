@@ -15,9 +15,9 @@ export const load: PageServerLoad = async ({ locals, parent }) => {
 			.order('published_at', { ascending: false })
 			.limit(5),
 		locals.supabase
-			.from('events')
-			.select('id, title, start_date, location, city, state')
-			.eq('is_published', true)
+			.from('sync_events')
+			.select('sf_event_id, name, display_name, start_date, location, city, state')
+			.eq('is_active', true)
 			.gte('start_date', new Date().toISOString())
 			.order('start_date', { ascending: true })
 			.limit(3),

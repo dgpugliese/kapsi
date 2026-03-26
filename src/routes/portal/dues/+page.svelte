@@ -3,6 +3,7 @@
 	import { invalidateAll } from '$app/navigation';
 	import { page } from '$app/stores';
 	import type { PageData } from './$types';
+	import ProgressButton from '$components/ProgressButton.svelte';
 
 	let { data }: { data: PageData } = $props();
 	let member = $derived(data.member);
@@ -380,14 +381,12 @@
 				<form onsubmit={confirmPayment}>
 					<div id="stripe-payment-element" style="min-height:100px; margin-bottom:20px;"></div>
 
-					<button
-						type="submit"
-						disabled={!stripeReady || processing}
-						class="btn btn--primary"
-						style="width:100%; justify-content:center; font-size:1rem; padding:14px;"
-					>
-						{processing ? 'Processing...' : `Pay $${orderTotal.toFixed(2)}`}
-					</button>
+					<ProgressButton
+						loading={processing}
+						disabled={!stripeReady}
+						label={`Pay $${orderTotal.toFixed(2)}`}
+						loadingLabel="Processing Payment..."
+					/>
 				</form>
 
 				<p style="text-align:center; margin-top:12px; font-size:0.75rem; color:var(--gray-400);">
@@ -468,14 +467,15 @@
 					</button>
 				</div>
 
-				<button
-					class="btn btn--primary"
-					style="width:100%; justify-content:center; font-size:1rem; padding:14px; margin-top:20px;"
-					disabled={processing}
-					onclick={createOrder}
-				>
-					{processing ? 'Creating Order...' : `Continue — $${(paymentMethod === 'card' ? baseAmount + surchargeAmount : baseAmount).toFixed(2)}`}
-				</button>
+				<div style="margin-top:20px;">
+					<ProgressButton
+						type="button"
+						loading={processing}
+						label={`Continue — $${(paymentMethod === 'card' ? baseAmount + surchargeAmount : baseAmount).toFixed(2)}`}
+						loadingLabel="Creating Order..."
+						onclick={createOrder}
+					/>
+				</div>
 			</div>
 		</div>
 	{:else if sfLinked}

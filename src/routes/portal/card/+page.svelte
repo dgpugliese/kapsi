@@ -43,8 +43,8 @@
 			<!-- Member info -->
 			<div class="kcard-member">
 				<div class="kcard-photo">
-					{#if member?.profile_photo_url}
-						<img src={member.profile_photo_url} alt="" />
+					{#if member?.profile_photo_url || sf?.imageUrl}
+						<img src={member?.profile_photo_url || sf?.imageUrl} alt="" />
 					{:else}
 						<span>{cardName.split(' ').map((n: string) => n[0]).join('')}</span>
 					{/if}

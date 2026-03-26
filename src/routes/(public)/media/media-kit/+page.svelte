@@ -110,6 +110,7 @@
 				The official brand identity for Kappa Alpha Psi® has been developed since the founding of the fraternity. There have been some refinements to usage to be applicable to today's mediums and standards. While the guidelines cover most situations, there may be times when further clarification is required. In those cases, always contact International Headquarters for the proper way to represent our brand.
 			</p>
 			<div class="ed-signature">
+				<img src="/images/sign_johnfburrell_ed-300x103.png" alt="Signature of John F. Burrell" class="ed-sig-img" />
 				<span class="ed-name">John F. Burrell</span>
 				<span class="ed-title">Executive Director</span>
 			</div>
@@ -531,6 +532,12 @@
 		display: flex;
 		flex-direction: column;
 		gap: 2px;
+	}
+
+	.ed-sig-img {
+		width: 200px;
+		height: auto;
+		margin-bottom: 8px;
 	}
 
 	.ed-name {

@@ -63,6 +63,7 @@
 		phone: '',
 		mobilePhone: '',
 		mailingStreet: '',
+		mailingApt: '',
 		mailingCity: '',
 		mailingState: '',
 		mailingPostalCode: '',
@@ -103,7 +104,8 @@
 		form = {
 			phone: sf.phone || '',
 			mobilePhone: sf.mobilePhone || '',
-			mailingStreet: sf.mailingStreet || '',
+			mailingStreet: (sf.mailingStreet || '').split('\n')[0] || '',
+			mailingApt: (sf.mailingStreet || '').split('\n')[1] || '',
 			mailingCity: sf.mailingCity || '',
 			mailingState: sf.mailingState || '',
 			mailingPostalCode: sf.mailingPostalCode || '',
@@ -145,10 +147,19 @@
 		error = '';
 
 		try {
+			// Combine street + apt into mailingStreet for SF
+			const payload = {
+				...form,
+				mailingStreet: form.mailingApt
+					? `${form.mailingStreet}\n${form.mailingApt}`
+					: form.mailingStreet
+			};
+			delete (payload as any).mailingApt;
+
 			const res = await fetch('/api/profile', {
 				method: 'PATCH',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify(form)
+				body: JSON.stringify(payload)
 			});
 
 			if (!res.ok) {
@@ -265,8 +276,12 @@
 				<h2 class="section-header">Mailing Address</h2>
 				<div style="display:grid; gap:16px;">
 					<div>
-						<label class="form-label" for="street">Street</label>
-						<input id="street" type="text" bind:value={form.mailingStreet} class="form-control" />
+						<label class="form-label" for="street">Street Address</label>
+						<input id="street" type="text" bind:value={form.mailingStreet} class="form-control" placeholder="123 Main St" />
+					</div>
+					<div>
+						<label class="form-label" for="apt">Apt / Suite / Unit</label>
+						<input id="apt" type="text" bind:value={form.mailingApt} class="form-control" placeholder="Apt 4B" />
 					</div>
 					<div class="grid-3col">
 						<div>
@@ -646,7 +661,7 @@
 					{ label: 'Email', value: sf.email },
 					{ label: 'Phone', value: sf.phone },
 					{ label: 'Mobile', value: sf.mobilePhone },
-					{ label: 'Address', value: [sf.mailingStreet, sf.mailingCity, sf.mailingState, sf.mailingPostalCode].filter(Boolean).join(', '), full: true },
+					{ label: 'Address', value: [sf.mailingStreet?.replace('\n', ', '), sf.mailingCity, sf.mailingState, sf.mailingPostalCode].filter(Boolean).join(', '), full: true },
 					{ label: 'Country', value: sf.mailingCountry }
 				] as field}
 					<div class="chip" style="{field.full ? 'grid-column:1/-1;' : ''}">

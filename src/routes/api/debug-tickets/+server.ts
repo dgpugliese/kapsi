@@ -55,6 +55,22 @@ export const GET: RequestHandler = async ({ url }) => {
 			return json({ accessObjs });
 		}
 
+		if (action === 'badges') {
+			// Describe Access Permission junction + Badge objects
+			const apDesc = await sfDescribe('OrderApi__Access_Permission__c');
+			const apFields = apDesc.fields
+				.filter((f: any) => !['Id','IsDeleted','CurrencyIsoCode','LastActivityDate','LastViewedDate','LastReferencedDate','OwnerId','CreatedById','CreatedDate','LastModifiedById','LastModifiedDate','SystemModstamp'].includes(f.name))
+				.map((f: any) => ({ name: f.name, label: f.label, type: f.type, referenceTo: f.referenceTo }));
+
+			// Also get a sample of access permissions for a known event's tickets
+			let samplePerms: any[] = [];
+			try {
+				samplePerms = await sfQuery(`SELECT Id, Name, OrderApi__Badge_Type__c, OrderApi__Badge_Type__r.Name, OrderApi__Item__c, OrderApi__Item__r.Name FROM OrderApi__Access_Permission__c LIMIT 20`);
+			} catch (e: any) { samplePerms = [{ error: e.message }]; }
+
+			return json({ apFields, samplePerms });
+		}
+
 		if (action === 'sample') {
 			const eventId = url.searchParams.get('eventId') || 'a1YSu000003Nt0TMAS';
 			const records = await sfQuery(

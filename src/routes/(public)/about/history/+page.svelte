@@ -11,30 +11,6 @@
 	</div>
 </section>
 
-<!-- Stats Banner -->
-<section class="stats-bar">
-	<div class="container">
-		<div class="stats">
-			<div class="stat">
-				<span class="stat-value">1911</span>
-				<span class="stat-label">Founded</span>
-			</div>
-			<div class="stat">
-				<span class="stat-value">150,000+</span>
-				<span class="stat-label">Members Initiated</span>
-			</div>
-			<div class="stat">
-				<span class="stat-value">700+</span>
-				<span class="stat-label">Chapters</span>
-			</div>
-			<div class="stat">
-				<span class="stat-value">13</span>
-				<span class="stat-label">International Territories</span>
-			</div>
-		</div>
-	</div>
-</section>
-
 <!-- The Founding -->
 <section class="section">
 	<div class="container">
@@ -202,40 +178,6 @@
 </section>
 
 <style>
-	/* Stats Banner */
-	.stats-bar {
-		background: var(--black, #1a1a1a);
-		padding: 40px 0;
-	}
-
-	.stats {
-		display: grid;
-		grid-template-columns: repeat(4, 1fr);
-		gap: 24px;
-		text-align: center;
-	}
-
-	.stat {
-		display: flex;
-		flex-direction: column;
-		gap: 4px;
-	}
-
-	.stat-value {
-		font-family: var(--font-serif);
-		font-size: clamp(1.6rem, 3.5vw, 2.2rem);
-		font-weight: 700;
-		color: var(--crimson, #c8102e);
-	}
-
-	.stat-label {
-		font-size: 0.8rem;
-		text-transform: uppercase;
-		letter-spacing: 0.1em;
-		color: var(--gray-400, #9ca3af);
-		font-weight: 500;
-	}
-
 	/* History Blocks */
 	.history-block {
 		max-width: 720px;
@@ -416,11 +358,6 @@
 
 	/* Mobile */
 	@media (max-width: 768px) {
-		.stats {
-			grid-template-columns: repeat(2, 1fr);
-			gap: 24px 16px;
-		}
-
 		.timeline::before {
 			left: 8px;
 		}

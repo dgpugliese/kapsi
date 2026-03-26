@@ -42,7 +42,7 @@ export const GET: RequestHandler = async ({ locals }) => {
 				instagram: contact.FON_Instagram__c,
 				linkedin: contact.FON_LinkedIn__c,
 				twitter: contact.FON_Twitter__c,
-				imageUrl: contact.FON_Public_Image_Url__c || contact.FON_Image_URL__c,
+				imageUrl: contact.FON_Image_URL__c,
 			}
 		});
 	} catch (err: any) {

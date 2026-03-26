@@ -6,6 +6,11 @@
 	let member = $derived(data.member);
 	let sf = $derived(data.sfContact);
 	let education = $derived(data.education ?? []);
+	let nationalAwards = $derived(
+		sf?.nationalAwards
+			? sf.nationalAwards.split(';').map((a: string) => a.trim()).filter(Boolean)
+			: []
+	);
 
 	let editing = $state(false);
 	let saving = $state(false);
@@ -528,6 +533,37 @@
 			<p class="hint">Membership details are managed by International Headquarters.</p>
 		</div>
 
+		<!-- Grand Chapter Awards -->
+		{#if nationalAwards.length > 0}
+			<div class="awards-card">
+				<div class="awards-header">
+					<div class="awards-crest">
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" class="awards-icon">
+							<path d="M12 2l2.4 7.4h7.6l-6 4.6 2.3 7-6.3-4.6-6.3 4.6 2.3-7-6-4.6h7.6z"/>
+						</svg>
+					</div>
+					<div>
+						<h2 class="awards-title">Grand Chapter Awardee</h2>
+						<p class="awards-subtitle">Recognized for distinguished achievement in the Fraternity</p>
+					</div>
+				</div>
+				<div class="awards-list">
+					{#each nationalAwards as award}
+						<div class="award-entry">
+							<div class="award-medallion">
+								{#if award.toLowerCase().includes('laurel wreath')}
+									<svg viewBox="0 0 32 32" class="medallion-svg"><circle cx="16" cy="16" r="14" fill="none" stroke="currentColor" stroke-width="1"/><path d="M16 6l2.5 5.5H24l-4.5 3.5 1.7 5.5L16 17.5l-5.2 3 1.7-5.5L8 11.5h5.5z" fill="currentColor"/></svg>
+								{:else}
+									<svg viewBox="0 0 32 32" class="medallion-svg"><circle cx="16" cy="16" r="14" fill="none" stroke="currentColor" stroke-width="1"/><circle cx="16" cy="16" r="8" fill="none" stroke="currentColor" stroke-width="0.8"/></svg>
+								{/if}
+							</div>
+							<span class="award-name">{award}</span>
+						</div>
+					{/each}
+				</div>
+			</div>
+		{/if}
+
 		<!-- Education (only shown if records exist) -->
 		{#if education.length > 0}
 			<div class="card">
@@ -767,5 +803,107 @@
 		.chip-grid, .chip-grid--2col {
 			grid-template-columns: 1fr;
 		}
+	}
+
+	/* Grand Chapter Awards */
+	.awards-card {
+		background: linear-gradient(135deg, #1a1208 0%, #2c1f0e 40%, #1a1208 100%);
+		border: 1px solid rgba(212, 175, 55, 0.3);
+		border-radius: 12px;
+		padding: 28px;
+		position: relative;
+		overflow: hidden;
+	}
+
+	.awards-card::before {
+		content: '';
+		position: absolute;
+		inset: 0;
+		background: radial-gradient(ellipse at 30% 0%, rgba(212, 175, 55, 0.08) 0%, transparent 60%);
+		pointer-events: none;
+	}
+
+	.awards-header {
+		display: flex;
+		align-items: center;
+		gap: 16px;
+		margin-bottom: 20px;
+		padding-bottom: 16px;
+		border-bottom: 1px solid rgba(212, 175, 55, 0.15);
+		position: relative;
+	}
+
+	.awards-crest {
+		flex-shrink: 0;
+		width: 48px;
+		height: 48px;
+		border-radius: 50%;
+		background: linear-gradient(135deg, #d4af37, #c5962e);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+	}
+
+	.awards-icon {
+		width: 26px;
+		height: 26px;
+		color: #1a1208;
+	}
+
+	.awards-title {
+		font-family: var(--font-serif);
+		font-size: 1.15rem;
+		font-weight: 700;
+		color: #d4af37;
+		letter-spacing: 0.02em;
+		margin: 0;
+	}
+
+	.awards-subtitle {
+		font-size: 0.8rem;
+		color: rgba(212, 175, 55, 0.6);
+		margin-top: 2px;
+	}
+
+	.awards-list {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+		position: relative;
+	}
+
+	.award-entry {
+		display: flex;
+		align-items: center;
+		gap: 14px;
+		padding: 14px 16px;
+		background: rgba(212, 175, 55, 0.04);
+		border: 1px solid rgba(212, 175, 55, 0.1);
+		border-radius: 10px;
+	}
+
+	.award-entry:hover {
+		background: rgba(212, 175, 55, 0.08);
+	}
+
+	.award-medallion {
+		flex-shrink: 0;
+		width: 36px;
+		height: 36px;
+	}
+
+	.medallion-svg {
+		width: 100%;
+		height: 100%;
+		color: #d4af37;
+	}
+
+	.award-name {
+		font-family: var(--font-serif);
+		font-size: 0.95rem;
+		font-weight: 600;
+		color: #f0e6cc;
+		letter-spacing: 0.01em;
 	}
 </style>

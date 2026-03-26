@@ -12,7 +12,53 @@
 	let message = $state('');
 	let error = $state('');
 
-	// Edit form — populated from SF data
+	// Picklist options
+	const US_STATES = [
+		'Alabama','Alaska','Arizona','Arkansas','California','Colorado','Connecticut','Delaware',
+		'District of Columbia','Florida','Georgia','Hawaii','Idaho','Illinois','Indiana','Iowa',
+		'Kansas','Kentucky','Louisiana','Maine','Maryland','Massachusetts','Michigan','Minnesota',
+		'Mississippi','Missouri','Montana','Nebraska','Nevada','New Hampshire','New Jersey',
+		'New Mexico','New York','North Carolina','North Dakota','Ohio','Oklahoma','Oregon',
+		'Pennsylvania','Rhode Island','South Carolina','South Dakota','Tennessee','Texas','Utah',
+		'Vermont','Virginia','Washington','West Virginia','Wisconsin','Wyoming'
+	];
+
+	const INDUSTRIES = [
+		'Enterprenuer/Business Owner','Advertising/Public Relations','Architecture/Construction',
+		'Banking','Corporate Finance','Education - College/University','Education - Post-Secondary',
+		'Education - Preschool K-12 and Special','Emergency Response','Entertainment',
+		'Fitness/Personal Training','Government/Politics','Health Care Administration',
+		'Health Care Providers','Human Resources','Information Technology',
+		'Investment Banking/Asset Management','Social Media','Insurance','Law Enforcement',
+		'Legal','Management Consulting','Manufacturing','Media/Communications','Military',
+		'Non-Profit','Pharmaceutical and Medical Device','Professional/Collegiate/Olympic Sports',
+		'Real Estate','Religion','Retail','Sciences','Social Work',
+		'Supply Chain/Logistics/Warehousing','Telecommunications/Streamed Services',
+		'Transportation/Hospitality/Lodging'
+	];
+
+	const MILITARY_CATEGORIES = ['Active Duty','Reserve','National Guard','Retired','Veteran'];
+
+	const BRANCHES_OF_SERVICE = [
+		'Air Force','Army','Coast Guard','Marine Corps','Navy','Space Force',
+		'Merchant Marine','US Public Health Service Commissioned Corps'
+	];
+
+	const SOURCES_OF_COMMISSION = [
+		'U.S. Military Academy','U.S. Naval Academy','U.S. Air Force Academy',
+		'Coast Guard Academy','Merchant Marine Academy','ROTC','OCS'
+	];
+
+	const ACHIEVEMENT_ACADEMY_OPTIONS = [
+		'Business','Health','Education','STEM','Government','Social Science',
+		'Law','Military Science','Choose not to declare'
+	];
+
+	const PROFESSION_ROLES = [
+		'C-Suite','VP/Director','Manager','Individual Contributor','Consultant','Educator','Student','Other'
+	];
+
+	// Edit form
 	let form = $state({
 		phone: '',
 		mobilePhone: '',
@@ -29,7 +75,27 @@
 		twitter: '',
 		showAddress: true,
 		showEmail: true,
-		showPhone: true
+		showPhone: true,
+		// High School
+		highSchool: '',
+		highSchoolCity: '',
+		highSchoolState: '',
+		highSchoolYearGraduated: '',
+		// Professional (extended)
+		professionRetired: false,
+		professionFullTimeStudent: false,
+		professionsList: '',
+		professionRole: '',
+		achievementAcademy: '',
+		// Military
+		militaryCategory: '',
+		branchOfMilitary: '',
+		highestRankHeld: '',
+		sourceOfCommission: '',
+		retiredFromMilitary: false,
+		disabledVeteran: false,
+		// Other
+		morePersonalInfo: ''
 	});
 
 	function startEditing() {
@@ -50,7 +116,23 @@
 			twitter: sf.twitter || '',
 			showAddress: sf.showAddress ?? true,
 			showEmail: sf.showEmail ?? true,
-			showPhone: sf.showPhone ?? true
+			showPhone: sf.showPhone ?? true,
+			highSchool: sf.highSchool || '',
+			highSchoolCity: sf.highSchoolCity || '',
+			highSchoolState: sf.highSchoolState || '',
+			highSchoolYearGraduated: sf.highSchoolYearGraduated || '',
+			professionRetired: sf.professionRetired ?? false,
+			professionFullTimeStudent: sf.professionFullTimeStudent ?? false,
+			professionsList: sf.professionsList || '',
+			professionRole: sf.professionRole || '',
+			achievementAcademy: sf.achievementAcademy || '',
+			militaryCategory: sf.militaryCategory || '',
+			branchOfMilitary: sf.branchOfMilitary || '',
+			highestRankHeld: sf.highestRankHeld || '',
+			sourceOfCommission: sf.sourceOfCommission || '',
+			retiredFromMilitary: sf.retiredFromMilitary ?? false,
+			disabledVeteran: sf.disabledVeteran ?? false,
+			morePersonalInfo: sf.morePersonalInfo || ''
 		};
 		editing = true;
 		message = '';
@@ -124,6 +206,16 @@
 		}
 		uploading = false;
 	}
+
+	function getInitiatedDisplay() {
+		if (!sf?.initiationDate && !sf?.yearOfInitiation) return null;
+		if (sf.initiationDate) {
+			const month = new Date(sf.initiationDate).getMonth();
+			const season = month >= 0 && month <= 5 ? 'Spring' : 'Fall';
+			return `${season} ${sf.yearOfInitiation || new Date(sf.initiationDate).getFullYear()}`;
+		}
+		return sf.yearOfInitiation;
+	}
 </script>
 
 <svelte:head>
@@ -150,11 +242,12 @@
 			<strong>Account Not Linked</strong> — Your email was not found in the membership system. Please contact IHQ at (215) 228-7184.
 		</div>
 	{:else if editing}
-		<!-- EDIT MODE -->
+		<!-- ======================== EDIT MODE ======================== -->
 		<form onsubmit={saveProfile}>
+
 			<!-- Contact Info -->
-			<div style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; padding:28px; margin-bottom:24px;">
-				<h2 style="font-family:var(--font-serif); font-size:1.15rem; margin-bottom:20px; padding-bottom:10px; border-bottom:1px solid var(--gray-100);">Contact Information</h2>
+			<div class="card">
+				<h2 class="section-header">Contact Information</h2>
 				<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
 					<div>
 						<label class="form-label" for="phone">Phone</label>
@@ -168,14 +261,14 @@
 			</div>
 
 			<!-- Address -->
-			<div style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; padding:28px; margin-bottom:24px;">
-				<h2 style="font-family:var(--font-serif); font-size:1.15rem; margin-bottom:20px; padding-bottom:10px; border-bottom:1px solid var(--gray-100);">Mailing Address</h2>
+			<div class="card">
+				<h2 class="section-header">Mailing Address</h2>
 				<div style="display:grid; gap:16px;">
 					<div>
 						<label class="form-label" for="street">Street</label>
 						<input id="street" type="text" bind:value={form.mailingStreet} class="form-control" />
 					</div>
-					<div style="display:grid; grid-template-columns:2fr 1fr 1fr; gap:16px;">
+					<div class="grid-3col">
 						<div>
 							<label class="form-label" for="city">City</label>
 							<input id="city" type="text" bind:value={form.mailingCity} class="form-control" />
@@ -192,28 +285,150 @@
 				</div>
 			</div>
 
-			<!-- Professional -->
-			<div style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; padding:28px; margin-bottom:24px;">
-				<h2 style="font-family:var(--font-serif); font-size:1.15rem; margin-bottom:20px; padding-bottom:10px; border-bottom:1px solid var(--gray-100);">Professional Information</h2>
+			<!-- High School -->
+			<div class="card">
+				<h2 class="section-header">High School Information</h2>
 				<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+					<div style="grid-column:1/-1;">
+						<label class="form-label" for="highSchool">High School Name</label>
+						<input id="highSchool" type="text" bind:value={form.highSchool} class="form-control" />
+					</div>
+					<div>
+						<label class="form-label" for="hsCity">City</label>
+						<input id="hsCity" type="text" bind:value={form.highSchoolCity} class="form-control" />
+					</div>
+					<div>
+						<label class="form-label" for="hsState">State</label>
+						<select id="hsState" bind:value={form.highSchoolState} class="form-control">
+							<option value="">Select State</option>
+							{#each US_STATES as st}
+								<option value={st}>{st}</option>
+							{/each}
+						</select>
+					</div>
+					<div>
+						<label class="form-label" for="hsYear">Year Graduated</label>
+						<input id="hsYear" type="text" bind:value={form.highSchoolYearGraduated} class="form-control" maxlength="4" />
+					</div>
+				</div>
+			</div>
+
+			<!-- Professional -->
+			<div class="card">
+				<h2 class="section-header">Professional Information</h2>
+				<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+					<div style="grid-column:1/-1; display:flex; gap:24px;">
+						<label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+							<input type="checkbox" bind:checked={form.professionRetired} style="accent-color:var(--crimson);" />
+							Retired
+						</label>
+						<label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+							<input type="checkbox" bind:checked={form.professionFullTimeStudent} style="accent-color:var(--crimson);" />
+							Full Time Student
+						</label>
+					</div>
+					<div>
+						<label class="form-label" for="profTitle">Position / Title</label>
+						<input id="profTitle" type="text" bind:value={form.professionalTitle} class="form-control" />
+					</div>
 					<div>
 						<label class="form-label" for="employer">Employer</label>
 						<input id="employer" type="text" bind:value={form.employer} class="form-control" />
 					</div>
 					<div>
-						<label class="form-label" for="profession">Profession</label>
-						<input id="profession" type="text" bind:value={form.profession} class="form-control" />
+						<label class="form-label" for="industry">Industry</label>
+						<select id="industry" bind:value={form.professionsList} class="form-control">
+							<option value="">Select Industry</option>
+							{#each INDUSTRIES as ind}
+								<option value={ind}>{ind}</option>
+							{/each}
+						</select>
 					</div>
-					<div style="grid-column:1/-1;">
-						<label class="form-label" for="title">Professional Title</label>
-						<input id="title" type="text" bind:value={form.professionalTitle} class="form-control" />
+					<div>
+						<label class="form-label" for="profRole">Role</label>
+						<select id="profRole" bind:value={form.professionRole} class="form-control">
+							<option value="">Select Role</option>
+							{#each PROFESSION_ROLES as role}
+								<option value={role}>{role}</option>
+							{/each}
+						</select>
+					</div>
+					<div>
+						<label class="form-label" for="achievementAcademy">Achievement Academy</label>
+						<select id="achievementAcademy" bind:value={form.achievementAcademy} class="form-control">
+							<option value="">Select Academy</option>
+							{#each ACHIEVEMENT_ACADEMY_OPTIONS as aa}
+								<option value={aa}>{aa}</option>
+							{/each}
+						</select>
+					</div>
+					<div>
+						<label class="form-label" for="linkedinEdit">LinkedIn</label>
+						<input id="linkedinEdit" type="text" bind:value={form.linkedin} class="form-control" placeholder="profile URL" />
 					</div>
 				</div>
 			</div>
 
-			<!-- Social -->
-			<div style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; padding:28px; margin-bottom:24px;">
-				<h2 style="font-family:var(--font-serif); font-size:1.15rem; margin-bottom:20px; padding-bottom:10px; border-bottom:1px solid var(--gray-100);">Social Media</h2>
+			<!-- Military -->
+			<div class="card">
+				<h2 class="section-header">Military Information</h2>
+				<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+					<div>
+						<label class="form-label" for="milCategory">Military Category</label>
+						<select id="milCategory" bind:value={form.militaryCategory} class="form-control">
+							<option value="">Select Category</option>
+							{#each MILITARY_CATEGORIES as cat}
+								<option value={cat}>{cat}</option>
+							{/each}
+						</select>
+					</div>
+					<div>
+						<label class="form-label" for="milBranch">Branch of Service</label>
+						<select id="milBranch" bind:value={form.branchOfMilitary} class="form-control">
+							<option value="">Select Branch</option>
+							{#each BRANCHES_OF_SERVICE as branch}
+								<option value={branch}>{branch}</option>
+							{/each}
+						</select>
+					</div>
+					<div>
+						<label class="form-label" for="milRank">Highest Rank Held</label>
+						<input id="milRank" type="text" bind:value={form.highestRankHeld} class="form-control" />
+					</div>
+					<div>
+						<label class="form-label" for="milCommission">Source of Commission</label>
+						<select id="milCommission" bind:value={form.sourceOfCommission} class="form-control">
+							<option value="">Select Source</option>
+							{#each SOURCES_OF_COMMISSION as src}
+								<option value={src}>{src}</option>
+							{/each}
+						</select>
+					</div>
+					<div style="grid-column:1/-1; display:flex; gap:24px;">
+						<label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+							<input type="checkbox" bind:checked={form.retiredFromMilitary} style="accent-color:var(--crimson);" />
+							Retired from Military
+						</label>
+						<label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+							<input type="checkbox" bind:checked={form.disabledVeteran} style="accent-color:var(--crimson);" />
+							Disabled Veteran
+						</label>
+					</div>
+				</div>
+			</div>
+
+			<!-- Other -->
+			<div class="card">
+				<h2 class="section-header">Other Information</h2>
+				<div>
+					<label class="form-label" for="moreInfo">Additional Personal Information</label>
+					<textarea id="moreInfo" bind:value={form.morePersonalInfo} class="form-control" rows="4"></textarea>
+				</div>
+			</div>
+
+			<!-- Social Media -->
+			<div class="card">
+				<h2 class="section-header">Social Media</h2>
 				<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
 					<div>
 						<label class="form-label" for="facebook">Facebook</label>
@@ -224,10 +439,6 @@
 						<input id="instagram" type="text" bind:value={form.instagram} class="form-control" placeholder="@handle" />
 					</div>
 					<div>
-						<label class="form-label" for="linkedin">LinkedIn</label>
-						<input id="linkedin" type="text" bind:value={form.linkedin} class="form-control" placeholder="profile URL" />
-					</div>
-					<div>
 						<label class="form-label" for="twitter">X / Twitter</label>
 						<input id="twitter" type="text" bind:value={form.twitter} class="form-control" placeholder="@handle" />
 					</div>
@@ -235,8 +446,8 @@
 			</div>
 
 			<!-- Privacy -->
-			<div style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; padding:28px; margin-bottom:24px;">
-				<h2 style="font-family:var(--font-serif); font-size:1.15rem; margin-bottom:20px; padding-bottom:10px; border-bottom:1px solid var(--gray-100);">Directory Privacy</h2>
+			<div class="card">
+				<h2 class="section-header">Directory Privacy</h2>
 				<div style="display:flex; flex-direction:column; gap:12px;">
 					{#each [
 						{ key: 'showEmail', label: 'Show my email in the member directory' },
@@ -260,10 +471,10 @@
 		</form>
 
 	{:else}
-		<!-- VIEW MODE -->
+		<!-- ======================== VIEW MODE ======================== -->
 
-		<!-- Photo -->
-		<div style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; padding:24px; margin-bottom:24px; display:flex; align-items:center; gap:20px;">
+		<!-- Photo + Name -->
+		<div class="card" style="display:flex; align-items:center; gap:20px; padding:24px;">
 			<div style="width:80px; height:80px; border-radius:50%; overflow:hidden; background:linear-gradient(160deg, var(--crimson-dark), var(--crimson)); display:flex; align-items:center; justify-content:center; flex-shrink:0; border:3px solid var(--crimson);">
 				{#if member?.profile_photo_url || sf?.imageUrl}
 					<img src={member?.profile_photo_url || sf?.imageUrl} alt="Profile" style="width:100%; height:100%; object-fit:cover;" />
@@ -283,29 +494,21 @@
 			</div>
 		</div>
 
-		<!-- Membership Info (read-only from Fonteva) -->
-		<div style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; padding:28px; margin-bottom:24px;">
-			<h2 style="font-family:var(--font-serif); font-size:1.15rem; margin-bottom:20px; padding-bottom:10px; border-bottom:1px solid var(--gray-100);">Membership Information</h2>
-			<div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px;">
+		<!-- Membership Information -->
+		<div class="card">
+			<h2 class="section-header">Membership Information</h2>
+			<div class="chip-grid">
 				{#each [
 					{ label: 'Membership #', value: sf.membershipNumber },
 					{ label: 'Status', value: sf.memberStatus },
 					{ label: 'Member Type', value: sf.memberType },
 					{ label: 'Chapter of Initiation', value: sf.chapterOfInitiation },
 					{ label: 'Current Chapter', value: sf.currentChapter },
-					{ label: 'Initiated', value: (() => {
-						if (!sf.initiationDate && !sf.yearOfInitiation) return null;
-						if (sf.initiationDate) {
-							const month = new Date(sf.initiationDate).getMonth();
-							const season = month >= 0 && month <= 5 ? 'Spring' : 'Fall';
-							return `${season} ${sf.yearOfInitiation || new Date(sf.initiationDate).getFullYear()}`;
-						}
-						return sf.yearOfInitiation;
-					})() }
+					{ label: 'Initiated', value: getInitiatedDisplay() }
 				].filter(f => f.value) as field}
-					<div style="padding:10px 14px; background:var(--gray-50); border-radius:8px;">
-						<div style="font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:var(--gray-400); margin-bottom:3px;">{field.label}</div>
-						<div style="font-size:0.9rem; color:var(--black); font-weight:500;">{field.value}</div>
+					<div class="chip">
+						<div class="chip-label">{field.label}</div>
+						<div class="chip-value">{field.value}</div>
 					</div>
 				{/each}
 			</div>
@@ -316,12 +519,12 @@
 					{/each}
 				</div>
 			{/if}
-			<p style="font-size:0.75rem; color:var(--gray-400); margin-top:12px;">Membership details are managed by International Headquarters.</p>
+			<p class="hint">Membership details are managed by International Headquarters.</p>
 		</div>
 
 		<!-- Education -->
-		<div style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; padding:28px; margin-bottom:24px;">
-			<h2 style="font-family:var(--font-serif); font-size:1.15rem; margin-bottom:20px; padding-bottom:10px; border-bottom:1px solid var(--gray-100);">Education</h2>
+		<div class="card">
+			<h2 class="section-header">Education</h2>
 			{#if education.length > 0}
 				<div style="display:flex; flex-direction:column; gap:16px;">
 					{#each education as edu}
@@ -354,42 +557,101 @@
 			{:else}
 				<p style="font-size:0.88rem; color:var(--gray-400); text-align:center; padding:16px 0;">No education records on file.</p>
 			{/if}
-			<p style="font-size:0.75rem; color:var(--gray-400); margin-top:12px;">Education details are managed by International Headquarters.</p>
+			<p class="hint">Education details are managed by International Headquarters.</p>
 		</div>
 
-		<!-- Contact Info -->
-		<div style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; padding:28px; margin-bottom:24px;">
-			<h2 style="font-family:var(--font-serif); font-size:1.15rem; margin-bottom:20px; padding-bottom:10px; border-bottom:1px solid var(--gray-100);">Contact Information</h2>
-			<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+		<!-- High School Information -->
+		{#if sf.highSchool || sf.highSchoolCity || sf.highSchoolState || sf.highSchoolYearGraduated}
+			<div class="card">
+				<h2 class="section-header">High School Information</h2>
+				<div class="chip-grid">
+					{#each [
+						{ label: 'High School', value: sf.highSchool },
+						{ label: 'City', value: sf.highSchoolCity },
+						{ label: 'State', value: sf.highSchoolState },
+						{ label: 'Year Graduated', value: sf.highSchoolYearGraduated }
+					].filter(f => f.value) as field}
+						<div class="chip">
+							<div class="chip-label">{field.label}</div>
+							<div class="chip-value">{field.value}</div>
+						</div>
+					{/each}
+				</div>
+			</div>
+		{/if}
+
+		<!-- Professional Information -->
+		<div class="card">
+			<h2 class="section-header">Professional Information</h2>
+			<div class="chip-grid">
 				{#each [
-					{ label: 'Name', value: `${sf.firstName} ${sf.lastName}` },
-					{ label: 'Email', value: sf.email },
-					{ label: 'Phone', value: sf.phone },
-					{ label: 'Mobile', value: sf.mobilePhone },
-					{ label: 'Address', value: [sf.mailingStreet, sf.mailingCity, sf.mailingState, sf.mailingPostalCode].filter(Boolean).join(', ') },
-					{ label: 'Country', value: sf.mailingCountry }
-				] as field}
-					<div style="padding:10px 14px; background:var(--gray-50); border-radius:8px; {field.label === 'Address' ? 'grid-column:1/-1;' : ''}">
-						<div style="font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:var(--gray-400); margin-bottom:3px;">{field.label}</div>
-						<div style="font-size:0.9rem; color:var(--black); font-weight:500;">{field.value || '—'}</div>
+					{ label: 'Retired', value: sf.professionRetired ? 'Yes' : null },
+					{ label: 'Full Time Student', value: sf.professionFullTimeStudent ? 'Yes' : null },
+					{ label: 'Position / Title', value: sf.professionalTitle },
+					{ label: 'Employer', value: sf.employer },
+					{ label: 'Industry', value: sf.professionsList },
+					{ label: 'Profession', value: sf.profession },
+					{ label: 'Role', value: sf.professionRole },
+					{ label: 'Achievement Academy', value: sf.achievementAcademy },
+					{ label: 'University/College', value: sf.university },
+					{ label: 'LinkedIn', value: sf.linkedin }
+				].filter(f => f.value) as field}
+					<div class="chip">
+						<div class="chip-label">{field.label}</div>
+						<div class="chip-value">{field.value}</div>
 					</div>
 				{/each}
 			</div>
 		</div>
 
-		<!-- Professional -->
-		<div style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; padding:28px; margin-bottom:24px;">
-			<h2 style="font-family:var(--font-serif); font-size:1.15rem; margin-bottom:20px; padding-bottom:10px; border-bottom:1px solid var(--gray-100);">Professional Information</h2>
-			<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+		<!-- Military Information -->
+		{#if sf.militaryCategory || sf.branchOfMilitary || sf.highestRankHeld || sf.sourceOfCommission || sf.retiredFromMilitary || sf.disabledVeteran}
+			<div class="card">
+				<h2 class="section-header">Military Information</h2>
+				<div class="chip-grid">
+					{#each [
+						{ label: 'Military Category', value: sf.militaryCategory },
+						{ label: 'Branch of Service', value: sf.branchOfMilitary },
+						{ label: 'Highest Rank Held', value: sf.highestRankHeld },
+						{ label: 'Source of Commission', value: sf.sourceOfCommission },
+						{ label: 'Retired from Military', value: sf.retiredFromMilitary ? 'Yes' : null },
+						{ label: 'Disabled Veteran', value: sf.disabledVeteran ? 'Yes' : null }
+					].filter(f => f.value) as field}
+						<div class="chip">
+							<div class="chip-label">{field.label}</div>
+							<div class="chip-value">{field.value}</div>
+						</div>
+					{/each}
+				</div>
+			</div>
+		{/if}
+
+		<!-- Other Information -->
+		{#if sf.morePersonalInfo}
+			<div class="card">
+				<h2 class="section-header">Other Information</h2>
+				<div class="chip" style="grid-column:1/-1;">
+					<div class="chip-label">Additional Personal Info</div>
+					<div class="chip-value">{sf.morePersonalInfo}</div>
+				</div>
+			</div>
+		{/if}
+
+		<!-- Contact Information -->
+		<div class="card">
+			<h2 class="section-header">Contact Information</h2>
+			<div class="chip-grid chip-grid--2col">
 				{#each [
-					{ label: 'Employer', value: sf.employer },
-					{ label: 'Profession', value: sf.profession },
-					{ label: 'Title', value: sf.professionalTitle },
-					{ label: 'University/College', value: sf.university }
+					{ label: 'Name', value: `${sf.firstName} ${sf.lastName}` },
+					{ label: 'Email', value: sf.email },
+					{ label: 'Phone', value: sf.phone },
+					{ label: 'Mobile', value: sf.mobilePhone },
+					{ label: 'Address', value: [sf.mailingStreet, sf.mailingCity, sf.mailingState, sf.mailingPostalCode].filter(Boolean).join(', '), full: true },
+					{ label: 'Country', value: sf.mailingCountry }
 				] as field}
-					<div style="padding:10px 14px; background:var(--gray-50); border-radius:8px;">
-						<div style="font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:var(--gray-400); margin-bottom:3px;">{field.label}</div>
-						<div style="font-size:0.9rem; color:var(--black); font-weight:500;">{field.value || '—'}</div>
+					<div class="chip" style="{field.full ? 'grid-column:1/-1;' : ''}">
+						<div class="chip-label">{field.label}</div>
+						<div class="chip-value">{field.value || '—'}</div>
 					</div>
 				{/each}
 			</div>
@@ -397,23 +659,40 @@
 
 		<!-- Social Media -->
 		{#if sf.facebook || sf.instagram || sf.linkedin || sf.twitter}
-			<div style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; padding:28px; margin-bottom:24px;">
-				<h2 style="font-family:var(--font-serif); font-size:1.15rem; margin-bottom:20px; padding-bottom:10px; border-bottom:1px solid var(--gray-100);">Social Media</h2>
-				<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+			<div class="card">
+				<h2 class="section-header">Social Media</h2>
+				<div class="chip-grid chip-grid--2col">
 					{#each [
 						{ label: 'Facebook', value: sf.facebook },
 						{ label: 'Instagram', value: sf.instagram },
 						{ label: 'LinkedIn', value: sf.linkedin },
 						{ label: 'X / Twitter', value: sf.twitter }
 					].filter(f => f.value) as field}
-						<div style="padding:10px 14px; background:var(--gray-50); border-radius:8px;">
-							<div style="font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:var(--gray-400); margin-bottom:3px;">{field.label}</div>
-							<div style="font-size:0.9rem; color:var(--black); font-weight:500;">{field.value}</div>
+						<div class="chip">
+							<div class="chip-label">{field.label}</div>
+							<div class="chip-value">{field.value}</div>
 						</div>
 					{/each}
 				</div>
 			</div>
 		{/if}
+
+		<!-- Privacy Settings -->
+		<div class="card">
+			<h2 class="section-header">Privacy Settings</h2>
+			<div class="chip-grid">
+				{#each [
+					{ label: 'Show Email', value: sf.showEmail ? 'Visible' : 'Hidden' },
+					{ label: 'Show Phone', value: sf.showPhone ? 'Visible' : 'Hidden' },
+					{ label: 'Show Address', value: sf.showAddress ? 'Visible' : 'Hidden' }
+				] as field}
+					<div class="chip">
+						<div class="chip-label">{field.label}</div>
+						<div class="chip-value" style="color:{field.value === 'Visible' ? '#065F46' : '#991B1B'};">{field.value}</div>
+					</div>
+				{/each}
+			</div>
+		</div>
 	{/if}
 </div>
 
@@ -421,5 +700,69 @@
 	.form-label {
 		display: block; font-size: 0.82rem; font-weight: 600;
 		color: var(--gray-800); margin-bottom: 6px;
+	}
+	.card {
+		background: var(--white);
+		border: 1px solid var(--gray-100);
+		border-radius: 12px;
+		padding: 28px;
+		margin-bottom: 24px;
+	}
+	.section-header {
+		font-family: var(--font-serif);
+		font-size: 1.15rem;
+		margin-bottom: 20px;
+		padding-bottom: 10px;
+		border-bottom: 1px solid var(--gray-100);
+	}
+	.chip {
+		padding: 10px 14px;
+		background: var(--gray-50);
+		border-radius: 8px;
+	}
+	.chip-label {
+		font-size: 0.65rem;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.8px;
+		color: var(--gray-400);
+		margin-bottom: 3px;
+	}
+	.chip-value {
+		font-size: 0.9rem;
+		color: var(--black);
+		font-weight: 500;
+	}
+	.chip-grid {
+		display: grid;
+		grid-template-columns: 1fr 1fr 1fr;
+		gap: 16px;
+	}
+	.chip-grid--2col {
+		grid-template-columns: 1fr 1fr;
+	}
+	.grid-3col {
+		display: grid;
+		grid-template-columns: 2fr 1fr 1fr;
+		gap: 16px;
+	}
+	.hint {
+		font-size: 0.75rem;
+		color: var(--gray-400);
+		margin-top: 12px;
+	}
+
+	@media (max-width: 768px) {
+		.chip-grid {
+			grid-template-columns: 1fr 1fr;
+		}
+		.grid-3col {
+			grid-template-columns: 1fr;
+		}
+	}
+	@media (max-width: 480px) {
+		.chip-grid, .chip-grid--2col {
+			grid-template-columns: 1fr;
+		}
 	}
 </style>

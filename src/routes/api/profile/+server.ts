@@ -89,6 +89,26 @@ export const PATCH: RequestHandler = async ({ request, locals }) => {
 		if (updates.showAddress !== undefined) sfFields.FON_Show_Address__c = updates.showAddress;
 		if (updates.showEmail !== undefined) sfFields.FON_Show_Email__c = updates.showEmail;
 		if (updates.showPhone !== undefined) sfFields.FON_Show_Phone__c = updates.showPhone;
+		// High School
+		if (updates.highSchool !== undefined) sfFields.FON_High_School__c = updates.highSchool;
+		if (updates.highSchoolCity !== undefined) sfFields.High_School_City__c = updates.highSchoolCity;
+		if (updates.highSchoolState !== undefined) sfFields.High_School_State__c = updates.highSchoolState;
+		if (updates.highSchoolYearGraduated !== undefined) sfFields.FON_HS_Year_Graduated__c = updates.highSchoolYearGraduated;
+		// Professional (extended)
+		if (updates.professionRetired !== undefined) sfFields.FON_Profession_Retired__c = updates.professionRetired;
+		if (updates.professionFullTimeStudent !== undefined) sfFields.FON_Profession_Full_Time_Student__c = updates.professionFullTimeStudent;
+		if (updates.professionsList !== undefined) sfFields.FON_Professions_List__c = updates.professionsList;
+		if (updates.professionRole !== undefined) sfFields.FON_Profession_Role__c = updates.professionRole;
+		if (updates.achievementAcademy !== undefined) sfFields.Achievement_Academy_AA_Co_Hort__c = updates.achievementAcademy;
+		// Military
+		if (updates.militaryCategory !== undefined) sfFields.Military_Category__c = updates.militaryCategory;
+		if (updates.branchOfMilitary !== undefined) sfFields.FON_Branch_of_Military__c = updates.branchOfMilitary;
+		if (updates.highestRankHeld !== undefined) sfFields.Highest_Rank_Held__c = updates.highestRankHeld;
+		if (updates.sourceOfCommission !== undefined) sfFields.Source_of_Comission__c = updates.sourceOfCommission;
+		if (updates.retiredFromMilitary !== undefined) sfFields.FON_Retired_From_Military__c = updates.retiredFromMilitary;
+		if (updates.disabledVeteran !== undefined) sfFields.FON_Disabled_Veteran__c = updates.disabledVeteran;
+		// Other
+		if (updates.morePersonalInfo !== undefined) sfFields.FON_More_Personal_Info__c = updates.morePersonalInfo;
 
 		if (Object.keys(sfFields).length === 0) {
 			throw error(400, 'No valid fields to update');

@@ -110,7 +110,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		// amountCharged = what Stripe charged (includes surcharge) — used for Receipt/ePayment
 		// amountPaidSO = base total of line items — used for Sales Order Amount_Paid (must match SO total)
 		let amountCharged = totalAmount;
-		const amountPaidSO = totalAmount; // base amount before surcharge
+		const amountPaidSO = baseTotalAmount; // must match SO line items total to zero the balance
 		if (!isFree && paymentIntentId) {
 			let cardLast4 = '', cardBrand = '', cardholderName = `${contact.FirstName} ${contact.LastName}`;
 			let chargeId = paymentIntentId;

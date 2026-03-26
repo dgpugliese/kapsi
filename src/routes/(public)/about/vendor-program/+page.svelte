@@ -186,14 +186,6 @@
 			<a href="https://members.kappaalphapsi1911.com/joinapi__login?id=a208W000000C0kdQAC&order=1" class="btn btn--primary" target="_blank" rel="noopener noreferrer">Vendor Application</a>
 			<a href="/contact" class="btn btn--outline">Contact IHQ</a>
 		</div>
-		<div class="cta-contact">
-			<address>
-				Kappa Alpha Psi Fraternity, Inc.<br />
-				2322-24 North Broad Street<br />
-				Philadelphia, PA 19132-4590<br />
-				Phone: (215) 228-7184
-			</address>
-		</div>
 	</div>
 </section>
 
@@ -469,19 +461,6 @@
 		gap: 16px;
 		justify-content: center;
 		flex-wrap: wrap;
-		margin-bottom: 32px;
-	}
-
-	.cta-contact address {
-		font-style: normal;
-		color: var(--gray-600);
-		line-height: 1.8;
-		padding: 20px 28px;
-		background: var(--gray-50, #f9fafb);
-		border: 1px solid var(--gray-200, #e5e7eb);
-		border-radius: 10px;
-		display: inline-block;
-		font-size: 0.95rem;
 	}
 
 	/* Mobile */

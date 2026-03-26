@@ -44,7 +44,7 @@ export const load: PageServerLoad = async ({ locals, parent }) => {
 					instagram: contact.FON_Instagram__c,
 					linkedin: contact.FON_LinkedIn__c,
 					twitter: contact.FON_Twitter__c,
-					imageUrl: contact.FON_Public_Image_Url__c || contact.FON_Image_URL__c,
+					imageUrl: contact.FON_Image_URL__c,
 					province: contact.Province_Name__c,
 					provinceOfInitiation: contact.Province_of_Initiation__c,
 					badges: contact.OrderApi__Badges__c,

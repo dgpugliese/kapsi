@@ -25,7 +25,7 @@ export const load: PageServerLoad = async ({ parent }) => {
 					isLifeMember: contact.FON_Is_Life_Member__c,
 					province: contact.Province_Name__c,
 					provinceOfInitiation: contact.Province_of_Initiation__c,
-					imageUrl: contact.FON_Public_Image_Url__c || contact.FON_Image_URL__c,
+					imageUrl: contact.FON_Image_URL__c,
 					membershipExpires: contact.Date_Membership_Expires__c,
 					badges: contact.OrderApi__Badges__c
 				};

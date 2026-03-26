@@ -31,7 +31,7 @@
 				<div class="footer-col">
 					<h4>Quick Links</h4>
 					<ul>
-						<li><a href="/login">Brothers Only</a></li>
+						<li><a href="/portal">Brothers Only</a></li>
 						<li><a href="/about/membership">Membership Info</a></li>
 						<li><a href="/about/chapter-locator">Chapter Locator</a></li>
 						<li><a href="/about/history">Our History</a></li>

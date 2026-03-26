@@ -171,19 +171,16 @@
 			<div class="awards-grid">
 				{#each nationalAwards as award}
 					{@const key = award.toLowerCase()}
-					<div class="award-item">
-						<img
-							class="award-img"
-							src={key.includes('laurel wreath') ? '/images/awards/award_laurel_wreath.png'
-								: key.includes('william') || key.includes('crump') ? '/images/awards/award_william_l_crump.png'
-								: key.includes('elder watson diggs') ? '/images/awards/award_elder_watson_diggs.png'
-								: key.includes('guy levis grant') ? '/images/awards/award_guy_levis_grant.png'
-								: key.includes('byron') || key.includes('armstrong') ? '/images/awards/award_byron_k_armstrong.png'
-								: '/images/crest.png'}
-							alt={award}
-						/>
-						<span class="award-label">{award}</span>
-					</div>
+					<img
+						class="award-img"
+						src={key.includes('laurel wreath') ? '/images/awards/award_laurel_wreath.png'
+							: key.includes('william') || key.includes('crump') ? '/images/awards/award_william_l_crump.png'
+							: key.includes('elder watson diggs') ? '/images/awards/award_elder_watson_diggs.png'
+							: key.includes('guy levis grant') ? '/images/awards/award_guy_levis_grant.png'
+							: key.includes('byron') || key.includes('armstrong') ? '/images/awards/award_byron_k_armstrong.png'
+							: '/images/crest.png'}
+						alt={award}
+					/>
 				{/each}
 			</div>
 		</div>
@@ -457,33 +454,16 @@
 
 	/* ===== Grand Chapter Awards ===== */
 	.awards-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-		gap: 16px;
-	}
-
-	.award-item {
 		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 10px;
-		padding: 20px 12px;
-		background: var(--gray-50, #f9fafb);
-		border-radius: 10px;
-		text-align: center;
+		flex-wrap: wrap;
+		gap: 20px;
+		justify-content: center;
 	}
 
 	.award-img {
-		width: 64px;
-		height: 64px;
+		width: 140px;
+		height: auto;
 		object-fit: contain;
-	}
-
-	.award-label {
-		font-size: 0.78rem;
-		font-weight: 600;
-		color: var(--black);
-		line-height: 1.3;
 	}
 
 	/* ===== Feed Grid (Announcements + Events) ===== */

@@ -29,23 +29,26 @@
 	}
 
 	const trademarks = [
-		{ name: 'KAPPA ALPHA PSI', reg: '2,866,627', variants: 'Crimson & Cream; Red & White' },
-		{ name: 'KAPPA ALPHA PSI FRATERNITY, INC', reg: '3,005,613', variants: 'Crimson & Cream; Red & White' },
-		{ name: 'Coat of Arms', reg: '2,895,189 / 3,007,186', variants: 'Color and black/white' },
-		{ name: 'Diamond with KAΨ', reg: '5,235,269', variants: '' },
-		{ name: 'KAΨ Greek Letters', reg: '5,831,179', variants: 'Crimson & Cream; Red & White' },
-		{ name: 'Ψ (Psi)', reg: '6,175,443', variants: 'Color and no-color' },
-		{ name: 'The Yo', reg: '5,817,074', variants: '' },
-		{ name: 'Diamond K', reg: '6,631,313', variants: 'Multiple color versions' },
-		{ name: 'NUPE', reg: '5,803,353', variants: '' },
-		{ name: 'KAPPA LEAGUE', reg: '5,112,429', variants: '' },
-		{ name: 'GUIDE RIGHT', reg: '5,112,430', variants: '' },
-		{ name: 'KAPPA KAMP', reg: '5,295,540', variants: '' },
-		{ name: 'Kappa League Shield & Pin', reg: '5,824,991 / 5,824,992', variants: '' },
-		{ name: '1911', reg: '90605441', variants: '' },
-		{ name: 'Phi Nu Pi', reg: '90605408', variants: '' },
-		{ name: 'SCROLLER / SCROLLER CLUB', reg: '90737017 / 90737022', variants: '' },
-		{ name: 'KAPPA', reg: '88/007,174', variants: '' }
+		{ name: 'KAPPA ALPHA PSI', reg: '2,866,627', variants: 'Crimson & Cream; Red & White', images: ['/images/trademarks/Kappa_Alpha_Psi_Crimson.jpg', '/images/trademarks/Kappa_Alpha_Psi_Red.jpg'] },
+		{ name: 'KAPPA ALPHA PSI FRATERNITY, INC', reg: '3,005,613', variants: 'Crimson & Cream; Red & White', images: ['/images/trademarks/Kappa_Alpha_Psi_Fraternity_Inc_Crimson.jpg', '/images/trademarks/Kappa_Alpha_Psi_Fraternity_Inc_Red.jpg'] },
+		{ name: 'NUPE', reg: '5,803,353', variants: '', images: ['/images/trademarks/NUPE.jpg'] },
+		{ name: 'Coat of Arms', reg: '2,895,189 / 3,007,186', variants: 'Color and black/white', images: ['/images/trademarks/coatofarms_large.png', '/images/trademarks/coatofarms_large_bw.png'] },
+		{ name: 'Kappa Alpha Psi (& Design)', reg: '5,235,269', variants: 'Diamond containing Greek letters surrounding scroll', images: ['/images/trademarks/rn_5235269_KappaAlphaPsiDiamond.png'] },
+		{ name: 'The "Yo"', reg: '5,817,074', variants: '', images: ['/images/trademarks/rn_5817074_TheYo.png'] },
+		{ name: 'KAΨ', reg: '5,831,179', variants: 'Crimson & Cream; Red & White', images: ['/images/trademarks/KAY_Crimson.jpg', '/images/trademarks/KAY_Red.jpg'] },
+		{ name: 'Capital Letter "Psi" (Ψ)', reg: '6,175,443', variants: 'Red & White; No Color', images: ['/images/trademarks/Psi_Red.jpg', '/images/trademarks/Psi.jpg'] },
+		{ name: 'KAPPA', reg: '88/007,213', variants: '', images: [] },
+		{ name: 'KAPPA LEAGUE', reg: '88/007,174', variants: '', images: [] },
+		{ name: 'KAPPA LEAGUE (Logo)', reg: '5,112,429', variants: '', images: ['/images/trademarks/Kappa_League.jpg'] },
+		{ name: 'GUIDE RIGHT', reg: '5,112,430', variants: '', images: [] },
+		{ name: 'KAPPA KAMP', reg: '5,295,540', variants: '', images: ['/images/trademarks/Kappa_Kamp.jpg'] },
+		{ name: 'Kappa League Shield', reg: '5,824,991', variants: '', images: ['/images/trademarks/rn_5824991_KappaLeagueShield.png'] },
+		{ name: 'Kappa League Pin', reg: '5,824,992', variants: '', images: ['/images/trademarks/rn_5824992_KappaLeaguePin.png'] },
+		{ name: 'Diamond K', reg: '6,631,313', variants: 'Multiple color versions', images: ['/images/trademarks/diamond_k_Crimson.png', '/images/trademarks/diamond_k_Red.png', '/images/trademarks/diamond_k.png'] },
+		{ name: '1911', reg: '90605441', variants: '', images: ['/images/trademarks/rn_90605441_1911_StandardCharacterMark-300x125.png'] },
+		{ name: 'Phi Nu Pi (Phoenician Nu)', reg: '90605408', variants: '', images: ['/images/trademarks/rn_90605408_PhiNuPi_PhoenicianNu.jpg'] },
+		{ name: 'SCROLLER CLUB', reg: '90737022', variants: '', images: ['/images/trademarks/rn_90737022_scrollerclub_StandardCharacterMark-300x136.png'] },
+		{ name: 'SCROLLER', reg: '90737017', variants: '', images: ['/images/trademarks/rn_90737017_scroller_standardcharactermark.png'] }
 	];
 
 	const entities = [
@@ -284,26 +287,28 @@
 				<p>No person or entity can reproduce registered trademarks for profit without a current vendor's license. Kappa Alpha Psi International Headquarters actively prosecutes trademark violations.</p>
 			</div>
 
-			<div class="trademark-table-wrap">
-				<table class="trademark-table">
-					<thead>
-						<tr>
-							<th>Mark</th>
-							<th>Registration #</th>
-							<th>Variants</th>
-						</tr>
-					</thead>
-					<tbody>
-						{#each trademarks as tm}
-							<tr>
-								<td class="tm-name">{tm.name}</td>
-								<td class="tm-reg">{tm.reg}</td>
-								<td class="tm-variants">{tm.variants || '—'}</td>
-							</tr>
-						{/each}
-					</tbody>
-				</table>
+			<div class="trademark-grid">
+				{#each trademarks as tm}
+					<div class="tm-card">
+						{#if tm.images && tm.images.length > 0}
+							<div class="tm-images">
+								{#each tm.images as img}
+									<img src={img} alt={tm.name} loading="lazy" />
+								{/each}
+							</div>
+						{/if}
+						<div class="tm-info">
+							<span class="tm-name">{tm.name}</span>
+							<span class="tm-reg">Reg. {tm.reg}</span>
+							{#if tm.variants}
+								<span class="tm-variants">{tm.variants}</span>
+							{/if}
+						</div>
+					</div>
+				{/each}
 			</div>
+
+			<p class="tm-contact">If you have questions related to branding or vendor registration, please contact <a href="mailto:ihqip@kappaalphapsi1911.com">ihqip@kappaalphapsi1911.com</a></p>
 		</div>
 	</div>
 </section>
@@ -796,46 +801,74 @@
 		margin: 0;
 	}
 
-	.trademark-table-wrap {
-		overflow-x: auto;
+	.trademark-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+		gap: 20px;
+		margin-top: 24px;
 	}
 
-	.trademark-table {
-		width: 100%;
-		border-collapse: collapse;
-		font-size: 0.9rem;
+	.tm-card {
+		background: #fff;
+		border: 1px solid var(--gray-200, #e5e7eb);
+		border-radius: 10px;
+		overflow: hidden;
+		transition: box-shadow 0.2s;
 	}
 
-	.trademark-table th {
-		text-align: left;
-		padding: 12px 16px;
-		font-size: 0.75rem;
-		font-weight: 700;
-		letter-spacing: 0.08em;
-		text-transform: uppercase;
-		color: var(--gray-600);
-		border-bottom: 2px solid var(--gray-200, #e5e7eb);
+	.tm-card:hover {
+		box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
 	}
 
-	.trademark-table td {
-		padding: 12px 16px;
-		border-bottom: 1px solid var(--gray-200, #e5e7eb);
-		color: var(--gray-800);
+	.tm-images {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+		padding: 16px;
+		justify-content: center;
+		align-items: center;
+		background: var(--gray-50, #f9fafb);
+		min-height: 100px;
+	}
+
+	.tm-images img {
+		max-height: 80px;
+		max-width: 100%;
+		object-fit: contain;
+	}
+
+	.tm-info {
+		padding: 14px 16px;
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
 	}
 
 	.tm-name {
 		font-weight: 600;
+		font-size: 0.95rem;
 	}
 
 	.tm-reg {
 		font-family: monospace;
-		font-size: 0.825rem;
-		color: var(--gray-600);
+		font-size: 0.8rem;
+		color: var(--gray-500);
 	}
 
 	.tm-variants {
-		font-size: 0.85rem;
+		font-size: 0.825rem;
 		color: var(--gray-500);
+	}
+
+	.tm-contact {
+		margin-top: 32px;
+		font-size: 0.9rem;
+		color: var(--gray-600);
+	}
+
+	.tm-contact a {
+		color: var(--crimson, #8B0000);
+		font-weight: 500;
 	}
 
 	/* Entities */

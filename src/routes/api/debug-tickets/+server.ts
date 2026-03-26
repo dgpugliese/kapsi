@@ -37,16 +37,33 @@ export const GET: RequestHandler = async ({ url }) => {
 			return json({ ticketObjs, describedObject: ticketObjs[0].name, count: fields.length, fields });
 		}
 
+		if (action === 'access') {
+			// Search for access/badge/permission junction objects
+			const token2 = await (await import('$lib/salesforce')).getSFToken();
+			const sobRes2 = await fetch(`${token2.instance_url}/services/data/v62.0/sobjects`, {
+				headers: { Authorization: `Bearer ${token2.access_token}` }
+			});
+			const sobData2 = await sobRes2.json();
+			const accessObjs = sobData2.sobjects
+				.filter((o: any) => {
+					const n = (o.name || '').toLowerCase();
+					const l = (o.label || '').toLowerCase();
+					return n.includes('access') || n.includes('badge') ||
+					       (n.includes('permission') && !n.includes('objectperm') && !n.includes('fieldperm') && !n.includes('setupperm'));
+				})
+				.map((o: any) => ({ name: o.name, label: o.label, custom: o.custom, queryable: o.queryable }));
+			return json({ accessObjs });
+		}
+
 		if (action === 'sample') {
-			const eventId = url.searchParams.get('eventId') || '';
+			const eventId = url.searchParams.get('eventId') || 'a1YSu000003Nt0TMAS';
 			const records = await sfQuery(
-				`SELECT Id, Name, OrderApi__Price__c, OrderApi__Is_Active__c,
-					OrderApi__Is_Published__c, OrderApi__Required_Badges__c,
-					OrderApi__Restrict_By_Badge__c, OrderApi__Display_Name__c,
-					OrderApi__Registration_Group__c, OrderApi__Capacity__c
-				FROM OrderApi__Ticket_Type__c
-				WHERE OrderApi__Event__c = '${eventId}'
-				LIMIT 20`
+				`SELECT Id, Name, EventApi__Price__c, EventApi__Is_Active__c,
+					EventApi__Is_Published__c, EventApi__Enable_Access_Permissions__c,
+					EventApi__Description__c, Main_Ticket_Type__c, Chapter_Ticket__c
+				FROM EventApi__Ticket_Type__c
+				WHERE EventApi__Event__c = '${eventId}'
+				LIMIT 30`
 			);
 			return json({ records });
 		}

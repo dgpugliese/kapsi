@@ -65,7 +65,8 @@
 				{ label: 'Journal Submissions', href: '/media/journal-submissions' },
 				{ label: 'News Coverage', href: '/media/news' },
 				{ label: 'Press Releases', href: '/media/press-releases' },
-				{ label: 'Photo Album', href: '/media/photos' }
+				{ label: 'Photo Album', href: '/media/photos' },
+				{ label: 'Media Kit', href: '/media/media-kit' }
 			]
 		},
 		{ label: 'Story', href: '/story' },

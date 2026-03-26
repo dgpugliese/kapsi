@@ -13,26 +13,6 @@
 	</div>
 </section>
 
-<!-- Stats -->
-<section class="section">
-	<div class="container">
-		<div class="stats-row">
-			<div class="stat-card">
-				<span class="stat-value">1911</span>
-				<span class="stat-label">Year Founded</span>
-			</div>
-			<div class="stat-card">
-				<span class="stat-value">150K+</span>
-				<span class="stat-label">Members</span>
-			</div>
-			<div class="stat-card">
-				<span class="stat-value">700+</span>
-				<span class="stat-label">Chapters Worldwide</span>
-			</div>
-		</div>
-	</div>
-</section>
-
 <!-- Why Invest -->
 <section class="section section--cream">
 	<div class="container">
@@ -153,40 +133,6 @@
 </section>
 
 <style>
-	/* Stats Row */
-	.stats-row {
-		display: grid;
-		grid-template-columns: repeat(3, 1fr);
-		gap: 24px;
-		text-align: center;
-	}
-
-	.stat-card {
-		display: flex;
-		flex-direction: column;
-		gap: 8px;
-		padding: 32px 24px;
-		background: var(--cream, #faf8f5);
-		border-radius: 12px;
-		border: 1px solid var(--gray-100, #f3f4f6);
-	}
-
-	.stat-value {
-		font-family: var(--font-serif);
-		font-size: clamp(2rem, 4vw, 2.5rem);
-		font-weight: 700;
-		color: var(--crimson, #c8102e);
-		line-height: 1;
-	}
-
-	.stat-label {
-		font-size: 0.8rem;
-		color: var(--gray-600);
-		text-transform: uppercase;
-		letter-spacing: 0.08em;
-		font-weight: 600;
-	}
-
 	/* Invest Block */
 	.invest-block {
 		max-width: 720px;
@@ -349,11 +295,6 @@
 
 	/* Mobile */
 	@media (max-width: 768px) {
-		.stats-row {
-			grid-template-columns: 1fr;
-			gap: 16px;
-		}
-
 		.recognition-grid {
 			grid-template-columns: 1fr;
 		}

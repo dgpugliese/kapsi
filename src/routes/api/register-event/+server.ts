@@ -107,8 +107,10 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		steps.lineItems = { ok: lineIds.length > 0, ids: lineIds };
 
 		// Step 3: Payment processing (paid events only)
-		// Use Stripe as source of truth for amount + card details
-		let amountPaid = totalAmount;
+		// amountCharged = what Stripe charged (includes surcharge) — used for Receipt/ePayment
+		// amountPaidSO = base total of line items — used for Sales Order Amount_Paid (must match SO total)
+		let amountCharged = totalAmount;
+		const amountPaidSO = totalAmount; // base amount before surcharge
 		if (!isFree && paymentIntentId) {
 			let cardLast4 = '', cardBrand = '', cardholderName = `${contact.FirstName} ${contact.LastName}`;
 			let chargeId = paymentIntentId;
@@ -121,7 +123,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 					);
 					if (piRes.ok) {
 						const pi = await piRes.json();
-						amountPaid = pi.amount / 100; // Stripe is source of truth
+						amountCharged = pi.amount / 100; // Stripe amount (includes surcharge)
 						const card = pi.payment_method?.card;
 						cardLast4 = card?.last4 ?? '';
 						cardBrand = card?.brand ?? '';
@@ -146,7 +148,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 					OrderApi__Account__c: contact.AccountId,
 					OrderApi__Sales_Order__c: orderId,
 					OrderApi__Date__c: today,
-					OrderApi__Total__c: amountPaid,
+					OrderApi__Total__c: amountCharged,
 					OrderApi__Succeeded__c: true,
 					OrderApi__Transaction_Type__c: isACH ? 'ach' : 'card',
 					OrderApi__Gateway_Transaction_ID__c: chargeId,
@@ -159,16 +161,16 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 				});
 				// Fonteva trigger may reset Total on insert — force it back
 				try {
-					await sfUpdate('OrderApi__EPayment__c', ePaymentId, { OrderApi__Total__c: amountPaid });
+					await sfUpdate('OrderApi__EPayment__c', ePaymentId, { OrderApi__Total__c: amountCharged });
 				} catch { /* best effort */ }
 				steps.ePayment = { ok: true, id: ePaymentId };
 
-				// Create Receipt
+				// Create Receipt (reflects actual amount charged including surcharge)
 				const receiptId = await sfCreate('OrderApi__Receipt__c', {
 					OrderApi__Sales_Order__c: orderId,
 					OrderApi__Contact__c: contact.Id,
 					OrderApi__Account__c: contact.AccountId,
-					OrderApi__Total__c: amountPaid,
+					OrderApi__Total__c: amountCharged,
 					OrderApi__Date__c: today,
 					OrderApi__Is_Posted__c: true,
 					OrderApi__Payment_Type__c: isACH ? 'ACH' : 'Credit Card',
@@ -191,7 +193,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 				OrderApi__Posting_Status__c: 'Posted',
 				OrderApi__Posted_Date__c: today,
 				OrderApi__Paid_Date__c: today,
-				OrderApi__Amount_Paid__c: amountPaid
+				OrderApi__Amount_Paid__c: amountPaidSO
 			});
 			steps.postOrder = { ok: true };
 		} catch (err: any) {

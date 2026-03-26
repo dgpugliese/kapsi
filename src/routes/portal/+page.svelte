@@ -174,10 +174,11 @@
 					<div class="award-item">
 						<img
 							class="award-img"
-							src={key.includes('laurel wreath') ? '/images/awards/award_laurel_wreath.svg'
-								: key.includes('elder watson diggs') ? '/images/awards/award_elder_watson_diggs.svg'
-								: key.includes('guy levis grant') ? '/images/awards/award_guy_levis_grant.svg'
-								: key.includes('byron') || key.includes('armstrong') ? '/images/awards/award_byron_k_armstrong.svg'
+							src={key.includes('laurel wreath') ? '/images/awards/award_laurel_wreath.png'
+								: key.includes('william') || key.includes('crump') ? '/images/awards/award_william_l_crump.png'
+								: key.includes('elder watson diggs') ? '/images/awards/award_elder_watson_diggs.png'
+								: key.includes('guy levis grant') ? '/images/awards/award_guy_levis_grant.png'
+								: key.includes('byron') || key.includes('armstrong') ? '/images/awards/award_byron_k_armstrong.png'
 								: '/images/crest.png'}
 							alt={award}
 						/>

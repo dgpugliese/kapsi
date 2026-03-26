@@ -132,9 +132,16 @@
 					{ label: 'Type', value: sfContact.memberType },
 					{ label: 'Chapter of Initiation', value: sfContact.chapterOfInitiation },
 					{ label: 'Current Chapter', value: sfContact.currentChapter },
-					{ label: 'Initiation Date', value: sfContact.initiationDate ? new Date(sfContact.initiationDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : null },
 					{ label: 'Province of Initiation', value: sfContact.provinceOfInitiation },
-					{ label: 'Year of Initiation', value: sfContact.yearOfInitiation }
+					{ label: 'Initiated', value: (() => {
+						if (!sfContact.initiationDate && !sfContact.yearOfInitiation) return null;
+						if (sfContact.initiationDate) {
+							const month = new Date(sfContact.initiationDate).getMonth();
+							const season = month >= 0 && month <= 5 ? 'Spring' : 'Fall';
+							return `${season} ${sfContact.yearOfInitiation || new Date(sfContact.initiationDate).getFullYear()}`;
+						}
+						return sfContact.yearOfInitiation;
+					})() }
 				].filter(f => f.value) as field}
 					<div class="detail-chip">
 						<div class="detail-label">{field.label}</div>

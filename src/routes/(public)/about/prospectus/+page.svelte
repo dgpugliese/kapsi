@@ -13,6 +13,48 @@
 	</div>
 </section>
 
+<!-- Impact Stats -->
+<section class="section">
+	<div class="container">
+		<div style="text-align:center; margin-bottom:48px;">
+			<div class="section-label">Our Impact</div>
+			<div class="rule rule--center"></div>
+			<h2 class="section-title">Making a Difference</h2>
+		</div>
+
+		<div class="impact-grid">
+			<div class="impact-card">
+				<div class="impact-icon">
+					<svg width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 1.66 2.69 3 6 3s6-1.34 6-3v-5"/></svg>
+				</div>
+				<span class="impact-value">$1M+</span>
+				<span class="impact-label">Raised for St. Jude Medical Research Center</span>
+			</div>
+			<div class="impact-card">
+				<div class="impact-icon">
+					<svg width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+				</div>
+				<span class="impact-value">100K+</span>
+				<span class="impact-label">Youth Mentored Through Guide Right &amp; Kappa League</span>
+			</div>
+			<div class="impact-card">
+				<div class="impact-icon">
+					<svg width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+				</div>
+				<span class="impact-value">700+</span>
+				<span class="impact-label">Chapters Delivering Community Service Nationwide</span>
+			</div>
+			<div class="impact-card">
+				<div class="impact-icon">
+					<svg width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+				</div>
+				<span class="impact-value">110+</span>
+				<span class="impact-label">Years of Service &amp; Achievement</span>
+			</div>
+		</div>
+	</div>
+</section>
+
 <!-- Why Invest -->
 <section class="section section--cream">
 	<div class="container">
@@ -133,6 +175,45 @@
 </section>
 
 <style>
+	/* Impact Grid */
+	.impact-grid {
+		display: grid;
+		grid-template-columns: repeat(4, 1fr);
+		gap: 24px;
+	}
+
+	.impact-card {
+		text-align: center;
+		padding: 32px 20px;
+		background: var(--gray-50, #f9fafb);
+		border: 1px solid var(--gray-200, #e5e7eb);
+		border-radius: 12px;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.impact-icon {
+		color: var(--crimson, #c8102e);
+		margin-bottom: 4px;
+	}
+
+	.impact-value {
+		font-family: var(--font-serif);
+		font-size: clamp(1.8rem, 3.5vw, 2.2rem);
+		font-weight: 700;
+		color: var(--crimson, #c8102e);
+		line-height: 1;
+	}
+
+	.impact-label {
+		font-size: 0.85rem;
+		color: var(--gray-600);
+		line-height: 1.5;
+		font-weight: 500;
+	}
+
 	/* Invest Block */
 	.invest-block {
 		max-width: 720px;
@@ -295,6 +376,10 @@
 
 	/* Mobile */
 	@media (max-width: 768px) {
+		.impact-grid {
+			grid-template-columns: repeat(2, 1fr);
+		}
+
 		.recognition-grid {
 			grid-template-columns: 1fr;
 		}

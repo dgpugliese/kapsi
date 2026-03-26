@@ -77,7 +77,7 @@ export const PATCH: RequestHandler = async ({ request, locals }) => {
 		if (updates.mobilePhone !== undefined) sfFields.MobilePhone = updates.mobilePhone;
 		if (updates.mailingStreet !== undefined) sfFields.MailingStreet = updates.mailingStreet;
 		if (updates.mailingCity !== undefined) sfFields.MailingCity = updates.mailingCity;
-		if (updates.mailingState !== undefined) sfFields.MailingStateCode = updates.mailingState;
+		if (updates.mailingState !== undefined) sfFields.MailingState = updates.mailingState;
 		if (updates.mailingPostalCode !== undefined) sfFields.MailingPostalCode = updates.mailingPostalCode;
 		if (updates.employer !== undefined) sfFields.FON_Employer_Name__c = updates.employer;
 		if (updates.profession !== undefined) sfFields.FON_Profession__c = updates.profession;

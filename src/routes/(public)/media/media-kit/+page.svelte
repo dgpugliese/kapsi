@@ -15,6 +15,7 @@
 		{ id: 'trademarks', label: 'Trademarks' },
 		{ id: 'entities', label: 'Entities' },
 		{ id: 'social-media', label: 'Social Media' },
+		{ id: 'videos', label: 'Videos' },
 		{ id: 'editorial', label: 'Editorial Calendar' },
 		{ id: 'contact', label: 'Contact' }
 	];
@@ -375,8 +376,34 @@
 	</div>
 </section>
 
+<!-- Videos -->
+<section class="section" id="videos">
+	<div class="container">
+		<div class="content-block">
+			<div class="section-label">Multimedia</div>
+			<div class="rule"></div>
+			<h2>Videos</h2>
+
+			<div class="video-grid">
+				<div class="video-card">
+					<div class="video-embed">
+						<iframe
+							src="https://www.youtube.com/embed/UjOQaWroeMA"
+							title="Kappa Alpha Psi Brand Video"
+							frameborder="0"
+							allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+							allowfullscreen
+						></iframe>
+					</div>
+					<h3>Kappa Alpha Psi Brand Video</h3>
+				</div>
+			</div>
+		</div>
+	</div>
+</section>
+
 <!-- Editorial Calendar -->
-<section class="section" id="editorial">
+<section class="section section--cream" id="editorial">
 	<div class="container">
 		<div class="content-block">
 			<div class="section-label">Publications</div>
@@ -894,6 +921,44 @@
 		margin-bottom: 6px;
 	}
 
+	/* Videos */
+	.video-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+		gap: 24px;
+		margin-top: 24px;
+	}
+
+	.video-card {
+		background: white;
+		border: 1px solid var(--gray-200, #e5e7eb);
+		border-radius: 12px;
+		overflow: hidden;
+	}
+
+	.video-embed {
+		position: relative;
+		padding-bottom: 56.25%;
+		height: 0;
+	}
+
+	.video-embed iframe {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+	}
+
+	.video-card h3 {
+		font-family: var(--font-serif);
+		font-size: 1rem;
+		font-weight: 700;
+		color: var(--black);
+		padding: 16px 20px;
+		margin: 0;
+	}
+
 	/* Journal */
 	.journal-card {
 		padding: 32px;
@@ -1002,6 +1067,10 @@
 
 		.color-pair {
 			flex-direction: column;
+		}
+
+		.video-grid {
+			grid-template-columns: 1fr;
 		}
 	}
 </style>

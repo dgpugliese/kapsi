@@ -146,9 +146,9 @@
 	}
 
 	async function handleRegister() {
-		if (!selectedRegistration) return;
-
 		const cartItems = getCartItems();
+		if (cartItems.length === 0) return;
+
 		const totalAmount = getCartTotal();
 
 		processing = true;
@@ -171,7 +171,7 @@
 					headers: { 'Content-Type': 'application/json' },
 					body: JSON.stringify({
 						eventId: event.sf_event_id,
-						ticketTypeId: selectedRegistration,
+						ticketTypeId: selectedRegistration || items[0]?.ticketTypeId,
 						items
 					})
 				});
@@ -199,7 +199,7 @@
 					headers: { 'Content-Type': 'application/json' },
 					body: JSON.stringify({
 						eventId: event.sf_event_id,
-						ticketTypeId: selectedRegistration,
+						ticketTypeId: selectedRegistration || items[0]?.ticketTypeId,
 						ticketName: cartItems[0]?.ticket.name,
 						amount: totalAmount,
 						items
@@ -570,7 +570,7 @@
 						<div class="ticket-section ticket-section--registration">
 							<div class="ticket-section-header">
 								<span>Event Registration</span>
-								<span class="badge badge--required">Required</span>
+								<span class="badge badge--optional">Optional</span>
 							</div>
 							<div class="ticket-section-body">
 								{#each registrationTickets as ticket}
@@ -729,7 +729,7 @@
 						</button>
 					{:else}
 						<button
-							disabled={!selectedRegistration || processing}
+							disabled={getCartItems().length === 0 || processing}
 							class="btn btn--primary"
 							style="width:100%; justify-content:center; padding:14px; font-size:1rem;"
 							onclick={handleRegister}

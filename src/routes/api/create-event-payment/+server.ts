@@ -16,12 +16,15 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
 	const body = await request.json();
 	const eventId = body.eventId;
+	const method: 'card' | 'ach' = body.paymentMethod === 'ach' ? 'ach' : 'card';
 
 	// Support both new multi-item format and legacy single-ticket format
 	const items = body.items || [{ ticketTypeId: body.ticketTypeId, ticketName: body.ticketName, quantity: 1, unitPrice: body.amount }];
-	const totalAmount = body.totalAmount ?? body.amount;
+	const baseAmount = body.totalAmount ?? body.amount;
+	const surcharge = method === 'card' ? Math.round(baseAmount * 0.04 * 100) / 100 : 0;
+	const totalAmount = baseAmount + surcharge;
 
-	if (!eventId || !totalAmount) throw error(400, 'Missing required fields');
+	if (!eventId || !baseAmount) throw error(400, 'Missing required fields');
 
 	const stripeSecretKey = env.STRIPE_SECRET_KEY;
 	if (!stripeSecretKey) throw error(500, 'Stripe not configured');
@@ -37,21 +40,29 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			.map((i: any) => `${i.ticketName}${i.quantity > 1 ? ` x${i.quantity}` : ''}`)
 			.join(', ') + ` - ${contact.FirstName} ${contact.LastName}`;
 
+		const paymentMethodTypes = method === 'ach' ? ['us_bank_account'] : ['card'];
+		const stripeParams = new URLSearchParams({
+			'amount': totalCents.toString(),
+			'currency': 'usd',
+			'metadata[sf_event_id]': eventId,
+			'metadata[sf_contact_id]': contact.Id,
+			'metadata[item_count]': items.length.toString(),
+			'metadata[payment_method]': method,
+			'metadata[base_amount]': baseAmount.toString(),
+			'metadata[surcharge]': surcharge.toString(),
+			'description': description
+		});
+		paymentMethodTypes.forEach((t, i) => {
+			stripeParams.append(`payment_method_types[${i}]`, t);
+		});
+
 		const stripeRes = await fetch('https://api.stripe.com/v1/payment_intents', {
 			method: 'POST',
 			headers: {
 				'Authorization': `Bearer ${stripeSecretKey}`,
 				'Content-Type': 'application/x-www-form-urlencoded'
 			},
-			body: new URLSearchParams({
-				'amount': totalCents.toString(),
-				'currency': 'usd',
-				'automatic_payment_methods[enabled]': 'true',
-				'metadata[sf_event_id]': eventId,
-				'metadata[sf_contact_id]': contact.Id,
-				'metadata[item_count]': items.length.toString(),
-				'description': description
-			})
+			body: stripeParams
 		});
 
 		if (!stripeRes.ok) {
@@ -65,7 +76,10 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			success: true,
 			clientSecret: paymentIntent.client_secret,
 			paymentIntentId: paymentIntent.id,
-			amount: totalAmount
+			amount: totalAmount,
+			baseAmount,
+			surcharge,
+			paymentMethod: method
 		});
 	} catch (err: any) {
 		console.error('Create event payment error:', err);

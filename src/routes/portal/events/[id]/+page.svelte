@@ -12,7 +12,11 @@
 	let processing = $state(false);
 	let registrationError = $state('');
 	let registrationSuccess = $state(false);
-	let step = $state<'info' | 'form' | 'select' | 'pay' | 'done'>('info');
+	let step = $state<'info' | 'form' | 'select' | 'method' | 'pay' | 'done'>('info');
+	let paymentMethod = $state<'card' | 'ach'>('card');
+	let eventBaseAmount = $state(0);
+	let eventSurcharge = $state(0);
+	let eventTotalAmount = $state(0);
 
 	// Registration form state
 	let formResponseId = $state('');
@@ -145,16 +149,26 @@
 		formSubmitting = false;
 	}
 
-	async function handleRegister() {
+	function handleRegister() {
 		const cartItems = getCartItems();
 		if (cartItems.length === 0) return;
 
 		const totalAmount = getCartTotal();
+		const isFree = totalAmount === 0;
 
-		processing = true;
-		registrationError = '';
-		registrationSuccess = false;
+		if (isFree) {
+			processFreeRegistration();
+		} else {
+			// Go to payment method selection
+			eventBaseAmount = totalAmount;
+			eventSurcharge = Math.round(totalAmount * 0.04 * 100) / 100;
+			paymentMethod = 'card';
+			step = 'method';
+		}
+	}
 
+	async function processFreeRegistration() {
+		const cartItems = getCartItems();
 		const items = cartItems.map(item => ({
 			ticketTypeId: item.ticket.sf_ticket_type_id,
 			ticketName: item.ticket.name,
@@ -162,81 +176,98 @@
 			unitPrice: getEffectivePrice(item.ticket).price
 		}));
 
-		const isFree = totalAmount === 0;
+		processing = true;
+		registrationError = '';
 
-		if (isFree) {
-			try {
-				const res = await fetch('/api/register-event', {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({
-						eventId: event.sf_event_id,
-						ticketTypeId: selectedRegistration || items[0]?.ticketTypeId,
-						items
-					})
-				});
-				const result = await res.json();
-				if (result.success) {
-					registrationSuccess = true;
-					step = 'done';
-				} else {
-					registrationError = result.message || 'Registration failed';
-				}
-			} catch (err: any) {
-				registrationError = err.message || 'Registration failed';
+		try {
+			const res = await fetch('/api/register-event', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					eventId: event.sf_event_id,
+					ticketTypeId: selectedRegistration || items[0]?.ticketTypeId,
+					items
+				})
+			});
+			const result = await res.json();
+			if (result.success) {
+				registrationSuccess = true;
+				step = 'done';
+			} else {
+				registrationError = result.message || 'Registration failed';
 			}
+		} catch (err: any) {
+			registrationError = err.message || 'Registration failed';
+		}
+		processing = false;
+	}
+
+	async function proceedToPayment() {
+		const cartItems = getCartItems();
+		const items = cartItems.map(item => ({
+			ticketTypeId: item.ticket.sf_ticket_type_id,
+			ticketName: item.ticket.name,
+			quantity: item.quantity,
+			unitPrice: getEffectivePrice(item.ticket).price
+		}));
+
+		const finalAmount = paymentMethod === 'card' ? eventBaseAmount + eventSurcharge : eventBaseAmount;
+		eventTotalAmount = finalAmount;
+
+		processing = true;
+		registrationError = '';
+
+		try {
+			if (!stripe) {
+				registrationError = 'Payment system not loaded. Please refresh.';
+				processing = false;
+				return;
+			}
+
+			const res = await fetch('/api/create-event-payment', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					eventId: event.sf_event_id,
+					ticketTypeId: selectedRegistration || items[0]?.ticketTypeId,
+					ticketName: cartItems[0]?.ticket.name,
+					totalAmount: eventBaseAmount,
+					items,
+					paymentMethod
+				})
+			});
+
+			if (!res.ok) {
+				const err = await res.json();
+				registrationError = err.message || 'Failed to create payment';
+				processing = false;
+				return;
+			}
+
+			const data = await res.json();
+			clientSecret = data.clientSecret;
+			currentPaymentIntentId = data.paymentIntentId;
+			eventTotalAmount = data.amount;
+
+			elements = stripe.elements({
+				clientSecret,
+				appearance: {
+					theme: 'stripe',
+					variables: { colorPrimary: '#8B0000', fontFamily: 'Inter, sans-serif' }
+				}
+			});
+			step = 'pay';
 			processing = false;
-		} else {
-			try {
-				if (!stripe) {
-					registrationError = 'Payment system not loaded. Please refresh.';
-					processing = false;
-					return;
-				}
 
-				const res = await fetch('/api/create-event-payment', {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({
-						eventId: event.sf_event_id,
-						ticketTypeId: selectedRegistration || items[0]?.ticketTypeId,
-						ticketName: cartItems[0]?.ticket.name,
-						amount: totalAmount,
-						items
-					})
-				});
+			setTimeout(() => {
+				const paymentEl = elements.create('payment');
+				paymentEl.mount('#event-payment-element');
+				paymentEl.on('ready', () => { stripeReady = true; });
+			}, 100);
 
-				if (!res.ok) {
-					const err = await res.json();
-					registrationError = err.message || 'Failed to create payment';
-					processing = false;
-					return;
-				}
-
-				const data = await res.json();
-				clientSecret = data.clientSecret;
-				currentPaymentIntentId = data.paymentIntentId;
-
-				elements = stripe.elements({
-					clientSecret,
-					appearance: {
-						theme: 'stripe',
-						variables: { colorPrimary: '#8B0000', fontFamily: 'Inter, sans-serif' }
-					}
-				});
-				step = 'pay';
-				processing = false;
-
-				setTimeout(() => {
-					const paymentEl = elements.create('payment');
-					paymentEl.mount('#event-payment-element');
-					paymentEl.on('ready', () => { stripeReady = true; });
-				}, 100);
-
-			} catch (err: any) {
-				registrationError = err.message || 'Failed to start payment';
-				processing = false;
-			}
+		} catch (err: any) {
+			registrationError = err.message || 'Failed to start payment';
+			processing = false;
 		}
 	}
 
@@ -273,7 +304,9 @@
 					eventId: event.sf_event_id,
 					ticketTypeId: selectedRegistration,
 					paymentIntentId: paymentIntent.id,
-					items
+					items,
+					totalAmount: eventTotalAmount,
+					paymentMethod
 				})
 			});
 			const result = await res.json();
@@ -315,13 +348,15 @@
 	function getStepNumber(): number {
 		if (step === 'form') return 1;
 		if (step === 'select') return 2;
-		if (step === 'pay') return 3;
+		if (step === 'method') return 3;
+		if (step === 'pay') return 4;
 		return 0;
 	}
 
 	function getStepLabel(): string {
 		if (step === 'form') return 'Registration Form';
 		if (step === 'select') return 'Select Tickets';
+		if (step === 'method') return 'Payment Method';
 		if (step === 'pay') return 'Payment';
 		return '';
 	}
@@ -409,12 +444,12 @@
 		{#if step !== 'done'}
 			<div class="reg-progress">
 				<div class="reg-progress-steps">
-					{#each [{ n: 1, label: 'Registration Form' }, { n: 2, label: 'Select Tickets' }, { n: 3, label: 'Payment' }] as s}
+					{#each [{ n: 1, label: 'Registration Form' }, { n: 2, label: 'Select Tickets' }, { n: 3, label: 'Payment Method' }, { n: 4, label: 'Payment' }] as s}
 						<div class="reg-step" class:reg-step--active={getStepNumber() === s.n} class:reg-step--done={getStepNumber() > s.n}>
 							<div class="reg-step-circle">{getStepNumber() > s.n ? '✓' : s.n}</div>
 							<span class="reg-step-label">{s.label}</span>
 						</div>
-						{#if s.n < 3}
+						{#if s.n < 4}
 							<div class="reg-step-line" class:reg-step-line--done={getStepNumber() > s.n}></div>
 						{/if}
 					{/each}
@@ -552,7 +587,7 @@
 		{/if}
 
 		<!-- Step 2: Ticket Selection -->
-		{#if step === 'select' || step === 'pay'}
+		{#if step === 'select' || step === 'method' || step === 'pay'}
 			<div class="event-section">
 				<h2>Select Tickets</h2>
 
@@ -717,13 +752,104 @@
 					{#if step === 'pay'}
 						<div style="background:var(--cream); border-radius:10px; padding:20px; margin-bottom:20px;">
 							<div style="font-weight:600; margin-bottom:12px; font-size:0.95rem;">Payment Details</div>
+							<div style="display:flex; justify-content:space-between; font-size:0.9rem; padding:4px 0;">
+								<span>Subtotal</span>
+								<span>${eventBaseAmount.toFixed(2)}</span>
+							</div>
+							{#if paymentMethod === 'card'}
+								<div style="display:flex; justify-content:space-between; font-size:0.88rem; padding:4px 0; color:var(--gray-600);">
+									<span>Processing Fee (4%)</span>
+									<span>${eventSurcharge.toFixed(2)}</span>
+								</div>
+							{:else}
+								<div style="display:flex; justify-content:space-between; font-size:0.88rem; padding:4px 0; color:#065F46;">
+									<span>Processing Fee</span>
+									<span>$0.00</span>
+								</div>
+							{/if}
+							<div style="display:flex; justify-content:space-between; font-size:1.05rem; font-weight:700; padding:8px 0 0; border-top:1px solid var(--gray-100); margin-top:4px; color:var(--crimson);">
+								<span>Total</span>
+								<span>${eventTotalAmount.toFixed(2)}</span>
+							</div>
 						</div>
 						<form onsubmit={handlePayment}>
 							<div id="event-payment-element" style="margin-bottom:20px;"></div>
 							<button type="submit" disabled={processing || !stripeReady} class="btn btn--primary" style="width:100%; justify-content:center; padding:14px; font-size:1rem;">
-								{processing ? 'Processing...' : `Pay $${getCartTotal().toFixed(2)} & Register`}
+								{processing ? 'Processing...' : `Pay $${eventTotalAmount.toFixed(2)} & Register`}
 							</button>
 						</form>
+						<button onclick={() => { step = 'method'; clientSecret = ''; elements = null; stripeReady = false; }} style="display:block; margin:12px auto 0; background:none; border:none; color:var(--gray-500); font-size:0.82rem; cursor:pointer;">
+							Back to Payment Method
+						</button>
+					{:else if step === 'method'}
+						<!-- Payment Method Selection -->
+						<div class="payment-method-grid">
+							<button
+								class="payment-method-card"
+								class:payment-method-card--selected={paymentMethod === 'card'}
+								onclick={() => { paymentMethod = 'card'; }}
+							>
+								<div class="payment-method-icon">
+									<svg width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+										<path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
+									</svg>
+								</div>
+								<div class="payment-method-title">Credit/Debit Card</div>
+								<div class="payment-method-sub">Includes Apple Pay & Google Pay</div>
+								<div class="payment-method-breakdown">
+									<div class="payment-method-row">
+										<span>Subtotal</span>
+										<span>${eventBaseAmount.toFixed(2)}</span>
+									</div>
+									<div class="payment-method-row">
+										<span>Processing Fee (4%)</span>
+										<span>${eventSurcharge.toFixed(2)}</span>
+									</div>
+									<div class="payment-method-row payment-method-row--total">
+										<span>Total</span>
+										<span>${(eventBaseAmount + eventSurcharge).toFixed(2)}</span>
+									</div>
+								</div>
+							</button>
+
+							<button
+								class="payment-method-card"
+								class:payment-method-card--selected={paymentMethod === 'ach'}
+								onclick={() => { paymentMethod = 'ach'; }}
+							>
+								<div class="payment-method-icon">
+									<svg width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+										<path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z" />
+									</svg>
+								</div>
+								<div class="payment-method-title">Bank Account (ACH)</div>
+								<div class="payment-method-sub">Direct bank transfer</div>
+								<div class="payment-method-breakdown">
+									<div class="payment-method-row">
+										<span>Subtotal</span>
+										<span>${eventBaseAmount.toFixed(2)}</span>
+									</div>
+									<div class="payment-method-row">
+										<span>Processing Fee</span>
+										<span>$0.00</span>
+									</div>
+									<div class="payment-method-row payment-method-row--total">
+										<span>Total</span>
+										<span>${eventBaseAmount.toFixed(2)}</span>
+									</div>
+								</div>
+								<div class="no-fee-badge">No processing fee</div>
+							</button>
+						</div>
+
+						<button
+							class="btn btn--primary"
+							style="width:100%; justify-content:center; padding:14px; font-size:1rem; margin-top:16px;"
+							disabled={processing}
+							onclick={proceedToPayment}
+						>
+							{processing ? 'Creating Payment...' : `Continue — $${(paymentMethod === 'card' ? eventBaseAmount + eventSurcharge : eventBaseAmount).toFixed(2)}`}
+						</button>
 						<button onclick={() => { step = 'select'; }} style="display:block; margin:12px auto 0; background:none; border:none; color:var(--gray-500); font-size:0.82rem; cursor:pointer;">
 							Back to Ticket Selection
 						</button>
@@ -739,7 +865,7 @@
 							{:else if !selectedRegistration}
 								Select a Registration Ticket
 							{:else if getCartTotal() > 0}
-								Continue to Payment — ${getCartTotal().toFixed(2)}
+								Choose Payment Method — ${getCartTotal().toFixed(2)}
 							{:else}
 								Register Now — Free
 							{/if}
@@ -1026,7 +1152,83 @@
 	}
 	.form-errors div { padding: 2px 0; }
 
+	/* Payment method selection */
+	.payment-method-grid {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 16px;
+	}
+	.payment-method-card {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		text-align: center;
+		gap: 8px;
+		padding: 20px 16px;
+		border: 2px solid var(--gray-200);
+		border-radius: 12px;
+		cursor: pointer;
+		transition: all 0.25s;
+		background: var(--white);
+		position: relative;
+	}
+	.payment-method-card:hover {
+		border-color: rgba(139, 0, 0, 0.3);
+		box-shadow: 0 2px 8px rgba(139, 0, 0, 0.06);
+	}
+	.payment-method-card--selected {
+		border-color: var(--crimson);
+		background: rgba(139, 0, 0, 0.03);
+		box-shadow: 0 0 0 1px var(--crimson);
+	}
+	.payment-method-icon {
+		color: var(--crimson);
+		margin-bottom: 4px;
+	}
+	.payment-method-title {
+		font-weight: 700;
+		font-size: 1rem;
+		color: var(--black);
+	}
+	.payment-method-sub {
+		font-size: 0.78rem;
+		color: var(--gray-500);
+	}
+	.payment-method-breakdown {
+		width: 100%;
+		margin-top: 8px;
+		padding-top: 8px;
+		border-top: 1px solid var(--gray-100);
+	}
+	.payment-method-row {
+		display: flex;
+		justify-content: space-between;
+		font-size: 0.82rem;
+		color: var(--gray-600);
+		padding: 2px 0;
+	}
+	.payment-method-row--total {
+		font-weight: 700;
+		color: var(--crimson);
+		font-size: 0.95rem;
+		padding-top: 6px;
+		margin-top: 4px;
+		border-top: 1px solid var(--gray-100);
+	}
+	.no-fee-badge {
+		margin-top: 6px;
+		font-size: 0.72rem;
+		font-weight: 700;
+		color: #065F46;
+		background: #ECFDF5;
+		padding: 3px 10px;
+		border-radius: 20px;
+	}
+
 	@media (max-width: 600px) {
+		.payment-method-grid {
+			grid-template-columns: 1fr;
+		}
 		.reg-step-label { font-size: 0.65rem; }
 		.reg-step-line { min-width: 20px; }
 		.field-group-body { padding: 14px; }

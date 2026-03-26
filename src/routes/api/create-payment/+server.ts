@@ -13,8 +13,9 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	const { session, user } = await locals.safeGetSession();
 	if (!session || !user) throw error(401, 'Unauthorized');
 
-	const { duesType } = await request.json();
+	const { duesType, paymentMethod } = await request.json();
 	if (!duesType) throw error(400, 'Missing duesType');
+	const method: 'card' | 'ach' = paymentMethod === 'ach' ? 'ach' : 'card';
 
 	try {
 		const contact = await findContactByEmail(user.email!);
@@ -39,8 +40,10 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		if (items.length === 0) throw error(404, 'No dues item found');
 
 		const item = items[0];
-		const total = duesType === 'undergraduate' ? 100 : 200;
-		const totalCents = total * 100;
+		const baseTotal = duesType === 'undergraduate' ? 100 : 200;
+		const surcharge = method === 'card' ? Math.round(baseTotal * 0.04 * 100) / 100 : 0;
+		const total = baseTotal + surcharge;
+		const totalCents = Math.round(total * 100);
 
 		// Check for existing active subscription (renewal detection)
 		const existingSubs = await sfQuery<any>(
@@ -82,22 +85,30 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		}
 
 		// Step 2: Always create a fresh Stripe PaymentIntent (old ones auto-expire)
+		const paymentMethodTypes = method === 'ach' ? ['us_bank_account'] : ['card'];
+		const stripeParams = new URLSearchParams({
+			'amount': totalCents.toString(),
+			'currency': 'usd',
+			'metadata[sf_order_id]': orderId,
+			'metadata[sf_contact_id]': contact.Id,
+			'metadata[dues_type]': duesType,
+			'metadata[is_renewal]': isRenewal ? 'true' : 'false',
+			'metadata[payment_method]': method,
+			'metadata[base_amount]': baseTotal.toString(),
+			'metadata[surcharge]': surcharge.toString(),
+			'description': `${duesType === 'undergraduate' ? 'Undergraduate' : 'Alumni'} Annual Dues ${isRenewal ? '(Renewal)' : ''} - ${contact.FirstName} ${contact.LastName}`
+		});
+		paymentMethodTypes.forEach((t, i) => {
+			stripeParams.append(`payment_method_types[${i}]`, t);
+		});
+
 		const stripeRes = await fetch('https://api.stripe.com/v1/payment_intents', {
 			method: 'POST',
 			headers: {
 				'Authorization': `Bearer ${stripeSecretKey}`,
 				'Content-Type': 'application/x-www-form-urlencoded'
 			},
-			body: new URLSearchParams({
-				'amount': totalCents.toString(),
-				'currency': 'usd',
-				'automatic_payment_methods[enabled]': 'true',
-				'metadata[sf_order_id]': orderId,
-				'metadata[sf_contact_id]': contact.Id,
-				'metadata[dues_type]': duesType,
-				'metadata[is_renewal]': isRenewal ? 'true' : 'false',
-				'description': `${duesType === 'undergraduate' ? 'Undergraduate' : 'Alumni'} Annual Dues ${isRenewal ? '(Renewal)' : ''} - ${contact.FirstName} ${contact.LastName}`
-			})
+			body: stripeParams
 		});
 
 		if (!stripeRes.ok) {
@@ -112,10 +123,13 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			clientSecret: paymentIntent.client_secret,
 			orderId,
 			total,
+			baseTotal,
+			surcharge,
 			isRenewal,
 			reusedOrder,
 			paymentIntentId: paymentIntent.id,
-			items: [{ name: `${duesType === 'undergraduate' ? 'Undergraduate' : 'Alumni'} Annual Dues`, price: total }]
+			paymentMethod: method,
+			items: [{ name: `${duesType === 'undergraduate' ? 'Undergraduate' : 'Alumni'} Annual Dues`, price: baseTotal }]
 		});
 
 	} catch (err: any) {

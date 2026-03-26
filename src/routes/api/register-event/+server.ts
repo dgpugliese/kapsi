@@ -28,7 +28,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	if (!session || !user) throw error(401, 'Unauthorized');
 
 	const body = await request.json();
-	const { eventId, paymentIntentId } = body;
+	const { eventId, paymentIntentId, paymentMethod: pmMethod } = body;
+	const isACH = pmMethod === 'ach';
 
 	// Support both multi-item and legacy single-ticket format
 	const items: { ticketTypeId: string; ticketName?: string; quantity: number; unitPrice?: number }[] =
@@ -54,15 +55,17 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
 		const ticketMap = new Map(ticketTypes.map((t: any) => [t.Id, t]));
 
-		// Calculate total
-		let totalAmount = 0;
+		// Calculate base total from line items
+		let baseTotalAmount = 0;
 		for (const item of items) {
 			const ticket = ticketMap.get(item.ticketTypeId);
 			const price = item.unitPrice ?? ticket?.EventApi__Price__c ?? 0;
-			totalAmount += price * item.quantity;
+			baseTotalAmount += price * item.quantity;
 		}
 
-		const isFree = totalAmount === 0;
+		// Use frontend-provided totalAmount (includes surcharge) if available
+		const totalAmount = body.totalAmount ?? baseTotalAmount;
+		const isFree = baseTotalAmount === 0;
 
 		// Step 1: Create Sales Order
 		let orderId = '';
@@ -136,7 +139,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 				});
 				steps.ePayment = { ok: true, id: ePaymentId };
 
-				// Create Receipt with total amount
+				// Create Receipt with total amount (includes surcharge if card)
 				const receiptId = await sfCreate('OrderApi__Receipt__c', {
 					OrderApi__Sales_Order__c: orderId,
 					OrderApi__Contact__c: contact.Id,
@@ -144,7 +147,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 					OrderApi__Total__c: totalAmount,
 					OrderApi__Date__c: today,
 					OrderApi__Is_Posted__c: true,
-					OrderApi__Payment_Type__c: 'Credit Card',
+					OrderApi__Payment_Type__c: isACH ? 'ACH' : 'Credit Card',
 					OrderApi__Payment_Gateway__c: gatewayId,
 					OrderApi__Gateway_Transaction_Id__c: paymentIntentId,
 					OrderApi__EPayment__c: ePaymentId

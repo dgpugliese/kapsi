@@ -14,7 +14,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	const { session, user } = await locals.safeGetSession();
 	if (!session || !user) throw error(401, 'Unauthorized');
 
-	const { orderId, paymentIntentId, amount, duesType } = await request.json();
+	const { orderId, paymentIntentId, amount, duesType, paymentMethod } = await request.json();
+	const isACH = paymentMethod === 'ach';
 	if (!orderId || !paymentIntentId) throw error(400, 'Missing orderId or paymentIntentId');
 
 	const contact = await findContactByEmail(user.email!);
@@ -119,7 +120,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 				OrderApi__Total__c: amount,
 				OrderApi__Date__c: today,
 				OrderApi__Is_Posted__c: true,
-				OrderApi__Payment_Type__c: 'Credit Card',
+				OrderApi__Payment_Type__c: isACH ? 'ACH' : 'Credit Card',
 				OrderApi__Payment_Gateway__c: gatewayId,
 				OrderApi__Gateway_Transaction_Id__c: paymentIntentId,
 				OrderApi__Reference_Number__c: paymentIntentId,

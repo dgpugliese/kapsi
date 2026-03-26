@@ -264,8 +264,8 @@
 		<!-- Photo -->
 		<div style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; padding:24px; margin-bottom:24px; display:flex; align-items:center; gap:20px;">
 			<div style="width:80px; height:80px; border-radius:50%; overflow:hidden; background:linear-gradient(160deg, var(--crimson-dark), var(--crimson)); display:flex; align-items:center; justify-content:center; flex-shrink:0; border:3px solid var(--crimson);">
-				{#if member?.profile_photo_url}
-					<img src={member.profile_photo_url} alt="Profile" style="width:100%; height:100%; object-fit:cover;" />
+				{#if member?.profile_photo_url || sf?.imageUrl}
+					<img src={member?.profile_photo_url || sf?.imageUrl} alt="Profile" style="width:100%; height:100%; object-fit:cover;" />
 				{:else}
 					<span style="font-family:var(--font-serif); font-size:1.4rem; color:rgba(255,255,255,0.5);">
 						{sf?.firstName?.[0] ?? ''}{sf?.lastName?.[0] ?? ''}

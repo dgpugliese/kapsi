@@ -140,20 +140,27 @@
 	.founder-feature-photo:hover {
 		transform: translateY(-6px);
 		box-shadow: 0 16px 50px rgba(139,0,0,0.2);
-		border-color: var(--gold);
+		border-color: var(--crimson);
 	}
 	.founder-feature-photo img { width: 100%; height: 100%; object-fit: cover; object-position: center center; }
 
 	/* Founder Grid */
 	.founders-grid {
-		display: flex; flex-wrap: wrap; justify-content: center; gap: 40px;
+		display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px;
 	}
 	.founder-card {
-		text-align: center; width: 220px;
+		text-align: center;
 		display: flex; flex-direction: column; align-items: center;
-		transition: transform 0.3s ease;
+		background: var(--gray-50, #f9fafb);
+		border-radius: 16px;
+		padding: 32px 24px;
+		border: 1px solid var(--gray-200, #e5e7eb);
+		transition: transform 0.3s ease, box-shadow 0.3s ease;
 	}
-	.founder-card:hover { transform: translateY(-4px); }
+	.founder-card:hover {
+		transform: translateY(-4px);
+		box-shadow: 0 12px 32px rgba(0,0,0,0.08);
+	}
 	.founder-photo {
 		width: 180px; height: 180px; margin: 0 auto 18px;
 		border-radius: 50%; overflow: hidden;
@@ -163,7 +170,7 @@
 	}
 	.founder-card:hover .founder-photo {
 		box-shadow: 0 12px 40px rgba(139,0,0,0.18);
-		border-color: var(--gold);
+		border-color: var(--crimson);
 	}
 	.founder-photo img { width: 100%; height: 100%; object-fit: cover; object-position: center center; }
 	.founder-name {
@@ -189,19 +196,16 @@
 	.founder-bio {
 		font-size: 0.85rem; color: var(--gray-600); line-height: 1.7;
 		margin-top: 8px; text-align: center;
-		max-height: 0; overflow: hidden; opacity: 0;
-		transition: max-height 0.4s ease, opacity 0.3s ease;
 	}
-	.founder-card:hover .founder-bio {
-		max-height: 200px; opacity: 1;
+
+	@media (max-width: 1024px) {
+		.founders-grid { grid-template-columns: repeat(2, 1fr); }
 	}
 
 	@media (max-width: 768px) {
 		.founder-feature { grid-template-columns: 1fr; gap: 32px; }
 		.founder-feature-photo { width: 200px; height: 200px; }
-		.founders-grid { gap: 24px; }
-		.founder-card { width: 200px; }
+		.founders-grid { grid-template-columns: 1fr; max-width: 400px; margin: 0 auto; }
 		.founder-photo { width: 140px; height: 140px; }
-		.founder-bio { max-height: none; opacity: 1; }
 	}
 </style>

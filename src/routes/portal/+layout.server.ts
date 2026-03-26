@@ -22,7 +22,7 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 	const member = memberRes.data;
 
 	// Attach SF photo URL to member data for layout avatar
-	const sfImageUrl = sfContact?.FON_Image_URL__c ?? null;
+	const sfImageUrl = sfContact?.FON_Public_Image_Url__c || sfContact?.FON_Image_URL__c || null;
 
 	return { session, user, member, sfImageUrl };
 };

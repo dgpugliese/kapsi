@@ -24,18 +24,9 @@ export const GET: RequestHandler = async ({ url }) => {
 			if (ticketObjs.length === 0) return json({ ticketObjs: [], fields: [] });
 
 			const desc = await sfDescribe('EventApi__Ticket_Type__c');
+			const skip = ['Id','IsDeleted','CurrencyIsoCode','LastActivityDate','LastViewedDate','LastReferencedDate','OwnerId','CreatedById','CreatedDate','LastModifiedById','LastModifiedDate','SystemModstamp'];
 			const fields = desc.fields
-				.filter((f: any) => {
-					const name = (f.name || '').toLowerCase();
-					return name.includes('restrict') || name.includes('require') ||
-					       name.includes('badge') || name.includes('eligible') ||
-					       name.includes('member') || name.includes('type') ||
-					       name.includes('visible') || name.includes('display') ||
-					       name.includes('access') || name.includes('limit') ||
-					       name.includes('criteria') || name.includes('filter') ||
-					       name.includes('status') || name.includes('group') ||
-					       name.includes('category') || name.includes('assignment');
-				})
+				.filter((f: any) => !skip.includes(f.name))
 				.map((f: any) => ({
 					name: f.name,
 					label: f.label,

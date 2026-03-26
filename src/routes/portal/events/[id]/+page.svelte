@@ -11,7 +11,19 @@
 	let processing = $state(false);
 	let registrationError = $state('');
 	let registrationSuccess = $state(false);
-	let step = $state<'select' | 'pay' | 'done'>('select');
+	let step = $state<'info' | 'form' | 'select' | 'pay' | 'done'>('info');
+
+	// Registration form state
+	let formResponseId = $state('');
+	let hazingConfirmed = $state(false);
+	let mealPreference = $state('');
+	let likenessConfirmed = $state(false);
+	let electedOfficial = $state('');
+	let officeTitle = $state('');
+	let officeLevel = $state('');
+	let jurisdiction = $state('');
+	let formErrors = $state<string[]>([]);
+	let formSubmitting = $state(false);
 
 	// Stripe
 	let stripe: any = null;
@@ -36,6 +48,57 @@
 		return tickets.find((t: any) => t.sf_ticket_type_id === selectedTicket);
 	}
 
+	function validateForm(): boolean {
+		const errors: string[] = [];
+		if (!hazingConfirmed) errors.push('You must confirm the Hazing Statement.');
+		if (!mealPreference) errors.push('Please select a meal preference.');
+		if (!likenessConfirmed) errors.push('You must acknowledge the Likeness Release.');
+		if (!electedOfficial) errors.push('Please indicate whether you are a publicly elected official.');
+		if (electedOfficial === 'Yes') {
+			if (!officeTitle.trim()) errors.push('Office Title is required.');
+			if (!officeLevel) errors.push('Level is required.');
+			if (!jurisdiction.trim()) errors.push('Jurisdiction/District is required.');
+		}
+		formErrors = errors;
+		return errors.length === 0;
+	}
+
+	async function handleFormSubmit() {
+		if (!validateForm()) return;
+		formSubmitting = true;
+		registrationError = '';
+
+		const answers: { label: string; value: string }[] = [
+			{ label: 'Confirmation of Hazing Statement', value: 'Confirmed' },
+			{ label: 'Dietary Preference', value: mealPreference },
+			{ label: 'Likeness Release Acknowledgement', value: 'Acknowledged' },
+			{ label: 'Elected Public Official', value: electedOfficial }
+		];
+		if (electedOfficial === 'Yes') {
+			answers.push({ label: 'Office Title', value: officeTitle.trim() });
+			answers.push({ label: 'Office Level', value: officeLevel });
+			answers.push({ label: 'Jurisdiction/District', value: jurisdiction.trim() });
+		}
+
+		try {
+			const res = await fetch('/api/submit-registration-form', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ answers })
+			});
+			const result = await res.json();
+			if (result.success) {
+				formResponseId = result.formResponseId;
+				step = 'select';
+			} else {
+				registrationError = result.message || 'Form submission failed';
+			}
+		} catch (err: any) {
+			registrationError = err.message || 'Form submission failed';
+		}
+		formSubmitting = false;
+	}
+
 	async function handleRegister() {
 		const ticket = getSelectedTicket();
 		if (!ticket) return;
@@ -48,7 +111,6 @@
 		const isFree = effectivePrice === 0;
 
 		if (isFree) {
-			// Free event — register directly
 			try {
 				const res = await fetch('/api/register-event', {
 					method: 'POST',
@@ -70,7 +132,6 @@
 			}
 			processing = false;
 		} else {
-			// Paid event — create PaymentIntent on server, then show Stripe Elements
 			try {
 				if (!stripe) {
 					registrationError = 'Payment system not loaded. Please refresh.';
@@ -100,7 +161,6 @@
 				clientSecret = data.clientSecret;
 				currentPaymentIntentId = data.paymentIntentId;
 
-				// Mount Stripe Elements
 				elements = stripe.elements({
 					clientSecret,
 					appearance: {
@@ -111,7 +171,6 @@
 				step = 'pay';
 				processing = false;
 
-				// Wait for DOM to update, then mount
 				setTimeout(() => {
 					const paymentEl = elements.create('payment');
 					paymentEl.mount('#event-payment-element');
@@ -142,7 +201,6 @@
 			return;
 		}
 
-		// Complete registration with payment
 		try {
 			const res = await fetch('/api/register-event', {
 				method: 'POST',
@@ -158,7 +216,6 @@
 				registrationSuccess = true;
 				step = 'done';
 			} else {
-				// Show which steps failed
 				const failedSteps = Object.entries(result.steps || {})
 					.filter(([, v]: [string, any]) => !v.ok)
 					.map(([k, v]: [string, any]) => `${k}: ${v.error}`)
@@ -188,6 +245,20 @@
 			}
 		}
 		return { price: ticket.price ?? 0, isEarlyBird: false };
+	}
+
+	function getStepNumber(): number {
+		if (step === 'form') return 1;
+		if (step === 'select') return 2;
+		if (step === 'pay') return 3;
+		return 0;
+	}
+
+	function getStepLabel(): string {
+		if (step === 'form') return 'Registration Form';
+		if (step === 'select') return 'Select Tickets';
+		if (step === 'pay') return 'Payment';
+		return '';
 	}
 </script>
 
@@ -259,103 +330,258 @@
 			<p style="color:#047857;">You're registered for {event.display_name || event.name}. Check your email for confirmation details.</p>
 			<a href="/portal/events" class="btn btn--primary" style="margin-top:16px;">Back to Events</a>
 		</div>
-	{:else}
+	{:else if step === 'info'}
+		<!-- Event Info — show Register button -->
 		<div class="event-section">
 			<h2>Register</h2>
-
-			{#if registrationError}
-				<div style="background:#FEF2F2; color:#991B1B; padding:12px 16px; border-radius:8px; font-size:0.9rem; margin-bottom:16px;">
-					{registrationError}
-				</div>
-			{/if}
-
-			{#if ticketsRestricted}
-				<div style="background:#FEF3C7; color:#92400E; padding:10px 14px; border-radius:8px; font-size:0.82rem; margin-bottom:16px;">
-					Some ticket types are restricted based on your membership and are not shown.
-				</div>
-			{/if}
-
-			{#if tickets.length === 0}
-				<p style="color:var(--gray-500);">No ticket types available for this event.</p>
-			{:else}
-				<div style="display:flex; flex-direction:column; gap:10px; margin-bottom:20px;">
-					{#each tickets as ticket}
-						{@const avail = ticket.capacity > 0 ? ticket.capacity - (ticket.quantity_sold ?? 0) : null}
-						{@const soldOut = avail !== null && avail <= 0}
-						{@const ep = getEffectivePrice(ticket)}
-						<label class="ticket-option" class:ticket-option--selected={selectedTicket === ticket.sf_ticket_type_id} class:ticket-option--disabled={soldOut}>
-							<input
-								type="radio"
-								name="ticket"
-								value={ticket.sf_ticket_type_id}
-								bind:group={selectedTicket}
-								disabled={soldOut}
-								style="accent-color:var(--crimson);"
-							/>
-							<div style="flex:1;">
-								<div style="font-weight:700; font-size:0.95rem;">{ticket.name}</div>
-								{#if ticket.description}
-									<div style="font-size:0.8rem; color:var(--gray-500); margin-top:3px; line-height:1.4;">{ticket.description}</div>
-								{/if}
-								{#if avail !== null}
-									<div style="font-size:0.75rem; color:{soldOut ? '#991B1B' : 'var(--gray-500)'}; margin-top:2px;">
-										{soldOut ? 'Sold Out' : `${avail.toLocaleString()} spots remaining`}
-									</div>
-								{/if}
-							</div>
-							<div style="text-align:right;">
-								{#if ep.isEarlyBird}
-									<div style="font-family:var(--font-serif); font-size:1.3rem; font-weight:700; color:var(--crimson);">
-										${ep.price.toFixed(2)}
-									</div>
-									<div style="font-size:0.7rem; color:var(--gray-400); text-decoration:line-through;">${ticket.price.toFixed(2)}</div>
-									<div style="font-size:0.68rem; color:#065F46; font-weight:600;">Early Bird</div>
-								{:else}
-									<div style="font-family:var(--font-serif); font-size:1.3rem; font-weight:700; color:var(--crimson);">
-										{ep.price > 0 ? `$${ep.price.toFixed(2)}` : 'Free'}
-									</div>
-								{/if}
-							</div>
-						</label>
+			<p style="color:var(--gray-600); margin-bottom:16px;">Ready to attend? Click below to begin the registration process.</p>
+			<button class="btn btn--primary" style="width:100%; justify-content:center; padding:14px; font-size:1rem;" onclick={() => { step = 'form'; }}>
+				Register for This Event
+			</button>
+		</div>
+	{:else}
+		<!-- Progress Indicator -->
+		{#if step !== 'done'}
+			<div class="reg-progress">
+				<div class="reg-progress-steps">
+					{#each [{ n: 1, label: 'Registration Form' }, { n: 2, label: 'Select Tickets' }, { n: 3, label: 'Payment' }] as s}
+						<div class="reg-step" class:reg-step--active={getStepNumber() === s.n} class:reg-step--done={getStepNumber() > s.n}>
+							<div class="reg-step-circle">{getStepNumber() > s.n ? '✓' : s.n}</div>
+							<span class="reg-step-label">{s.label}</span>
+						</div>
+						{#if s.n < 3}
+							<div class="reg-step-line" class:reg-step-line--done={getStepNumber() > s.n}></div>
+						{/if}
 					{/each}
 				</div>
+			</div>
+		{/if}
 
-				{#if step === 'pay'}
-					{@const selTicket = getSelectedTicket()}
-					{@const selEp = selTicket ? getEffectivePrice(selTicket) : { price: 0, isEarlyBird: false }}
-					<div style="background:var(--cream); border-radius:10px; padding:20px; margin-bottom:20px;">
-						<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-							<span style="font-weight:600;">{selTicket?.name}</span>
-							<span style="font-family:var(--font-serif); font-size:1.2rem; font-weight:700; color:var(--crimson);">${selEp.price.toFixed(2)}{selEp.isEarlyBird ? ' (Early Bird)' : ''}</span>
+		{#if registrationError}
+			<div style="background:#FEF2F2; color:#991B1B; padding:12px 16px; border-radius:8px; font-size:0.9rem; margin-bottom:16px;">
+				{registrationError}
+			</div>
+		{/if}
+
+		<!-- Step 1: Registration Form -->
+		{#if step === 'form'}
+			<div class="event-section reg-form">
+				<h2>Registration Form</h2>
+
+				{#if formErrors.length > 0}
+					<div class="form-errors">
+						{#each formErrors as err}
+							<div>{err}</div>
+						{/each}
+					</div>
+				{/if}
+
+				<!-- Section 1: Hazing Statement -->
+				<div class="field-group">
+					<div class="field-group-header">Hazing Statement Acceptance</div>
+					<div class="field-group-body">
+						<div class="instructional-text">
+							<p>All attendees must follow required registration requirements, along with acknowledging the Required Meeting Minutes Passage Statement.</p>
+							<p style="font-style:italic; margin:12px 0;">"Individually and collectively, if any brother was aware of any reportable conduct, misconduct or violations of Fraternity rules, mandates or policies. Brothers were specifically asked about hazing incidents, practices, actions, or underground intake activity that occurred; pre (before), during and post (after) the Membership Training Academy."</p>
+							<p>If Yes, please contact Jason A Hall at International Headquarters <a href="mailto:jhall@kappaalphapsi1911.com">jhall@kappaalphapsi1911.com</a>.</p>
+							<p>If "No", you were not aware of any reportable conduct or violations, you are also reminded that reports can be made anonymously at <strong>1-888-NOT-HAZE</strong>.</p>
+						</div>
+						<label class="form-checkbox">
+							<input type="checkbox" bind:checked={hazingConfirmed} />
+							<span>Confirmation of Hazing Statement <span class="required">*</span></span>
+						</label>
+					</div>
+				</div>
+
+				<!-- Section 2: Refund Information -->
+				<div class="field-group">
+					<div class="field-group-header">Refund Information</div>
+					<div class="field-group-body">
+						<div class="instructional-text">
+							<p>Registration is open until the event is sold out and/or no later than the posted deadline. Registration cancellation for a refund request must be received in writing with your name, address, and best contact number by the posted deadline to <a href="mailto:refund@kappaalphapsi1911.com">refund@kappaalphapsi1911.com</a>.</p>
 						</div>
 					</div>
-					<form onsubmit={handlePayment}>
-						<div id="event-payment-element" style="margin-bottom:20px;"></div>
-						<button type="submit" disabled={processing || !stripeReady} class="btn btn--primary" style="width:100%; justify-content:center; padding:14px; font-size:1rem;">
-							{processing ? 'Processing...' : `Pay $${selEp.price.toFixed(2)} & Register`}
-						</button>
-					</form>
-					<button onclick={() => { step = 'select'; selectedTicket = ''; }} style="display:block; margin:12px auto 0; background:none; border:none; color:var(--gray-500); font-size:0.82rem; cursor:pointer;">
-						Cancel
-					</button>
-				{:else}
-					<button
-						disabled={!selectedTicket || processing}
-						class="btn btn--primary"
-						style="width:100%; justify-content:center; padding:14px; font-size:1rem;"
-						onclick={handleRegister}
-					>
-						{#if processing}
-							Registering...
-						{:else if getSelectedTicket() && getEffectivePrice(getSelectedTicket()).price > 0}
-							Continue to Payment — ${getEffectivePrice(getSelectedTicket()).price.toFixed(2)}
-						{:else}
-							Register Now
+				</div>
+
+				<!-- Section 3: Dietary Preferences -->
+				<div class="field-group">
+					<div class="field-group-header">Dietary Preferences</div>
+					<div class="field-group-body">
+						<label class="form-label">Please select a meal preference <span class="required">*</span></label>
+						<select class="form-select" bind:value={mealPreference}>
+							<option value="">-- Select --</option>
+							<option value="N/A">N/A</option>
+							<option value="Vegan">Vegan</option>
+							<option value="Vegetarian">Vegetarian</option>
+							<option value="Gluten-free">Gluten-free</option>
+							<option value="Kosher">Kosher</option>
+							<option value="Halal">Halal</option>
+						</select>
+					</div>
+				</div>
+
+				<!-- Section 4: Likeness Release -->
+				<div class="field-group">
+					<div class="field-group-header">Member/Attendee/Participant Likeness Release Acknowledgement</div>
+					<div class="field-group-body">
+						<div class="instructional-text" style="font-size:0.82rem; line-height:1.7;">
+							<p>I authorize and irrevocably consent that my name, likeness and voice may be used by Kappa Alpha Psi Fraternity, Inc. in any photograph, film, video, performance, statements, testimonials, image or audio recording of me and consent to the use of my likeness, image and voice in any and all internal or external third-party publications, educational materials, research, marketing, advertising, news media, and Web materials. I understand and agree that such materials, including all negatives, positives, digital images, prints, recordings, or data of my Appearance shall become and remain the sole property of the Fraternity, and I shall have no right or title to such items. I agree that the Fraternity does not owe me any compensation for the Appearance that I have consented to in this agreement, whether or not the Fraternity received any third-party compensation for the use of my likeness, image or voice recording. I further understand and agree that these materials may be kept on file and used by the Fraternity for potential future internal or third-party external purposes and further agree to release Kappa Alpha Psi Fraternity, Inc. from any and all liability arising from or in connection with the taking, use, publication, or dissemination of such materials, without limitation, compensation or further permission or notification to me.</p>
+						</div>
+						<label class="form-checkbox">
+							<input type="checkbox" bind:checked={likenessConfirmed} />
+							<span>You acknowledge that you have read and understand the Likeness Statement. <span class="required">*</span></span>
+						</label>
+					</div>
+				</div>
+
+				<!-- Section 5: Elected Public Official -->
+				<div class="field-group">
+					<div class="field-group-header">Elected Public Official Information Request</div>
+					<div class="field-group-body">
+						<div class="instructional-text">
+							<p>Please complete the information if you are a publicly elected official on any level.</p>
+						</div>
+						<label class="form-label">Are you a publicly elected official at the local, state or federal level? <span class="required">*</span></label>
+						<select class="form-select" bind:value={electedOfficial}>
+							<option value="">-- Select --</option>
+							<option value="Yes">Yes</option>
+							<option value="No">No</option>
+						</select>
+
+						{#if electedOfficial === 'Yes'}
+							<div style="margin-top:16px; display:flex; flex-direction:column; gap:14px;">
+								<div>
+									<label class="form-label">Office Title <span class="required">*</span></label>
+									<input type="text" class="form-input" bind:value={officeTitle} placeholder="e.g. City Council Member" />
+								</div>
+								<div>
+									<label class="form-label">Level <span class="required">*</span></label>
+									<select class="form-select" bind:value={officeLevel}>
+										<option value="">-- Select --</option>
+										<option value="Local">Local</option>
+										<option value="State">State</option>
+										<option value="Federal">Federal</option>
+									</select>
+								</div>
+								<div>
+									<label class="form-label">Jurisdiction/District <span class="required">*</span></label>
+									<input type="text" class="form-input" bind:value={jurisdiction} placeholder="e.g. District 5, Ward 3" />
+								</div>
+							</div>
 						{/if}
-					</button>
+					</div>
+				</div>
+
+				<button
+					class="btn btn--primary"
+					style="width:100%; justify-content:center; padding:14px; font-size:1rem; margin-top:8px;"
+					disabled={formSubmitting}
+					onclick={handleFormSubmit}
+				>
+					{formSubmitting ? 'Submitting...' : 'Continue to Ticket Selection'}
+				</button>
+				<button onclick={() => { step = 'info'; formErrors = []; registrationError = ''; }} style="display:block; margin:12px auto 0; background:none; border:none; color:var(--gray-500); font-size:0.82rem; cursor:pointer;">
+					Cancel
+				</button>
+			</div>
+		{/if}
+
+		<!-- Step 2: Ticket Selection -->
+		{#if step === 'select' || step === 'pay'}
+			<div class="event-section">
+				<h2>Select Tickets</h2>
+
+				{#if ticketsRestricted}
+					<div style="background:#FEF3C7; color:#92400E; padding:10px 14px; border-radius:8px; font-size:0.82rem; margin-bottom:16px;">
+						Some ticket types are restricted based on your membership and are not shown.
+					</div>
 				{/if}
-			{/if}
-		</div>
+
+				{#if tickets.length === 0}
+					<p style="color:var(--gray-500);">No ticket types available for this event.</p>
+				{:else}
+					<div style="display:flex; flex-direction:column; gap:10px; margin-bottom:20px;">
+						{#each tickets as ticket}
+							{@const avail = ticket.capacity > 0 ? ticket.capacity - (ticket.quantity_sold ?? 0) : null}
+							{@const soldOut = avail !== null && avail <= 0}
+							{@const ep = getEffectivePrice(ticket)}
+							<label class="ticket-option" class:ticket-option--selected={selectedTicket === ticket.sf_ticket_type_id} class:ticket-option--disabled={soldOut}>
+								<input
+									type="radio"
+									name="ticket"
+									value={ticket.sf_ticket_type_id}
+									bind:group={selectedTicket}
+									disabled={soldOut}
+									style="accent-color:var(--crimson);"
+								/>
+								<div style="flex:1;">
+									<div style="font-weight:700; font-size:0.95rem;">{ticket.name}</div>
+									{#if ticket.description}
+										<div style="font-size:0.8rem; color:var(--gray-500); margin-top:3px; line-height:1.4;">{ticket.description}</div>
+									{/if}
+									{#if avail !== null}
+										<div style="font-size:0.75rem; color:{soldOut ? '#991B1B' : 'var(--gray-500)'}; margin-top:2px;">
+											{soldOut ? 'Sold Out' : `${avail.toLocaleString()} spots remaining`}
+										</div>
+									{/if}
+								</div>
+								<div style="text-align:right;">
+									{#if ep.isEarlyBird}
+										<div style="font-family:var(--font-serif); font-size:1.3rem; font-weight:700; color:var(--crimson);">
+											${ep.price.toFixed(2)}
+										</div>
+										<div style="font-size:0.7rem; color:var(--gray-400); text-decoration:line-through;">${ticket.price.toFixed(2)}</div>
+										<div style="font-size:0.68rem; color:#065F46; font-weight:600;">Early Bird</div>
+									{:else}
+										<div style="font-family:var(--font-serif); font-size:1.3rem; font-weight:700; color:var(--crimson);">
+											{ep.price > 0 ? `$${ep.price.toFixed(2)}` : 'Free'}
+										</div>
+									{/if}
+								</div>
+							</label>
+						{/each}
+					</div>
+
+					{#if step === 'pay'}
+						{@const selTicket = getSelectedTicket()}
+						{@const selEp = selTicket ? getEffectivePrice(selTicket) : { price: 0, isEarlyBird: false }}
+						<div style="background:var(--cream); border-radius:10px; padding:20px; margin-bottom:20px;">
+							<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+								<span style="font-weight:600;">{selTicket?.name}</span>
+								<span style="font-family:var(--font-serif); font-size:1.2rem; font-weight:700; color:var(--crimson);">${selEp.price.toFixed(2)}{selEp.isEarlyBird ? ' (Early Bird)' : ''}</span>
+							</div>
+						</div>
+						<form onsubmit={handlePayment}>
+							<div id="event-payment-element" style="margin-bottom:20px;"></div>
+							<button type="submit" disabled={processing || !stripeReady} class="btn btn--primary" style="width:100%; justify-content:center; padding:14px; font-size:1rem;">
+								{processing ? 'Processing...' : `Pay $${selEp.price.toFixed(2)} & Register`}
+							</button>
+						</form>
+						<button onclick={() => { step = 'select'; selectedTicket = ''; }} style="display:block; margin:12px auto 0; background:none; border:none; color:var(--gray-500); font-size:0.82rem; cursor:pointer;">
+							Cancel
+						</button>
+					{:else}
+						<button
+							disabled={!selectedTicket || processing}
+							class="btn btn--primary"
+							style="width:100%; justify-content:center; padding:14px; font-size:1rem;"
+							onclick={handleRegister}
+						>
+							{#if processing}
+								Registering...
+							{:else if getSelectedTicket() && getEffectivePrice(getSelectedTicket()).price > 0}
+								Continue to Payment — ${getEffectivePrice(getSelectedTicket()).price.toFixed(2)}
+							{:else}
+								Register Now
+							{/if}
+						</button>
+						<button onclick={() => { step = 'form'; }} style="display:block; margin:12px auto 0; background:none; border:none; color:var(--gray-500); font-size:0.82rem; cursor:pointer;">
+							Back to Form
+						</button>
+					{/if}
+				{/if}
+			</div>
+		{/if}
 	{/if}
 </div>
 
@@ -427,4 +653,104 @@
 	.ticket-option--selected { border-color: var(--crimson); background: rgba(139, 0, 0, 0.04); }
 	.ticket-option--disabled { opacity: 0.5; cursor: not-allowed; }
 	.ticket-option--disabled:hover { border-color: var(--gray-100); background: transparent; }
+
+	/* Progress indicator */
+	.reg-progress {
+		background: var(--white); border: 1px solid var(--gray-100);
+		border-radius: 14px; padding: 20px 24px; margin-bottom: 24px;
+	}
+	.reg-progress-steps {
+		display: flex; align-items: center; justify-content: center; gap: 0;
+	}
+	.reg-step {
+		display: flex; flex-direction: column; align-items: center; gap: 6px;
+	}
+	.reg-step-circle {
+		width: 32px; height: 32px; border-radius: 50%;
+		background: var(--gray-100); color: var(--gray-500);
+		display: flex; align-items: center; justify-content: center;
+		font-size: 0.82rem; font-weight: 700; transition: all 0.2s;
+	}
+	.reg-step--active .reg-step-circle {
+		background: var(--crimson); color: white;
+	}
+	.reg-step--done .reg-step-circle {
+		background: #065F46; color: white;
+	}
+	.reg-step-label {
+		font-size: 0.72rem; color: var(--gray-400); font-weight: 600;
+		text-align: center; white-space: nowrap;
+	}
+	.reg-step--active .reg-step-label { color: var(--crimson); }
+	.reg-step--done .reg-step-label { color: #065F46; }
+	.reg-step-line {
+		flex: 1; height: 2px; background: var(--gray-100);
+		min-width: 40px; max-width: 80px; margin: 0 8px; margin-bottom: 22px;
+	}
+	.reg-step-line--done { background: #065F46; }
+
+	/* Registration form styles */
+	.reg-form { }
+	.field-group {
+		border: 1px solid var(--gray-100); border-radius: 10px;
+		overflow: hidden; margin-bottom: 20px;
+	}
+	.field-group-header {
+		background: var(--crimson); color: white;
+		font-family: var(--font-serif); font-weight: 700;
+		font-size: 0.92rem; padding: 12px 18px;
+	}
+	.field-group-body {
+		padding: 18px;
+	}
+	.instructional-text {
+		background: #F9FAFB; border: 1px solid var(--gray-100);
+		border-radius: 8px; padding: 14px 16px; margin-bottom: 14px;
+	}
+	.instructional-text p {
+		font-size: 0.85rem !important; color: var(--gray-600) !important;
+		line-height: 1.7 !important; margin-bottom: 8px !important;
+	}
+	.instructional-text p:last-child { margin-bottom: 0 !important; }
+	.instructional-text a {
+		color: var(--crimson); text-decoration: underline;
+	}
+	.form-checkbox {
+		display: flex; align-items: flex-start; gap: 10px;
+		cursor: pointer; font-size: 0.88rem; color: var(--gray-700);
+		line-height: 1.5;
+	}
+	.form-checkbox input[type="checkbox"] {
+		margin-top: 3px; accent-color: var(--crimson); flex-shrink: 0;
+		width: 18px; height: 18px;
+	}
+	.form-label {
+		display: block; font-size: 0.88rem; font-weight: 600;
+		color: var(--gray-700); margin-bottom: 6px;
+	}
+	.form-select {
+		width: 100%; padding: 10px 14px; border: 1px solid var(--gray-200);
+		border-radius: 8px; font-size: 0.88rem; color: var(--gray-700);
+		background: white; appearance: auto;
+	}
+	.form-select:focus { outline: none; border-color: var(--crimson); box-shadow: 0 0 0 2px rgba(139,0,0,0.1); }
+	.form-input {
+		width: 100%; padding: 10px 14px; border: 1px solid var(--gray-200);
+		border-radius: 8px; font-size: 0.88rem; color: var(--gray-700);
+		box-sizing: border-box;
+	}
+	.form-input:focus { outline: none; border-color: var(--crimson); box-shadow: 0 0 0 2px rgba(139,0,0,0.1); }
+	.required { color: var(--crimson); }
+	.form-errors {
+		background: #FEF2F2; border: 1px solid #FECACA; border-radius: 8px;
+		padding: 12px 16px; margin-bottom: 16px; font-size: 0.85rem; color: #991B1B;
+	}
+	.form-errors div { padding: 2px 0; }
+
+	@media (max-width: 600px) {
+		.reg-step-label { font-size: 0.65rem; }
+		.reg-step-line { min-width: 20px; }
+		.field-group-body { padding: 14px; }
+		.instructional-text { padding: 10px 12px; }
+	}
 </style>

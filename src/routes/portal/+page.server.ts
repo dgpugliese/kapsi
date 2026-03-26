@@ -47,7 +47,8 @@ export const load: PageServerLoad = async ({ locals, parent }) => {
 			outstandingDebt: contact.FON_Outstanding_Debt__c,
 			membershipExpires: contact.Date_Membership_Expires__c || contact.Membership_End_Date__c,
 			yearOfInitiation: contact.Year_of_Initiation__c,
-			imageUrl: contact.FON_Image_URL__c
+			imageUrl: contact.FON_Image_URL__c,
+			nationalAwards: contact.National_Award_Winner__c
 		};
 
 		// Membership + balance in parallel (needs Contact ID from above)

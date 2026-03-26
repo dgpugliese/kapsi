@@ -227,7 +227,8 @@ export async function findContactByEmail(email: string): Promise<Record<string, 
 			Source_of_Comission__c,
 			FON_Retired_From_Military__c,
 			FON_Disabled_Veteran__c,
-			FON_More_Personal_Info__c
+			FON_More_Personal_Info__c,
+			National_Award_Winner__c
 		FROM Contact
 		WHERE Email = '${escaped}'
 			OR OrderApi__Personal_Email__c = '${escaped}'

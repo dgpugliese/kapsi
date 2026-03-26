@@ -68,8 +68,11 @@ export const load: PageServerLoad = async ({ locals, parent }) => {
 					retiredFromMilitary: contact.FON_Retired_From_Military__c,
 					disabledVeteran: contact.FON_Disabled_Veteran__c,
 					// Other
-					morePersonalInfo: contact.FON_More_Personal_Info__c
+					morePersonalInfo: contact.FON_More_Personal_Info__c,
+					// Awards
+					nationalAwards: contact.National_Award_Winner__c
 				};
+				console.log('[Profile] National_Award_Winner__c =', contact.National_Award_Winner__c);
 			}
 		}
 	} catch (err) {

@@ -80,6 +80,9 @@ export const load: PageServerLoad = async ({ locals, params, parent }) => {
 		tickets = sfTickets.filter((t: any) => {
 			const name = (t.Name || '').toLowerCase();
 
+			// Hide virtual registration tickets
+			if (name.includes('virtual')) return false;
+
 			// Name-based member type filtering
 			if (name.includes('undergraduate') && memberType === 'Alumni') return false;
 			if (name.includes('alumni') && memberType === 'Undergraduate') return false;

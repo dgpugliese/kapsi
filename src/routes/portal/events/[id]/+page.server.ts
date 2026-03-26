@@ -85,6 +85,13 @@ export const load: PageServerLoad = async ({ locals, params, parent }) => {
 			if (name.includes('alumni') && memberType === 'Undergraduate') return false;
 			if (name.includes('senior kappa') && !memberBadges.includes('Senior Kappa')) return false;
 
+			// Senior Kappa members should only see their tier, not regular alumni/member registration
+			if (memberBadges.includes('Senior Kappa')) {
+				const isGenericAlumni = (name.includes('alumni member') || name.includes('alumni chapter'))
+					&& !name.includes('senior');
+				if (isGenericAlumni) return false;
+			}
+
 			// Badge-based access permission filtering
 			if (t.EventApi__Enable_Access_Permissions__c && permissionMap.has(t.Id)) {
 				const requiredBadges = permissionMap.get(t.Id)!;

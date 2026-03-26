@@ -27,29 +27,31 @@
 		</div>
 
 		<!-- Other Programs -->
-		<div style="margin-top:56px; padding-top:32px; border-top:1px solid var(--gray-200);">
-			<div style="text-align:center; margin-bottom:24px;">
+		<div class="other-programs">
+			<div style="text-align:center; margin-bottom:32px;">
 				<div class="section-label">Explore</div>
-				<h3 style="font-family:var(--font-serif); font-size:1.25rem; font-weight:700; color:var(--black);">Other Programs</h3>
+				<div class="rule rule--center"></div>
+				<h3 class="other-programs-title">Our Programs</h3>
 			</div>
-			<div style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center;">
+			<div class="programs-logo-grid">
 				{#each [
-					{ slug: 'guide-right', name: 'Guide Right' },
-					{ slug: 'kappa-league', name: 'Kappa League' },
-					{ slug: 'achievement-academy', name: 'Achievement Academy' },
-					{ slug: 'room-to-read', name: 'Room To Read' },
-					{ slug: 'learn-to-live', name: 'Learn 2 Live' },
-					{ slug: 'uli', name: 'ULI' },
-					{ slug: 'lead-kappa', name: 'Lead Kappa' },
-					{ slug: 'glad', name: 'G.L.A.D.' },
-					{ slug: 'are-you-ok', name: 'Are You OK?' }
-				].filter(p => p.slug !== data.slug) as program}
+					{ slug: 'guide-right', name: 'Guide Right', icon: '/images/programs/Guide-Right-200.png' },
+					{ slug: 'kappa-league', name: 'Kappa League', icon: '/images/programs/KappaLeague-200.png' },
+					{ slug: 'achievement-academy', name: 'Achievement Academy', icon: '/images/programs/AcheivementAcademy-200.png' },
+					{ slug: 'room-to-read', name: 'Room To Read', icon: '/images/programs/RTR-Logo-Primary-RGB-FullColor-r6v55a3137bq2nefd4d02px2f2hf6dt8zs0lzwf26k.png' },
+					{ slug: 'learn-to-live', name: 'Learn 2 Live', icon: '/images/programs/Learn2Live-200.png' },
+					{ slug: 'uli', name: 'ULI', icon: '/images/programs/ULI-200.png' },
+					{ slug: 'lead-kappa', name: 'Lead Kappa', icon: '/images/programs/LEADKappa-200.png' },
+					{ slug: 'glad', name: 'G.L.A.D.', icon: '/images/programs/GLAD-200.png' },
+					{ slug: 'are-you-ok', name: 'Are You OK?', icon: '/images/programs/AreYouOKDark.png' }
+				] as program}
 					<a
 						href="/programs/{program.slug}"
-						style="padding:8px 20px; background:var(--cream); color:var(--crimson); font-size:0.85rem; font-weight:600; border-radius:24px; text-decoration:none; transition:all 0.25s; border:1px solid transparent;"
-						class="prog-pill"
+						class="program-logo-link"
+						class:program-logo-link--active={program.slug === data.slug}
 					>
-						{program.name}
+						<img src={program.icon} alt={program.name} />
+						<span>{program.name}</span>
 					</a>
 				{/each}
 			</div>
@@ -69,9 +71,72 @@
 		background: rgba(255,255,255,0.95);
 		padding: 8px;
 	}
-	.prog-pill:hover {
-		background: var(--crimson) !important;
-		color: var(--white) !important;
-		transform: translateY(-1px);
+	.other-programs {
+		margin-top: 56px;
+		padding-top: 32px;
+		border-top: 1px solid var(--gray-200);
+	}
+
+	.other-programs-title {
+		font-family: var(--font-serif);
+		font-size: 1.25rem;
+		font-weight: 700;
+		color: var(--black);
+	}
+
+	.programs-logo-grid {
+		display: grid;
+		grid-template-columns: repeat(5, 1fr);
+		gap: 20px;
+	}
+
+	.program-logo-link {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 10px;
+		text-decoration: none;
+		padding: 20px 12px;
+		border-radius: 12px;
+		background: var(--gray-50, #f9fafb);
+		border: 1px solid var(--gray-200, #e5e7eb);
+		transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+	}
+
+	.program-logo-link:hover {
+		transform: translateY(-4px);
+		box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+		border-color: var(--crimson, #c8102e);
+	}
+
+	.program-logo-link--active {
+		border-color: var(--crimson, #c8102e);
+		background: rgba(200, 16, 46, 0.04);
+	}
+
+	.program-logo-link img {
+		width: 72px;
+		height: 72px;
+		object-fit: contain;
+	}
+
+	.program-logo-link span {
+		font-size: 0.8rem;
+		font-weight: 600;
+		color: var(--gray-700, #374151);
+		text-align: center;
+		line-height: 1.3;
+	}
+
+	@media (max-width: 1024px) {
+		.programs-logo-grid {
+			grid-template-columns: repeat(3, 1fr);
+		}
+	}
+
+	@media (max-width: 600px) {
+		.programs-logo-grid {
+			grid-template-columns: repeat(2, 1fr);
+		}
 	}
 </style>

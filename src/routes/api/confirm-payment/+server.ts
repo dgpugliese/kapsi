@@ -129,8 +129,9 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 				OrderApi__Full_Name__c: cardholderName,
 				OrderApi__Entity__c: 'Contact'
 			});
-			// Fonteva trigger may reset Total on insert — force it back
+			// Fonteva trigger resets Total on insert — force it back with delay
 			try {
+				await new Promise(r => setTimeout(r, 1000));
 				await sfUpdate('OrderApi__EPayment__c', ePaymentId, { OrderApi__Total__c: amountPaid });
 			} catch { /* best effort */ }
 			steps.ePayment = { ok: true, id: ePaymentId };

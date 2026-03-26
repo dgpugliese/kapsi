@@ -6,7 +6,12 @@
 
 	let sidebarOpen = $state(false);
 
-	// Bottom tab bar items for mobile — key actions only
+	// Close sidebar on route change
+	$effect(() => {
+		$page.url.pathname;
+		sidebarOpen = false;
+	});
+
 	const bottomTabs = [
 		{ label: 'Home', href: '/portal', icon: 'home' },
 		{ label: 'Dues', href: '/portal/dues', icon: 'credit-card' },
@@ -17,6 +22,7 @@
 
 	const navSections = [
 		{
+			label: 'Member',
 			items: [
 				{ label: 'Dashboard', href: '/portal', icon: 'home' },
 				{ label: 'My Info', href: '/portal/profile', icon: 'user' },
@@ -27,6 +33,7 @@
 			]
 		},
 		{
+			label: 'Resources',
 			items: [
 				{ label: 'Kappa Store', href: '/portal/store', icon: 'store' },
 				{ label: 'Member Directory', href: '/portal/directory', icon: 'search' },
@@ -34,6 +41,7 @@
 			]
 		},
 		{
+			label: 'Information',
 			items: [
 				{ label: 'Announcements', href: '/portal/announcements', icon: 'bell' },
 				{ label: 'Documents', href: '/portal/documents', icon: 'folder' }
@@ -55,55 +63,68 @@
 		folder: 'M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z',
 		menu: 'M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5'
 	};
+
+	function isActive(href: string): boolean {
+		if (href === '/portal') return $page.url.pathname === '/portal';
+		return $page.url.pathname.startsWith(href);
+	}
 </script>
 
-<div class="min-h-screen bg-gray-50">
-	<!-- Mobile header — simplified, no duplicate hamburger -->
-	<div class="lg:hidden flex items-center bg-white border-b px-4 py-3">
-		<h2 class="font-serif font-bold text-crimson-900">Member Portal</h2>
-	</div>
-
-	<div class="lg:flex">
-		<!-- Sidebar -->
-		{#if sidebarOpen}
-			<div class="fixed inset-0 bg-black/50 z-40 lg:hidden" onclick={() => (sidebarOpen = false)} role="presentation"></div>
-		{/if}
-		<aside class="
-			{sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-			fixed top-0 left-0 z-50 h-full w-64 bg-white border-r border-gray-200 transition-transform
-			lg:translate-x-0 lg:static lg:z-auto lg:shrink-0
-		">
-			<!-- Profile summary -->
-			<div style="padding:20px; text-align:center; border-bottom:1px solid var(--gray-200);">
-				<div style="width:64px; height:64px; border-radius:50%; overflow:hidden; margin:0 auto 10px; background:linear-gradient(160deg, var(--crimson-dark), var(--crimson)); display:flex; align-items:center; justify-content:center; border:3px solid var(--crimson);">
+<div class="portal-shell">
+	<!-- Mobile header -->
+	<header class="portal-mobile-header">
+		<div class="portal-mobile-header-inner">
+			<div class="portal-mobile-identity">
+				<div class="portal-mobile-avatar">
 					{#if data.member?.profile_photo_url}
-						<img src={data.member.profile_photo_url} alt="" style="width:100%; height:100%; object-fit:cover;" />
+						<img src={data.member.profile_photo_url} alt="" />
 					{:else}
-						<span style="font-family:var(--font-serif); font-size:1.2rem; color:rgba(255,255,255,0.6);">
-							{data.member?.first_name?.[0] ?? ''}{data.member?.last_name?.[0] ?? ''}
-						</span>
+						<span>{data.member?.first_name?.[0] ?? ''}{data.member?.last_name?.[0] ?? ''}</span>
 					{/if}
 				</div>
-				<p style="font-family:var(--font-serif); font-weight:700; color:var(--black); font-size:0.95rem;">
-					{data.member?.first_name ?? ''} {data.member?.last_name ?? ''}
-				</p>
-				<p style="font-size:0.75rem; color:var(--gray-600); margin-top:2px;">{data.member?.chapters?.name ?? ''}</p>
+				<div>
+					<h2 class="portal-mobile-name">{data.member?.first_name ?? ''} {data.member?.last_name ?? ''}</h2>
+					<p class="portal-mobile-chapter">{data.member?.chapters?.name ?? 'Member Portal'}</p>
+				</div>
+			</div>
+		</div>
+	</header>
+
+	<div class="portal-body">
+		<!-- Sidebar overlay -->
+		{#if sidebarOpen}
+			<div class="sidebar-overlay" onclick={() => (sidebarOpen = false)} role="presentation"></div>
+		{/if}
+
+		<!-- Sidebar -->
+		<aside class="portal-sidebar" class:portal-sidebar--open={sidebarOpen}>
+			<!-- Profile summary -->
+			<div class="sidebar-profile">
+				<div class="sidebar-avatar">
+					{#if data.member?.profile_photo_url}
+						<img src={data.member.profile_photo_url} alt="" />
+					{:else}
+						<span>{data.member?.first_name?.[0] ?? ''}{data.member?.last_name?.[0] ?? ''}</span>
+					{/if}
+				</div>
+				<p class="sidebar-name">{data.member?.first_name ?? ''} {data.member?.last_name ?? ''}</p>
+				<p class="sidebar-chapter">{data.member?.chapters?.name ?? ''}</p>
 			</div>
 
-			<!-- Nav with sections -->
-			<nav style="padding:8px 0;">
+			<!-- Nav sections -->
+			<nav class="sidebar-nav">
 				{#each navSections as section, si}
 					{#if si > 0}
-						<div style="height:1px; background:var(--gray-200); margin:8px 16px;"></div>
+						<div class="sidebar-divider"></div>
 					{/if}
+					<p class="sidebar-section-label">{section.label}</p>
 					{#each section.items as item}
 						<a
 							href={item.href}
-							style="display:flex; align-items:center; gap:10px; padding:10px 20px; font-size:0.85rem; color:var(--gray-600); text-decoration:none; transition:all 0.2s; border-left:3px solid transparent;"
-							class="portal-nav-link"
-							onclick={() => (sidebarOpen = false)}
+							class="sidebar-link"
+							class:sidebar-link--active={isActive(item.href)}
 						>
-							<svg style="width:18px; height:18px; flex-shrink:0; opacity:0.5;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+							<svg class="sidebar-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
 								<path stroke-linecap="round" stroke-linejoin="round" d={iconPaths[item.icon]} />
 							</svg>
 							{item.label}
@@ -113,10 +134,10 @@
 			</nav>
 
 			<!-- Logout -->
-			<div class="p-3 border-t border-gray-200">
+			<div class="sidebar-footer">
 				<form method="POST" action="/logout">
-					<button type="submit" class="flex items-center gap-3 w-full px-3 py-2.5 text-sm text-gray-500 hover:text-crimson hover:bg-cream/50 rounded-lg transition-colors">
-						<svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+					<button type="submit" class="sidebar-logout">
+						<svg class="sidebar-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
 							<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
 						</svg>
 						Sign Out
@@ -126,9 +147,9 @@
 		</aside>
 
 		<!-- Main content -->
-		<div class="flex-1 p-4 sm:p-6 lg:p-8 pb-24 lg:pb-8">
+		<main class="portal-main">
 			{@render children()}
-		</div>
+		</main>
 	</div>
 
 	<!-- Mobile bottom tab bar -->
@@ -137,6 +158,7 @@
 			{#if tab.href === '#more'}
 				<button
 					class="bottom-tab"
+					class:bottom-tab--active={sidebarOpen}
 					onclick={() => (sidebarOpen = !sidebarOpen)}
 					aria-label="More options"
 				>
@@ -149,7 +171,7 @@
 				<a
 					href={tab.href}
 					class="bottom-tab"
-					class:bottom-tab--active={$page.url.pathname === tab.href}
+					class:bottom-tab--active={isActive(tab.href)}
 				>
 					<svg class="bottom-tab-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
 						<path stroke-linecap="round" stroke-linejoin="round" d={iconPaths[tab.icon]} />
@@ -162,14 +184,246 @@
 </div>
 
 <style>
-	.portal-nav-link:hover {
-		background: var(--cream);
-		color: var(--crimson);
-		border-left-color: var(--crimson);
+	/* ===== Shell ===== */
+	.portal-shell {
+		min-height: 100vh;
+		background: var(--gray-50, #f9fafb);
 	}
-	.portal-nav-link:hover svg { opacity: 1; }
 
-	/* Bottom tab bar — mobile only */
+	.portal-body {
+		display: flex;
+	}
+
+	/* ===== Mobile Header ===== */
+	.portal-mobile-header {
+		display: none;
+		background: white;
+		border-bottom: 1px solid var(--gray-200, #e5e7eb);
+	}
+
+	.portal-mobile-header-inner {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 12px 16px;
+	}
+
+	.portal-mobile-identity {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+	}
+
+	.portal-mobile-avatar {
+		width: 40px;
+		height: 40px;
+		border-radius: 50%;
+		overflow: hidden;
+		background: linear-gradient(160deg, var(--crimson-dark, #8b0000), var(--crimson, #c8102e));
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border: 2px solid var(--crimson, #c8102e);
+		flex-shrink: 0;
+	}
+
+	.portal-mobile-avatar img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+
+	.portal-mobile-avatar span {
+		font-family: var(--font-serif);
+		font-size: 0.8rem;
+		color: rgba(255,255,255,0.7);
+		font-weight: 600;
+	}
+
+	.portal-mobile-name {
+		font-family: var(--font-serif);
+		font-weight: 700;
+		font-size: 0.95rem;
+		color: var(--black);
+		line-height: 1.2;
+	}
+
+	.portal-mobile-chapter {
+		font-size: 0.72rem;
+		color: var(--gray-500);
+	}
+
+	/* ===== Sidebar ===== */
+	.portal-sidebar {
+		position: fixed;
+		top: 0;
+		left: 0;
+		z-index: 50;
+		width: 260px;
+		height: 100vh;
+		background: white;
+		border-right: 1px solid var(--gray-200, #e5e7eb);
+		display: flex;
+		flex-direction: column;
+		transform: translateX(-100%);
+		transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+		overflow-y: auto;
+	}
+
+	.portal-sidebar--open {
+		transform: translateX(0);
+	}
+
+	.sidebar-overlay {
+		position: fixed;
+		inset: 0;
+		background: rgba(0,0,0,0.5);
+		z-index: 40;
+		backdrop-filter: blur(2px);
+	}
+
+	/* Sidebar profile */
+	.sidebar-profile {
+		padding: 24px 20px 20px;
+		text-align: center;
+		border-bottom: 1px solid var(--gray-200, #e5e7eb);
+	}
+
+	.sidebar-avatar {
+		width: 64px;
+		height: 64px;
+		border-radius: 50%;
+		overflow: hidden;
+		margin: 0 auto 10px;
+		background: linear-gradient(160deg, var(--crimson-dark, #8b0000), var(--crimson, #c8102e));
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border: 3px solid var(--crimson, #c8102e);
+	}
+
+	.sidebar-avatar img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+
+	.sidebar-avatar span {
+		font-family: var(--font-serif);
+		font-size: 1.2rem;
+		color: rgba(255,255,255,0.6);
+	}
+
+	.sidebar-name {
+		font-family: var(--font-serif);
+		font-weight: 700;
+		color: var(--black);
+		font-size: 0.95rem;
+	}
+
+	.sidebar-chapter {
+		font-size: 0.75rem;
+		color: var(--gray-500);
+		margin-top: 2px;
+	}
+
+	/* Sidebar nav */
+	.sidebar-nav {
+		flex: 1;
+		padding: 12px 0;
+		overflow-y: auto;
+	}
+
+	.sidebar-section-label {
+		font-size: 0.65rem;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.1em;
+		color: var(--gray-400);
+		padding: 8px 20px 4px;
+	}
+
+	.sidebar-divider {
+		height: 1px;
+		background: var(--gray-200, #e5e7eb);
+		margin: 8px 16px;
+	}
+
+	.sidebar-link {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		padding: 10px 20px;
+		font-size: 0.85rem;
+		color: var(--gray-600);
+		text-decoration: none;
+		transition: all 0.2s;
+		border-left: 3px solid transparent;
+	}
+
+	.sidebar-link:hover {
+		background: var(--cream, #faf8f5);
+		color: var(--crimson, #c8102e);
+		border-left-color: var(--crimson, #c8102e);
+	}
+
+	.sidebar-link:hover .sidebar-icon {
+		opacity: 1;
+	}
+
+	.sidebar-link--active {
+		background: rgba(200, 16, 46, 0.04);
+		color: var(--crimson, #c8102e);
+		border-left-color: var(--crimson, #c8102e);
+		font-weight: 600;
+	}
+
+	.sidebar-link--active .sidebar-icon {
+		opacity: 1;
+	}
+
+	.sidebar-icon {
+		width: 18px;
+		height: 18px;
+		flex-shrink: 0;
+		opacity: 0.5;
+	}
+
+	/* Sidebar footer */
+	.sidebar-footer {
+		padding: 12px;
+		border-top: 1px solid var(--gray-200, #e5e7eb);
+	}
+
+	.sidebar-logout {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		width: 100%;
+		padding: 10px 12px;
+		font-size: 0.85rem;
+		color: var(--gray-500);
+		background: none;
+		border: none;
+		border-radius: 8px;
+		cursor: pointer;
+		font-family: inherit;
+		transition: all 0.2s;
+	}
+
+	.sidebar-logout:hover {
+		color: var(--crimson, #c8102e);
+		background: var(--cream, #faf8f5);
+	}
+
+	/* ===== Main content ===== */
+	.portal-main {
+		flex: 1;
+		padding: 24px 16px 100px;
+		min-height: 100vh;
+	}
+
+	/* ===== Bottom tab bar ===== */
 	.bottom-tab-bar {
 		display: none;
 		position: fixed;
@@ -177,15 +431,12 @@
 		left: 0;
 		right: 0;
 		z-index: 50;
-		background: #fff;
-		border-top: 1px solid var(--gray-200);
+		background: white;
+		border-top: 1px solid var(--gray-200, #e5e7eb);
 		padding: 6px 0 env(safe-area-inset-bottom, 8px);
 		justify-content: space-around;
 		align-items: center;
 		box-shadow: 0 -2px 10px rgba(0,0,0,0.06);
-	}
-	@media (max-width: 1023px) {
-		.bottom-tab-bar { display: flex; }
 	}
 
 	.bottom-tab {
@@ -193,26 +444,36 @@
 		flex-direction: column;
 		align-items: center;
 		gap: 2px;
-		padding: 4px 8px;
+		padding: 6px 12px;
 		text-decoration: none;
-		color: var(--gray-600);
+		color: var(--gray-500);
 		background: none;
 		border: none;
 		cursor: pointer;
 		font-family: inherit;
 		transition: color 0.15s;
 		-webkit-tap-highlight-color: transparent;
+		position: relative;
 	}
-	.bottom-tab:hover,
+
 	.bottom-tab:active {
-		color: var(--crimson);
+		color: var(--crimson, #c8102e);
 	}
 
 	.bottom-tab--active {
-		color: var(--crimson);
+		color: var(--crimson, #c8102e);
 	}
-	.bottom-tab--active .bottom-tab-icon {
-		stroke-width: 2;
+
+	.bottom-tab--active::before {
+		content: '';
+		position: absolute;
+		top: -6px;
+		left: 50%;
+		transform: translateX(-50%);
+		width: 24px;
+		height: 3px;
+		background: var(--crimson, #c8102e);
+		border-radius: 0 0 3px 3px;
 	}
 
 	.bottom-tab-icon {
@@ -220,9 +481,56 @@
 		height: 22px;
 	}
 
+	.bottom-tab--active .bottom-tab-icon {
+		stroke-width: 2;
+	}
+
 	.bottom-tab-label {
 		font-size: 0.65rem;
-		font-weight: 500;
+		font-weight: 600;
 		letter-spacing: 0.01em;
+	}
+
+	/* ===== Desktop ===== */
+	@media (min-width: 1024px) {
+		.portal-mobile-header {
+			display: none;
+		}
+
+		.portal-sidebar {
+			position: sticky;
+			top: 0;
+			transform: translateX(0);
+			z-index: auto;
+			flex-shrink: 0;
+		}
+
+		.sidebar-overlay {
+			display: none;
+		}
+
+		.portal-main {
+			padding: 32px;
+			padding-bottom: 32px;
+		}
+
+		.bottom-tab-bar {
+			display: none;
+		}
+	}
+
+	/* ===== Mobile ===== */
+	@media (max-width: 1023px) {
+		.portal-mobile-header {
+			display: block;
+		}
+
+		.bottom-tab-bar {
+			display: flex;
+		}
+
+		.portal-main {
+			padding: 20px 16px 100px;
+		}
 	}
 </style>

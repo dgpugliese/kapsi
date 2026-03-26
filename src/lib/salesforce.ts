@@ -211,7 +211,23 @@ export async function findContactByEmail(email: string): Promise<Record<string, 
 			Province_of_Initiation__c,
 			Province_Name__c,
 			Year_of_Initiation__c,
-			OrderApi__Badges__c
+			OrderApi__Badges__c,
+			FON_High_School__c,
+			High_School_City__c,
+			High_School_State__c,
+			FON_HS_Year_Graduated__c,
+			FON_Profession_Retired__c,
+			FON_Profession_Full_Time_Student__c,
+			FON_Professions_List__c,
+			FON_Profession_Role__c,
+			Achievement_Academy_AA_Co_Hort__c,
+			Military_Category__c,
+			FON_Branch_of_Military__c,
+			Highest_Rank_Held__c,
+			Source_of_Comission__c,
+			FON_Retired_From_Military__c,
+			FON_Disabled_Veteran__c,
+			FON_More_Personal_Info__c
 		FROM Contact
 		WHERE Email = '${escaped}'
 			OR OrderApi__Personal_Email__c = '${escaped}'

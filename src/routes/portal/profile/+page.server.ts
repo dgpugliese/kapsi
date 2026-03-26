@@ -48,7 +48,27 @@ export const load: PageServerLoad = async ({ locals, parent }) => {
 					province: contact.Province_Name__c,
 					provinceOfInitiation: contact.Province_of_Initiation__c,
 					badges: contact.OrderApi__Badges__c,
-					chapterId: contact.Chapter_Id__c
+					chapterId: contact.Chapter_Id__c,
+					// High School
+					highSchool: contact.FON_High_School__c,
+					highSchoolCity: contact.High_School_City__c,
+					highSchoolState: contact.High_School_State__c,
+					highSchoolYearGraduated: contact.FON_HS_Year_Graduated__c,
+					// Professional (extended)
+					professionRetired: contact.FON_Profession_Retired__c,
+					professionFullTimeStudent: contact.FON_Profession_Full_Time_Student__c,
+					professionsList: contact.FON_Professions_List__c,
+					professionRole: contact.FON_Profession_Role__c,
+					achievementAcademy: contact.Achievement_Academy_AA_Co_Hort__c,
+					// Military
+					militaryCategory: contact.Military_Category__c,
+					branchOfMilitary: contact.FON_Branch_of_Military__c,
+					highestRankHeld: contact.Highest_Rank_Held__c,
+					sourceOfCommission: contact.Source_of_Comission__c,
+					retiredFromMilitary: contact.FON_Retired_From_Military__c,
+					disabledVeteran: contact.FON_Disabled_Veteran__c,
+					// Other
+					morePersonalInfo: contact.FON_More_Personal_Info__c
 				};
 			}
 		}

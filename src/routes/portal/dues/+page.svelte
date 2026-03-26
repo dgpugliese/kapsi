@@ -17,7 +17,8 @@
 	let processing = $state(false);
 	let paymentError = $state('');
 	let paymentSuccess = $state(false);
-	let paymentStep = $state<'select' | 'pay' | 'done'>('select');
+	let paymentStep = $state<'select' | 'method' | 'pay' | 'done'>('select');
+	let paymentMethod = $state<'card' | 'ach'>('card');
 	let totalBalance = $derived(balance.reduce((sum: number, b: any) => sum + (b.balance ?? 0), 0));
 
 	// Stripe
@@ -27,6 +28,8 @@
 	let currentOrderId = $state('');
 	let currentPaymentIntentId = $state('');
 	let orderTotal = $state(0);
+	let baseAmount = $state(0);
+	let surchargeAmount = $state(0);
 	let orderItems = $state<any[]>([]);
 	let stripeReady = $state(false);
 
@@ -76,9 +79,12 @@
 		currentOrderId = '';
 		currentPaymentIntentId = '';
 		orderTotal = 0;
+		baseAmount = 0;
+		surchargeAmount = 0;
 		orderItems = [];
 		stripeReady = false;
 		elements = null;
+		paymentMethod = 'card';
 	}
 
 	/** Back button handler — cancel Stripe PI and reset */
@@ -88,16 +94,36 @@
 		paymentStep = 'select';
 	}
 
-	async function createOrder() {
+	async function handleBackToMethod() {
+		await cancelCurrentPaymentIntent();
+		clientSecret = '';
+		currentOrderId = '';
+		currentPaymentIntentId = '';
+		stripeReady = false;
+		elements = null;
+		paymentStep = 'method';
+	}
+
+	function goToMethodStep() {
 		if (!selectedDuesType) return;
+		// Calculate base amount for display
+		baseAmount = selectedDuesType === 'undergraduate' ? 100 : 200;
+		surchargeAmount = Math.round(baseAmount * 0.04 * 100) / 100;
+		paymentMethod = 'card';
+		paymentStep = 'method';
+	}
+
+	async function createOrder() {
 		processing = true;
 		paymentError = '';
+
+		const finalAmount = paymentMethod === 'card' ? baseAmount + surchargeAmount : baseAmount;
 
 		try {
 			const res = await fetch('/api/create-payment', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ duesType: selectedDuesType })
+				body: JSON.stringify({ duesType: selectedDuesType, paymentMethod })
 			});
 
 			if (!res.ok) {
@@ -136,8 +162,7 @@
 
 				setTimeout(() => {
 					const paymentElement = elements.create('payment', {
-						layout: 'tabs',
-						paymentMethodOrder: ['apple_pay', 'google_pay', 'card', 'us_bank_account']
+						layout: 'tabs'
 					});
 					paymentElement.mount('#stripe-payment-element');
 					stripeReady = true;
@@ -178,7 +203,8 @@
 					orderId: currentOrderId,
 					paymentIntentId: currentPaymentIntentId,
 					amount: orderTotal,
-					duesType: selectedDuesType
+					duesType: selectedDuesType,
+					paymentMethod
 				})
 			});
 
@@ -317,7 +343,7 @@
 		<div class="portal-card section-card fade-up" style="--delay:2;">
 			<div class="section-header" style="display:flex; justify-content:space-between; align-items:center;">
 				<h2>Complete Payment</h2>
-				<button class="back-btn" onclick={handleBack}>← Back</button>
+				<button class="back-btn" onclick={handleBackToMethod}>← Back</button>
 			</div>
 			<div style="padding:24px;">
 				<!-- Order summary -->
@@ -325,10 +351,25 @@
 					<div class="card-label" style="margin-bottom:8px;">Order Summary</div>
 					<div style="display:flex; justify-content:space-between; font-size:0.95rem; padding:4px 0;">
 						<span style="font-weight:600;">{selectedDuesType === 'undergraduate' ? 'Undergraduate' : 'Alumni'} Annual Dues</span>
+						<span style="font-weight:700;">${baseAmount.toFixed(2)}</span>
+					</div>
+					{#if paymentMethod === 'card'}
+						<div style="display:flex; justify-content:space-between; font-size:0.88rem; padding:4px 0; color:var(--gray-600);">
+							<span>Processing Fee (4%)</span>
+							<span>${surchargeAmount.toFixed(2)}</span>
+						</div>
+					{:else}
+						<div style="display:flex; justify-content:space-between; font-size:0.88rem; padding:4px 0; color:#065F46;">
+							<span>Processing Fee</span>
+							<span>$0.00</span>
+						</div>
+					{/if}
+					<div style="display:flex; justify-content:space-between; font-size:1.05rem; padding:8px 0 0; border-top:1px solid var(--gray-100); margin-top:4px;">
+						<span style="font-weight:700;">Total</span>
 						<span style="font-weight:700; color:var(--crimson);">${orderTotal.toFixed(2)}</span>
 					</div>
 					<div style="font-size:0.75rem; color:var(--gray-400); margin-top:4px;">
-						Includes: {orderItems.map(i => i.name.replace(/^(Alumni|Undergrad|Undergraduate) Annual Dues\s*[-–]\s*/i, '')).join(', ')}
+						Paying via {paymentMethod === 'card' ? 'Credit/Debit Card' : 'Bank Account (ACH)'}
 					</div>
 				</div>
 
@@ -352,6 +393,89 @@
 				<p style="text-align:center; margin-top:12px; font-size:0.75rem; color:var(--gray-400);">
 					Payments are processed securely through Stripe.
 				</p>
+			</div>
+		</div>
+	{:else if paymentStep === 'method' && sfLinked}
+		<!-- Step 2: Select payment method -->
+		<div class="portal-card section-card fade-up" style="--delay:2;">
+			<div class="section-header" style="display:flex; justify-content:space-between; align-items:center;">
+				<h2>Choose Payment Method</h2>
+				<button class="back-btn" onclick={handleBack}>← Back</button>
+			</div>
+			<div style="padding:24px;">
+				{#if paymentError}
+					<div class="error-msg">{paymentError}</div>
+				{/if}
+
+				<div class="payment-method-grid">
+					<!-- Card option -->
+					<button
+						class="payment-method-card"
+						class:payment-method-card--selected={paymentMethod === 'card'}
+						onclick={() => { paymentMethod = 'card'; }}
+					>
+						<div class="payment-method-icon">
+							<svg width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+								<path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
+							</svg>
+						</div>
+						<div class="payment-method-title">Credit/Debit Card</div>
+						<div class="payment-method-sub">Includes Apple Pay & Google Pay</div>
+						<div class="payment-method-breakdown">
+							<div class="payment-method-row">
+								<span>Base</span>
+								<span>${baseAmount.toFixed(2)}</span>
+							</div>
+							<div class="payment-method-row">
+								<span>Processing Fee (4%)</span>
+								<span>${surchargeAmount.toFixed(2)}</span>
+							</div>
+							<div class="payment-method-row payment-method-row--total">
+								<span>Total</span>
+								<span>${(baseAmount + surchargeAmount).toFixed(2)}</span>
+							</div>
+						</div>
+					</button>
+
+					<!-- ACH option -->
+					<button
+						class="payment-method-card"
+						class:payment-method-card--selected={paymentMethod === 'ach'}
+						onclick={() => { paymentMethod = 'ach'; }}
+					>
+						<div class="payment-method-icon">
+							<svg width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+								<path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z" />
+							</svg>
+						</div>
+						<div class="payment-method-title">Bank Account (ACH)</div>
+						<div class="payment-method-sub">Direct bank transfer</div>
+						<div class="payment-method-breakdown">
+							<div class="payment-method-row">
+								<span>Base</span>
+								<span>${baseAmount.toFixed(2)}</span>
+							</div>
+							<div class="payment-method-row">
+								<span>Processing Fee</span>
+								<span>$0.00</span>
+							</div>
+							<div class="payment-method-row payment-method-row--total">
+								<span>Total</span>
+								<span>${baseAmount.toFixed(2)}</span>
+							</div>
+						</div>
+						<div class="no-fee-badge">No processing fee</div>
+					</button>
+				</div>
+
+				<button
+					class="btn btn--primary"
+					style="width:100%; justify-content:center; font-size:1rem; padding:14px; margin-top:20px;"
+					disabled={processing}
+					onclick={createOrder}
+				>
+					{processing ? 'Creating Order...' : `Continue — $${(paymentMethod === 'card' ? baseAmount + surchargeAmount : baseAmount).toFixed(2)}`}
+				</button>
 			</div>
 		</div>
 	{:else if sfLinked}
@@ -391,9 +515,9 @@
 					disabled={!selectedDuesType || processing}
 					class="btn btn--primary"
 					style="width:100%; justify-content:center; font-size:1rem; padding:14px;"
-					onclick={createOrder}
+					onclick={goToMethodStep}
 				>
-					{processing ? 'Creating Order...' : 'Continue to Payment'}
+					Continue to Payment
 				</button>
 			</div>
 		</div>
@@ -701,6 +825,84 @@
 	.history-card-item {
 		padding: 14px 20px;
 		border-bottom: 1px solid var(--gray-50);
+	}
+
+	/* ===== Payment method selection ===== */
+	.payment-method-grid {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 16px;
+	}
+	.payment-method-card {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		text-align: center;
+		gap: 8px;
+		padding: 20px 16px;
+		border: 2px solid var(--gray-200);
+		border-radius: 12px;
+		cursor: pointer;
+		transition: all 0.25s;
+		background: var(--white);
+		position: relative;
+	}
+	.payment-method-card:hover {
+		border-color: rgba(139, 0, 0, 0.3);
+		box-shadow: 0 2px 8px rgba(139, 0, 0, 0.06);
+	}
+	.payment-method-card--selected {
+		border-color: var(--crimson);
+		background: rgba(139, 0, 0, 0.03);
+		box-shadow: 0 0 0 1px var(--crimson);
+	}
+	.payment-method-icon {
+		color: var(--crimson);
+		margin-bottom: 4px;
+	}
+	.payment-method-title {
+		font-weight: 700;
+		font-size: 1rem;
+		color: var(--black);
+	}
+	.payment-method-sub {
+		font-size: 0.78rem;
+		color: var(--gray-500);
+	}
+	.payment-method-breakdown {
+		width: 100%;
+		margin-top: 8px;
+		padding-top: 8px;
+		border-top: 1px solid var(--gray-100);
+	}
+	.payment-method-row {
+		display: flex;
+		justify-content: space-between;
+		font-size: 0.82rem;
+		color: var(--gray-600);
+		padding: 2px 0;
+	}
+	.payment-method-row--total {
+		font-weight: 700;
+		color: var(--crimson);
+		font-size: 0.95rem;
+		padding-top: 6px;
+		margin-top: 4px;
+		border-top: 1px solid var(--gray-100);
+	}
+	.no-fee-badge {
+		margin-top: 6px;
+		font-size: 0.72rem;
+		font-weight: 700;
+		color: #065F46;
+		background: #ECFDF5;
+		padding: 3px 10px;
+		border-radius: 20px;
+	}
+	@media (max-width: 480px) {
+		.payment-method-grid {
+			grid-template-columns: 1fr;
+		}
 	}
 
 	@media (max-width: 640px) {

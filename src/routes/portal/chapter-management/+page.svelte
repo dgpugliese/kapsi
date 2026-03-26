@@ -22,7 +22,7 @@
 </script>
 
 <svelte:head>
-	<title>Chapter Management — Member Portal — Kappa Alpha Psi®</title>
+	<title>Chapter Management — Brother's Only — Kappa Alpha Psi®</title>
 </svelte:head>
 
 <div style="max-width:900px;">

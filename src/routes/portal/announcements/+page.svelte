@@ -13,7 +13,7 @@
 </script>
 
 <svelte:head>
-	<title>Announcements — Member Portal — Kappa Alpha Psi®</title>
+	<title>Announcements — Brother's Only — Kappa Alpha Psi®</title>
 </svelte:head>
 
 <div style="max-width:800px;">

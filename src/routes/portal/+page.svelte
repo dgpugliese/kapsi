@@ -17,7 +17,7 @@
 </script>
 
 <svelte:head>
-	<title>Dashboard — Member Portal — Kappa Alpha Psi®</title>
+	<title>Dashboard — Brother's Only — Kappa Alpha Psi®</title>
 </svelte:head>
 
 <div class="dashboard" class:dashboard--ready={ready}>

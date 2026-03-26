@@ -127,7 +127,7 @@
 </script>
 
 <svelte:head>
-	<title>My Info — Member Portal — Kappa Alpha Psi®</title>
+	<title>My Info — Brother's Only — Kappa Alpha Psi®</title>
 </svelte:head>
 
 <div style="max-width:800px;">

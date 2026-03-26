@@ -90,7 +90,7 @@
 
 <!-- Top Bar -->
 <div class="top-bar">
-	<div class="container" style="display:flex; justify-content:space-between; align-items:center;">
+	<div class="top-bar-inner">
 		<span>&#922;&#913;&#936; &nbsp;&middot;&nbsp; Founded January 5, 1911 &nbsp;&middot;&nbsp; Indiana University Bloomington</span>
 		<div style="display:flex; gap:20px; align-items:center;">
 			<a href="/contact" class="hidden sm:inline">Need Assistance</a>
@@ -98,7 +98,7 @@
 				<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="flex-shrink:0;">
 					<path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
 				</svg>
-				Member Portal
+				Brother's Only
 			</a>
 		</div>
 	</div>
@@ -106,7 +106,7 @@
 
 <!-- Header -->
 <header class="site-header" class:scrolled>
-	<div class="container">
+	<div class="header-inner">
 		<nav class="nav-main" aria-label="Main navigation">
 			<!-- Logo -->
 			<a href="/" class="nav-logo" aria-label="Home">
@@ -162,7 +162,7 @@
 				<svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="flex-shrink:0;">
 					<path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
 				</svg>
-				Member Portal
+				Brother's Only
 			</a>
 		</nav>
 	{/if}
@@ -177,6 +177,10 @@
 		font-family: 'Inter', sans-serif;
 		letter-spacing: 0.3px;
 		padding: 7px 0;
+	}
+	.top-bar-inner {
+		display: flex; justify-content: space-between; align-items: center;
+		padding: 0 clamp(20px, 4vw, 48px);
 	}
 	.top-bar a { color: rgba(255,255,255,0.75); transition: color 0.25s; text-decoration: none; }
 	.top-bar a:hover { color: #fff; }
@@ -210,6 +214,9 @@
 	}
 	.scrolled { box-shadow: 0 4px 20px rgba(0,0,0,0.10); }
 
+	.header-inner {
+		padding: 0 clamp(20px, 4vw, 48px);
+	}
 	.nav-main {
 		display: flex;
 		align-items: center;

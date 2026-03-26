@@ -19,7 +19,7 @@
 </script>
 
 <svelte:head>
-	<title>My Membership Card — Member Portal — Kappa Alpha Psi®</title>
+	<title>My Membership Card — Brother's Only — Kappa Alpha Psi®</title>
 </svelte:head>
 
 <div style="max-width:600px;">

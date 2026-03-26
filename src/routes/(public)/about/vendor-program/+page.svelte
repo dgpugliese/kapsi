@@ -122,6 +122,7 @@
 
 		<div class="vendors-grid">
 			<div class="vendor-card">
+				<img src="/images/vendors/NupeMALL-Logo (1).jpg" alt="Nupe Mall" class="vendor-logo" />
 				<div class="vendor-badge">Official Paraphernalia</div>
 				<h3>Nupe Mall</h3>
 				<p>
@@ -131,6 +132,7 @@
 			</div>
 
 			<div class="vendor-card">
+				<img src="/images/vendors/Herff_Jones_Logo.jpg" alt="Herff Jones" class="vendor-logo" />
 				<div class="vendor-badge">Official Jeweler</div>
 				<h3>Herff Jones, Inc.</h3>
 				<p>
@@ -162,9 +164,13 @@
 		<h2 class="section-title">Ready to Apply?</h2>
 		<div class="rule rule--center"></div>
 		<p>
-			For questions about the Vendor License Program, to request an application, or for
-			general vendor inquiries, contact International Headquarters.
+			Submit your vendor license application through our online portal, or contact
+			International Headquarters for questions and general vendor inquiries.
 		</p>
+		<div class="cta-buttons">
+			<a href="https://members.kappaalphapsi1911.com/joinapi__login?id=a208W000000C0kdQAC&order=1" class="btn btn--primary" target="_blank" rel="noopener noreferrer">Vendor Application</a>
+			<a href="/contact" class="btn btn--outline">Contact IHQ</a>
+		</div>
 		<div class="cta-contact">
 			<address>
 				Kappa Alpha Psi Fraternity, Inc.<br />
@@ -173,7 +179,6 @@
 				Phone: (215) 228-7184
 			</address>
 		</div>
-		<a href="/contact" class="btn btn--primary" style="margin-top:24px;">Contact IHQ</a>
 	</div>
 </section>
 
@@ -322,6 +327,13 @@
 		padding: 32px;
 	}
 
+	.vendor-logo {
+		width: 160px;
+		height: 80px;
+		object-fit: contain;
+		margin-bottom: 16px;
+	}
+
 	.vendor-badge {
 		display: inline-block;
 		font-size: 0.72rem;
@@ -397,10 +409,18 @@
 
 	.cta-section p {
 		max-width: 560px;
-		margin: 0 auto 24px;
+		margin: 0 auto 32px;
 		color: var(--gray-600);
 		line-height: 1.85;
 		font-size: 1.025rem;
+	}
+
+	.cta-buttons {
+		display: flex;
+		gap: 16px;
+		justify-content: center;
+		flex-wrap: wrap;
+		margin-bottom: 32px;
 	}
 
 	.cta-contact address {

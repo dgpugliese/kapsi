@@ -146,15 +146,30 @@
 
 <!-- IP Notice -->
 <section class="section ip-notice-section">
-	<div class="container ip-notice">
-		<svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-		<h2>Trademark &amp; Intellectual Property</h2>
-		<p>
-			The name, logos, crest, coat of arms, and all other marks of Kappa Alpha Psi Fraternity, Inc.
-			are registered trademarks. Unauthorized use, reproduction, or sale of merchandise bearing these
-			marks is strictly prohibited and subject to legal action. Only licensed vendors are authorized
-			to produce and sell Kappa Alpha Psi branded merchandise.
-		</p>
+	<div class="container">
+		<div class="ip-notice">
+			<div class="ip-notice-header">
+				<div class="ip-notice-badge">
+					<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+					Trademark Protection
+				</div>
+				<h2>Intellectual Property Notice</h2>
+			</div>
+			<div class="ip-notice-body">
+				<div class="ip-notice-item">
+					<h3>Registered Trademarks</h3>
+					<p>The name, logos, crest, coat of arms, and all other marks of Kappa Alpha Psi Fraternity, Inc. are registered trademarks protected under federal law.</p>
+				</div>
+				<div class="ip-notice-item">
+					<h3>Unauthorized Use Prohibited</h3>
+					<p>Unauthorized use, reproduction, or sale of merchandise bearing these marks is strictly prohibited and subject to legal action.</p>
+				</div>
+				<div class="ip-notice-item">
+					<h3>Licensed Vendors Only</h3>
+					<p>Only vendors licensed through the official Vendor License Program are authorized to produce and sell Kappa Alpha Psi branded merchandise.</p>
+				</div>
+			</div>
+		</div>
 	</div>
 </section>
 
@@ -379,27 +394,61 @@
 	}
 
 	.ip-notice {
-		text-align: center;
-		max-width: 680px;
+		max-width: 900px;
 		margin: 0 auto;
 	}
 
-	.ip-notice svg {
-		color: var(--crimson, #c8102e);
-		margin-bottom: 16px;
+	.ip-notice-header {
+		text-align: center;
+		margin-bottom: 40px;
 	}
 
-	.ip-notice h2 {
-		font-family: var(--font-serif);
-		font-size: clamp(1.3rem, 3vw, 1.6rem);
+	.ip-notice-badge {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		background: var(--crimson, #c8102e);
+		color: white;
+		font-size: 0.75rem;
 		font-weight: 700;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		padding: 6px 16px;
+		border-radius: 20px;
 		margin-bottom: 16px;
 	}
 
-	.ip-notice p {
-		color: var(--gray-300, #d1d5db);
-		line-height: 1.85;
+	.ip-notice-header h2 {
+		font-family: var(--font-serif);
+		font-size: clamp(1.4rem, 3vw, 1.8rem);
+		font-weight: 700;
+	}
+
+	.ip-notice-body {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 24px;
+	}
+
+	.ip-notice-item {
+		background: rgba(255,255,255,0.05);
+		border: 1px solid rgba(255,255,255,0.1);
+		border-radius: 12px;
+		padding: 24px;
+	}
+
+	.ip-notice-item h3 {
+		font-family: var(--font-serif);
 		font-size: 1rem;
+		font-weight: 700;
+		color: var(--crimson, #c8102e);
+		margin-bottom: 8px;
+	}
+
+	.ip-notice-item p {
+		color: var(--gray-300, #d1d5db);
+		line-height: 1.75;
+		font-size: 0.9rem;
 	}
 
 	/* CTA */
@@ -447,6 +496,10 @@
 		}
 
 		.vendors-grid {
+			grid-template-columns: 1fr;
+		}
+
+		.ip-notice-body {
 			grid-template-columns: 1fr;
 		}
 	}

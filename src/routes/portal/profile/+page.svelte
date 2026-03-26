@@ -5,6 +5,7 @@
 	let { data }: { data: PageData } = $props();
 	let member = $derived(data.member);
 	let sf = $derived(data.sfContact);
+	let education = $derived(data.education ?? []);
 
 	let editing = $state(false);
 	let saving = $state(false);
@@ -316,6 +317,44 @@
 				</div>
 			{/if}
 			<p style="font-size:0.75rem; color:var(--gray-400); margin-top:12px;">Membership details are managed by International Headquarters.</p>
+		</div>
+
+		<!-- Education -->
+		<div style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; padding:28px; margin-bottom:24px;">
+			<h2 style="font-family:var(--font-serif); font-size:1.15rem; margin-bottom:20px; padding-bottom:10px; border-bottom:1px solid var(--gray-100);">Education</h2>
+			{#if education.length > 0}
+				<div style="display:flex; flex-direction:column; gap:16px;">
+					{#each education as edu}
+						<div style="padding:16px; background:var(--gray-50); border-radius:10px; border-left:3px solid var(--crimson);">
+							<div style="font-family:var(--font-serif); font-size:1rem; font-weight:700; color:var(--black); margin-bottom:4px;">
+								{edu.school || 'Unknown School'}
+							</div>
+							{#if edu.degree || edu.major || edu.fieldOfStudy}
+								<div style="font-size:0.88rem; color:var(--gray-700); margin-bottom:4px;">
+									{[edu.degree, edu.major || edu.fieldOfStudy].filter(Boolean).join(' — ')}
+								</div>
+							{/if}
+							<div style="display:flex; gap:16px; flex-wrap:wrap; font-size:0.78rem; color:var(--gray-500);">
+								{#if edu.yearGraduated}
+									<span>Class of {edu.yearGraduated}</span>
+								{/if}
+								{#if edu.currentlyEnrolled}
+									<span style="color:var(--crimson); font-weight:600;">Currently Enrolled</span>
+								{/if}
+								{#if edu.city || edu.state}
+									<span>{[edu.city, edu.state].filter(Boolean).join(', ')}</span>
+								{/if}
+								{#if edu.discipline}
+									<span>{edu.discipline}</span>
+								{/if}
+							</div>
+						</div>
+					{/each}
+				</div>
+			{:else}
+				<p style="font-size:0.88rem; color:var(--gray-400); text-align:center; padding:16px 0;">No education records on file.</p>
+			{/if}
+			<p style="font-size:0.75rem; color:var(--gray-400); margin-top:12px;">Education details are managed by International Headquarters.</p>
 		</div>
 
 		<!-- Contact Info -->

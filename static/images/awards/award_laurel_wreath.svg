@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 280" fill="none">
+  <!-- Outer medallion -->
+  <circle cx="120" cy="125" r="105" fill="#8B0000" stroke="#d4af37" stroke-width="3"/>
+  <circle cx="120" cy="125" r="95" fill="none" stroke="#d4af37" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <circle cx="120" cy="125" r="88" fill="none" stroke="rgba(212,175,55,0.3)" stroke-width="1"/>
+  <!-- Inner field -->
+  <circle cx="120" cy="125" r="70" fill="#6b0000"/>
+  <!-- Laurel wreath left -->
+  <path d="M58 170 C55 150, 50 130, 52 110 C54 95, 58 80, 65 68 C60 82, 57 98, 58 115 C59 132, 62 148, 68 162Z" fill="#d4af37" opacity="0.9"/>
+  <path d="M65 175 C60 155, 55 135, 56 115 C57 100, 60 85, 68 72 C63 87, 60 103, 60 120 C61 137, 64 153, 72 167Z" fill="#d4af37" opacity="0.7"/>
+  <path d="M72 178 C68 160, 63 142, 63 122 C64 107, 67 92, 74 80 C69 94, 66 110, 67 127 C68 144, 71 158, 78 170Z" fill="#d4af37" opacity="0.5"/>
+  <!-- Laurel wreath right -->
+  <path d="M182 170 C185 150, 190 130, 188 110 C186 95, 182 80, 175 68 C180 82, 183 98, 182 115 C181 132, 178 148, 172 162Z" fill="#d4af37" opacity="0.9"/>
+  <path d="M175 175 C180 155, 185 135, 184 115 C183 100, 180 85, 172 72 C177 87, 180 103, 180 120 C179 137, 176 153, 168 167Z" fill="#d4af37" opacity="0.7"/>
+  <path d="M168 178 C172 160, 177 142, 177 122 C176 107, 173 92, 166 80 C171 94, 174 110, 173 127 C172 144, 169 158, 162 170Z" fill="#d4af37" opacity="0.5"/>
+  <!-- Star -->
+  <path d="M120 72 L128 98 L156 98 L134 114 L142 140 L120 124 L98 140 L106 114 L84 98 L112 98Z" fill="#d4af37"/>
+  <!-- Ribbon -->
+  <rect x="85" y="232" width="70" height="2" rx="1" fill="#d4af37" opacity="0.5"/>
+  <!-- Text -->
+  <text x="120" y="175" text-anchor="middle" font-family="Georgia, serif" font-size="11" font-weight="700" fill="#d4af37" letter-spacing="1.5">LAUREL WREATH</text>
+  <text x="120" y="190" text-anchor="middle" font-family="Georgia, serif" font-size="9" fill="rgba(212,175,55,0.7)" letter-spacing="1">LAUREATE</text>
+  <!-- Bottom banner -->
+  <path d="M70 245 L90 240 L120 244 L150 240 L170 245 L165 255 L150 250 L120 254 L90 250 L75 255Z" fill="#8B0000" stroke="#d4af37" stroke-width="1"/>
+  <text x="120" y="251" text-anchor="middle" font-family="Georgia, serif" font-size="7.5" font-weight="700" fill="#d4af37" letter-spacing="2">KAΨ</text>
+</svg>

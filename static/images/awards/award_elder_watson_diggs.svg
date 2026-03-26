@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 280" fill="none">
+  <!-- Outer medallion -->
+  <circle cx="120" cy="125" r="105" fill="#8B0000" stroke="#d4af37" stroke-width="3"/>
+  <circle cx="120" cy="125" r="95" fill="none" stroke="#d4af37" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <circle cx="120" cy="125" r="88" fill="none" stroke="rgba(212,175,55,0.3)" stroke-width="1"/>
+  <!-- Inner field -->
+  <circle cx="120" cy="125" r="70" fill="#6b0000"/>
+  <!-- Medallion / profile silhouette -->
+  <circle cx="120" cy="105" r="22" fill="#d4af37" opacity="0.85"/>
+  <rect x="100" y="127" width="40" height="25" rx="8" fill="#d4af37" opacity="0.85"/>
+  <!-- Decorative ring -->
+  <circle cx="120" cy="118" r="45" fill="none" stroke="#d4af37" stroke-width="1" opacity="0.4"/>
+  <!-- Text -->
+  <text x="120" y="175" text-anchor="middle" font-family="Georgia, serif" font-size="9" font-weight="700" fill="#d4af37" letter-spacing="1">ELDER WATSON DIGGS</text>
+  <text x="120" y="190" text-anchor="middle" font-family="Georgia, serif" font-size="9" fill="rgba(212,175,55,0.7)" letter-spacing="1">AWARDEE</text>
+  <!-- Ribbon -->
+  <rect x="85" y="232" width="70" height="2" rx="1" fill="#d4af37" opacity="0.5"/>
+  <!-- Bottom banner -->
+  <path d="M70 245 L90 240 L120 244 L150 240 L170 245 L165 255 L150 250 L120 254 L90 250 L75 255Z" fill="#8B0000" stroke="#d4af37" stroke-width="1"/>
+  <text x="120" y="251" text-anchor="middle" font-family="Georgia, serif" font-size="7.5" font-weight="700" fill="#d4af37" letter-spacing="2">KAΨ</text>
+</svg>

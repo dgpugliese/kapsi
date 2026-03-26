@@ -110,8 +110,13 @@
 
 <section class="section section--dark">
 	<div class="container hazing-notice">
+		<div class="hazing-notice-badge">
+			<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+			Zero Tolerance Policy
+		</div>
 		<h2>Our Commitment to Safety</h2>
-		<p>Kappa Alpha Psi Fraternity, Inc. strictly prohibits hazing in any form. The Membership Intake Process is designed to educate, inspire, and welcome — never to harm or demean. Any reports of hazing should be directed to International Headquarters immediately.</p>
+		<p>Kappa Alpha Psi Fraternity, Inc. strictly prohibits hazing in any form. The Membership Intake Process is designed to educate, inspire, and welcome — never to harm or demean.</p>
+		<a href="/contact">Report Hazing to International Headquarters</a>
 	</div>
 </section>
 
@@ -266,25 +271,65 @@
 	.section--dark {
 		background: var(--black, #1a1a1a);
 		color: white;
+		position: relative;
+		overflow: hidden;
+	}
+
+	.section--dark::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		height: 4px;
+		background: var(--crimson, #c8102e);
 	}
 
 	.hazing-notice {
 		text-align: center;
 		max-width: 680px;
 		margin: 0 auto;
+		position: relative;
+	}
+
+	.hazing-notice-badge {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		background: var(--crimson, #c8102e);
+		color: white;
+		font-size: 0.75rem;
+		font-weight: 700;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		padding: 6px 16px;
+		border-radius: 20px;
+		margin-bottom: 20px;
 	}
 
 	.hazing-notice h2 {
 		font-family: var(--font-serif);
-		font-size: clamp(1.3rem, 3vw, 1.6rem);
+		font-size: clamp(1.5rem, 3.5vw, 2rem);
 		font-weight: 700;
-		margin-bottom: 16px;
+		margin-bottom: 20px;
 	}
 
 	.hazing-notice p {
 		color: var(--gray-300, #d1d5db);
 		line-height: 1.85;
-		font-size: 1rem;
+		font-size: 1.05rem;
+		margin-bottom: 24px;
+	}
+
+	.hazing-notice a {
+		color: white;
+		font-weight: 600;
+		text-decoration: underline;
+		text-underline-offset: 3px;
+	}
+
+	.hazing-notice a:hover {
+		color: var(--crimson, #c8102e);
 	}
 
 	/* CTA section */

@@ -40,8 +40,10 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	const contact = await findContactByEmail(user.email!);
 	if (!contact) throw error(404, 'No Salesforce contact found');
 
-	const today = new Date().toISOString().split('T')[0];
+	const today = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }))
+		.toISOString().split('T')[0];
 	const gatewayId = env.SF_GATEWAY_ID || 'a18Su000008QU13IAG';
+	const stripeKey = env.STRIPE_SECRET_KEY;
 	const steps: Record<string, { ok: boolean; id?: string; ids?: string[]; error?: string }> = {};
 
 	try {
@@ -105,68 +107,106 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		steps.lineItems = { ok: lineIds.length > 0, ids: lineIds };
 
 		// Step 3: Payment processing (paid events only)
+		// Use Stripe as source of truth for amount + card details
+		let amountPaid = totalAmount;
 		if (!isFree && paymentIntentId) {
-			let cardLast4 = '', cardBrand = '', cardholderName = '';
+			let cardLast4 = '', cardBrand = '', cardholderName = `${contact.FirstName} ${contact.LastName}`;
+			let chargeId = paymentIntentId;
+
 			try {
-				const stripeKey = env.STRIPE_SECRET_KEY;
 				if (stripeKey) {
-					const piRes = await fetch(`https://api.stripe.com/v1/payment_intents/${paymentIntentId}?expand[]=payment_method`, {
-						headers: { Authorization: `Bearer ${stripeKey}` }
-					});
+					const piRes = await fetch(
+						`https://api.stripe.com/v1/payment_intents/${paymentIntentId}?expand[]=payment_method`,
+						{ headers: { Authorization: `Bearer ${stripeKey}` } }
+					);
 					if (piRes.ok) {
 						const pi = await piRes.json();
+						amountPaid = pi.amount / 100; // Stripe is source of truth
 						const card = pi.payment_method?.card;
 						cardLast4 = card?.last4 ?? '';
 						cardBrand = card?.brand ?? '';
-						cardholderName = pi.payment_method?.billing_details?.name ?? `${contact.FirstName} ${contact.LastName}`;
+						if (pi.payment_method?.billing_details?.name) {
+							cardholderName = pi.payment_method.billing_details.name;
+						}
+						chargeId = typeof pi.latest_charge === 'string'
+							? pi.latest_charge
+							: pi.latest_charge?.id ?? paymentIntentId;
 					}
 				}
-			} catch {}
+			} catch (err: any) {
+				console.error('Stripe lookup failed (non-blocking):', err.message);
+			}
 
-			// Create ePayment
+			// Create ePayment (with Total, Succeeded, Transaction_Type, etc.)
+			let ePaymentId = '';
 			try {
-				const ePaymentId = await sfCreate('OrderApi__EPayment__c', {
+				ePaymentId = await sfCreate('OrderApi__EPayment__c', {
 					OrderApi__Payment_Gateway__c: gatewayId,
 					OrderApi__Contact__c: contact.Id,
 					OrderApi__Account__c: contact.AccountId,
 					OrderApi__Sales_Order__c: orderId,
 					OrderApi__Date__c: today,
+					OrderApi__Total__c: amountPaid,
+					OrderApi__Succeeded__c: true,
+					OrderApi__Transaction_Type__c: isACH ? 'ach' : 'card',
+					OrderApi__Gateway_Transaction_ID__c: chargeId,
 					OrderApi__Payment_Method_Token__c: paymentIntentId,
 					OrderApi__Reference_Token__c: paymentIntentId,
 					OrderApi__Card_Number__c: cardLast4 ? `xxxx-xxxx-xxxx-${cardLast4}` : null,
 					OrderApi__Card_Type__c: cardBrand ? cardBrand.charAt(0).toUpperCase() + cardBrand.slice(1) : null,
-					OrderApi__Full_Name__c: cardholderName || null
+					OrderApi__Full_Name__c: cardholderName,
+					OrderApi__Entity__c: 'Contact'
 				});
+				// Fonteva trigger may reset Total on insert — force it back
+				try {
+					await sfUpdate('OrderApi__EPayment__c', ePaymentId, { OrderApi__Total__c: amountPaid });
+				} catch { /* best effort */ }
 				steps.ePayment = { ok: true, id: ePaymentId };
 
-				// Create Receipt with total amount (includes surcharge if card)
+				// Create Receipt
 				const receiptId = await sfCreate('OrderApi__Receipt__c', {
 					OrderApi__Sales_Order__c: orderId,
 					OrderApi__Contact__c: contact.Id,
 					OrderApi__Account__c: contact.AccountId,
-					OrderApi__Total__c: totalAmount,
+					OrderApi__Total__c: amountPaid,
 					OrderApi__Date__c: today,
 					OrderApi__Is_Posted__c: true,
 					OrderApi__Payment_Type__c: isACH ? 'ACH' : 'Credit Card',
 					OrderApi__Payment_Gateway__c: gatewayId,
 					OrderApi__Gateway_Transaction_Id__c: paymentIntentId,
+					OrderApi__Reference_Number__c: paymentIntentId,
 					OrderApi__EPayment__c: ePaymentId
 				});
 				steps.receipt = { ok: true, id: receiptId };
 			} catch (err: any) {
+				console.error('ePayment/Receipt failed:', err.message);
 				steps.ePayment = { ok: false, error: err.message };
 			}
 		}
 
-		// Step 4: Close Sales Order
+		// Step 4: Post the order + set Amount Paid (exits draft state)
 		try {
 			await sfUpdate('OrderApi__Sales_Order__c', orderId, {
-				OrderApi__Status__c: 'Closed',
+				OrderApi__Is_Posted__c: true,
 				OrderApi__Posting_Status__c: 'Posted',
-				OrderApi__Is_Posted__c: true
+				OrderApi__Posted_Date__c: today,
+				OrderApi__Paid_Date__c: today,
+				OrderApi__Amount_Paid__c: amountPaid
+			});
+			steps.postOrder = { ok: true };
+		} catch (err: any) {
+			console.error('Post order failed:', err.message);
+			steps.postOrder = { ok: false, error: err.message };
+		}
+
+		// Step 5: Close the order (separate update — Fonteva blocks draft→closed)
+		try {
+			await sfUpdate('OrderApi__Sales_Order__c', orderId, {
+				OrderApi__Status__c: 'Closed'
 			});
 			steps.closeOrder = { ok: true };
 		} catch (err: any) {
+			console.error('Close order failed:', err.message);
 			steps.closeOrder = { ok: false, error: err.message };
 		}
 

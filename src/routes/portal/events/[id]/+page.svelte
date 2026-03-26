@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import type { PageData } from './$types';
+	import ProgressButton from '$components/ProgressButton.svelte';
 
 	let { data }: { data: PageData } = $props();
 	let event = $derived(data.event);
@@ -774,9 +775,12 @@
 						</div>
 						<form onsubmit={handlePayment}>
 							<div id="event-payment-element" style="margin-bottom:20px;"></div>
-							<button type="submit" disabled={processing || !stripeReady} class="btn btn--primary" style="width:100%; justify-content:center; padding:14px; font-size:1rem;">
-								{processing ? 'Processing...' : `Pay $${eventTotalAmount.toFixed(2)} & Register`}
-							</button>
+							<ProgressButton
+								loading={processing}
+								disabled={!stripeReady}
+								label={`Pay $${eventTotalAmount.toFixed(2)} & Register`}
+								loadingLabel="Processing Payment..."
+							/>
 						</form>
 						<button onclick={() => { step = 'method'; clientSecret = ''; elements = null; stripeReady = false; }} style="display:block; margin:12px auto 0; background:none; border:none; color:var(--gray-500); font-size:0.82rem; cursor:pointer;">
 							Back to Payment Method
@@ -842,14 +846,15 @@
 							</button>
 						</div>
 
-						<button
-							class="btn btn--primary"
-							style="width:100%; justify-content:center; padding:14px; font-size:1rem; margin-top:16px;"
-							disabled={processing}
-							onclick={proceedToPayment}
-						>
-							{processing ? 'Creating Payment...' : `Continue — $${(paymentMethod === 'card' ? eventBaseAmount + eventSurcharge : eventBaseAmount).toFixed(2)}`}
-						</button>
+						<div style="margin-top:16px;">
+							<ProgressButton
+								type="button"
+								loading={processing}
+								label={`Continue — $${(paymentMethod === 'card' ? eventBaseAmount + eventSurcharge : eventBaseAmount).toFixed(2)}`}
+								loadingLabel="Creating Payment..."
+								onclick={proceedToPayment}
+							/>
+						</div>
 						<button onclick={() => { step = 'select'; }} style="display:block; margin:12px auto 0; background:none; border:none; color:var(--gray-500); font-size:0.82rem; cursor:pointer;">
 							Back to Ticket Selection
 						</button>

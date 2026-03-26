@@ -510,8 +510,9 @@
 		}
 
 		.portal-main {
-			padding: 32px;
-			padding-bottom: 32px;
+			padding: 40px 48px;
+			max-width: 960px;
+			margin: 0 auto;
 		}
 
 		.bottom-tab-bar {

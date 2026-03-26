@@ -15,124 +15,306 @@
 
 <section class="section">
 	<div class="container">
-		<div class="prose">
+		<div class="commitment">
+			<div class="commitment-bar"></div>
 			<blockquote>
 				Membership in Kappa Alpha Psi is a solemn commitment. To this Fraternity, the maker
 				of the commitment becomes synonymous with the commitment itself.
 			</blockquote>
+		</div>
 
-			<h2>Maturity</h2>
-			<p>
-				The first prerequisite for the acquisition of this commitment is maturity. Maturity is defined
-				as acceptance of the reality that the fraternity has not, can not, and will not solve all of
-				its social problems. It means sacrificing some individual freedoms of action for the purpose
-				of achieving some worthwhile group goals. It means an understanding that the Fraternity's
-				future is linked to Moral Rectitude and individual character.
-			</p>
-
-			<h2>Kappa Alpha Psi</h2>
-			<p>
-				The second prerequisite is Kappa Alpha Psi. The fraternity has always been more concerned with
-				the caliber of the individual than with numbers. And whereas quality and quantity are not
-				mutually exclusive, the end result is always quality. Kappa Alpha Psi works because it reflects
-				"that Good Old Kappa Spirit" — that undying love of the Fraternity.
-			</p>
-
-			<h2>Dedication</h2>
-			<p>
-				The third prerequisite is dedication. Membership is a lifelong program of action, not passive
-				affiliation. There is a well-defined program of work based upon the Fraternity's purpose
-				and objectives.
-			</p>
+		<div class="pillars">
+			<div class="pillar">
+				<h2>Maturity</h2>
+				<p>
+					The first prerequisite for the acquisition of this commitment is maturity. Maturity is defined
+					as acceptance of the reality that the fraternity has not, can not, and will not solve all of
+					its social problems. It means sacrificing some individual freedoms of action for the purpose
+					of achieving some worthwhile group goals. It means an understanding that the Fraternity's
+					future is linked to Moral Rectitude and individual character.
+				</p>
+			</div>
+			<div class="pillar">
+				<h2>Kappa Alpha Psi</h2>
+				<p>
+					The second prerequisite is Kappa Alpha Psi. The fraternity has always been more concerned with
+					the caliber of the individual than with numbers. And whereas quality and quantity are not
+					mutually exclusive, the end result is always quality. Kappa Alpha Psi works because it reflects
+					"that Good Old Kappa Spirit" — that undying love of the Fraternity.
+				</p>
+			</div>
+			<div class="pillar">
+				<h2>Dedication</h2>
+				<p>
+					The third prerequisite is dedication. Membership is a lifelong program of action, not passive
+					affiliation. There is a well-defined program of work based upon the Fraternity's purpose
+					and objectives.
+				</p>
+			</div>
 		</div>
 	</div>
 </section>
 
 <section class="section section--cream">
 	<div class="container">
-		<p class="section-label">Requirements</p>
-		<h2 class="section-title">Seven Acceptable Qualities</h2>
+		<p class="section-label">Paths to Membership</p>
+		<h2 class="section-title">How to Join</h2>
 		<div class="rule"></div>
 
-		<div class="grid grid--2">
-			<div class="card">
-				<div class="card-body">
-					<h3 style="color:var(--crimson); margin-bottom:8px;">1. Good Moral Character</h3>
-					<p style="color:var(--gray-600); font-size:0.95rem; line-height:1.7;">
-						A demonstrated commitment to ethical conduct and integrity in all facets of life.
-					</p>
+		<div class="paths">
+			<div class="path-card">
+				<div class="path-icon">
+					<svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 1.66 2.69 3 6 3s6-1.34 6-3v-5"/></svg>
 				</div>
+				<h3>Undergraduate Membership</h3>
+				<p>Full-time college students enrolled at an accredited institution with an active chapter may pursue membership through the Membership Intake Process (MIP). Candidates must meet GPA requirements and demonstrate the Seven Acceptable Qualities.</p>
 			</div>
-
-			<div class="card">
-				<div class="card-body">
-					<h3 style="color:var(--crimson); margin-bottom:8px;">2. Appropriate Temperament and Personal Bearing</h3>
-					<p style="color:var(--gray-600); font-size:0.95rem; line-height:1.7;">
-						The disposition and demeanor befitting a member of the fraternity.
-					</p>
+			<div class="path-card">
+				<div class="path-icon">
+					<svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
 				</div>
-			</div>
-
-			<div class="card">
-				<div class="card-body">
-					<h3 style="color:var(--crimson); margin-bottom:8px;">3. Satisfactory Scholastic Standing</h3>
-					<p style="color:var(--gray-600); font-size:0.95rem; line-height:1.7;">
-						Academic performance that reflects the fraternity's commitment to intellectual excellence.
-					</p>
-				</div>
-			</div>
-
-			<div class="card">
-				<div class="card-body">
-					<h3 style="color:var(--crimson); margin-bottom:8px;">4. Acceptable Character References</h3>
-					<p style="color:var(--gray-600); font-size:0.95rem; line-height:1.7;">
-						Endorsements from individuals who can attest to the candidate's character and reputation.
-					</p>
-				</div>
-			</div>
-
-			<div class="card">
-				<div class="card-body">
-					<h3 style="color:var(--crimson); margin-bottom:8px;">5. Display of Leadership Potential</h3>
-					<p style="color:var(--gray-600); font-size:0.95rem; line-height:1.7;">
-						Evidence of the ability and willingness to lead and serve in various capacities.
-					</p>
-				</div>
-			</div>
-
-			<div class="card">
-				<div class="card-body">
-					<h3 style="color:var(--crimson); margin-bottom:8px;">6. Genuine Interest in the Aims and Purposes</h3>
-					<p style="color:var(--gray-600); font-size:0.95rem; line-height:1.7;">
-						A sincere desire to uphold and advance the mission of Kappa Alpha Psi Fraternity, Inc.
-					</p>
-				</div>
-			</div>
-
-			<div class="card">
-				<div class="card-body">
-					<h3 style="color:var(--crimson); margin-bottom:8px;">7. Financial Responsibility</h3>
-					<p style="color:var(--gray-600); font-size:0.95rem; line-height:1.7;">
-						The ability and commitment to meet the financial obligations of membership.
-					</p>
-				</div>
+				<h3>Alumni Membership</h3>
+				<p>College-educated men who have graduated may pursue membership through an alumni chapter. Alumni intake follows the same standards of excellence and is conducted under the guidance of the Province and International Headquarters.</p>
 			</div>
 		</div>
 	</div>
 </section>
 
 <section class="section">
-	<div class="container" style="text-align:center;">
+	<div class="container">
+		<p class="section-label">Requirements</p>
+		<h2 class="section-title">Seven Acceptable Qualities</h2>
+		<div class="rule"></div>
+
+		<div class="qualities">
+			{#each [
+				{ title: 'Good Moral Character', desc: 'A demonstrated commitment to ethical conduct and integrity in all facets of life.' },
+				{ title: 'Appropriate Temperament and Personal Bearing', desc: 'The disposition and demeanor befitting a member of the fraternity.' },
+				{ title: 'Satisfactory Scholastic Standing', desc: 'Academic performance that reflects the fraternity\'s commitment to intellectual excellence.' },
+				{ title: 'Acceptable Character References', desc: 'Endorsements from individuals who can attest to the candidate\'s character and reputation.' },
+				{ title: 'Display of Leadership Potential', desc: 'Evidence of the ability and willingness to lead and serve in various capacities.' },
+				{ title: 'Genuine Interest in the Aims and Purposes', desc: 'A sincere desire to uphold and advance the mission of Kappa Alpha Psi Fraternity, Inc.' },
+				{ title: 'Financial Responsibility', desc: 'The ability and commitment to meet the financial obligations of membership.' }
+			] as quality, i}
+				<div class="quality">
+					<span class="quality-number">{i + 1}</span>
+					<div>
+						<h3>{quality.title}</h3>
+						<p>{quality.desc}</p>
+					</div>
+				</div>
+			{/each}
+		</div>
+	</div>
+</section>
+
+<section class="section section--dark">
+	<div class="container hazing-notice">
+		<h2>Our Commitment to Safety</h2>
+		<p>Kappa Alpha Psi Fraternity, Inc. strictly prohibits hazing in any form. The Membership Intake Process is designed to educate, inspire, and welcome — never to harm or demean. Any reports of hazing should be directed to International Headquarters immediately.</p>
+	</div>
+</section>
+
+<section class="section">
+	<div class="container cta-section">
 		<h2 class="section-title">Interested in Membership?</h2>
 		<div class="rule rule--center"></div>
-		<p style="max-width:600px; margin:0 auto 32px; color:var(--gray-600); line-height:1.85;">
-			To learn more about the Membership Intake Process, contact a Province Polemarch or find
-			a local undergraduate or alumni chapter in your area. Kappa Alpha Psi strictly prohibits
-			hazing in any form.
+		<p>
+			Take the first step toward joining a brotherhood of achievement. Submit a membership interest
+			form, find a chapter near you, or contact us for more information.
 		</p>
-		<div style="display:flex; gap:16px; justify-content:center; flex-wrap:wrap;">
-			<a href="/about/chapter-locator" class="btn btn--primary">Find a Chapter</a>
+		<div class="cta-buttons">
+			<a href="/about/membership/interest" class="btn btn--primary">Membership Interest Form</a>
+			<a href="/about/chapter-locator" class="btn btn--outline">Find a Chapter</a>
 			<a href="/contact" class="btn btn--outline">Contact Us</a>
 		</div>
 	</div>
 </section>
+
+<style>
+	/* Commitment blockquote */
+	.commitment {
+		position: relative;
+		padding-left: 24px;
+		margin-bottom: 56px;
+	}
+
+	.commitment-bar {
+		position: absolute;
+		left: 0;
+		top: 0;
+		bottom: 0;
+		width: 4px;
+		background: var(--crimson, #c8102e);
+		border-radius: 2px;
+	}
+
+	.commitment blockquote {
+		margin: 0;
+		padding: 0;
+		border: none;
+		font-family: var(--font-serif);
+		font-size: clamp(1.15rem, 2.5vw, 1.4rem);
+		font-style: italic;
+		color: var(--gray-700, #374151);
+		line-height: 1.8;
+	}
+
+	/* Three pillars */
+	.pillars {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 40px;
+	}
+
+	.pillar h2 {
+		font-family: var(--font-serif);
+		font-size: 1.25rem;
+		font-weight: 700;
+		color: var(--crimson, #c8102e);
+		margin-bottom: 12px;
+	}
+
+	.pillar p {
+		color: var(--gray-600);
+		line-height: 1.85;
+		font-size: 0.95rem;
+	}
+
+	/* Paths to membership */
+	.paths {
+		display: grid;
+		grid-template-columns: repeat(2, 1fr);
+		gap: 32px;
+	}
+
+	.path-card {
+		background: white;
+		border-radius: 12px;
+		padding: 36px;
+		border: 1px solid var(--gray-200, #e5e7eb);
+	}
+
+	.path-icon {
+		color: var(--crimson, #c8102e);
+		margin-bottom: 16px;
+	}
+
+	.path-card h3 {
+		font-family: var(--font-serif);
+		font-size: 1.15rem;
+		font-weight: 700;
+		color: var(--black);
+		margin-bottom: 10px;
+	}
+
+	.path-card p {
+		color: var(--gray-600);
+		line-height: 1.8;
+		font-size: 0.95rem;
+	}
+
+	/* Seven qualities */
+	.qualities {
+		display: flex;
+		flex-direction: column;
+		gap: 0;
+	}
+
+	.quality {
+		display: flex;
+		align-items: flex-start;
+		gap: 20px;
+		padding: 24px 0;
+		border-bottom: 1px solid var(--gray-200, #e5e7eb);
+	}
+
+	.quality:last-child {
+		border-bottom: none;
+	}
+
+	.quality-number {
+		flex-shrink: 0;
+		width: 40px;
+		height: 40px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: var(--crimson, #c8102e);
+		color: white;
+		font-family: var(--font-serif);
+		font-weight: 700;
+		font-size: 1rem;
+		border-radius: 50%;
+	}
+
+	.quality h3 {
+		font-family: var(--font-serif);
+		font-size: 1.05rem;
+		font-weight: 700;
+		color: var(--black);
+		margin-bottom: 4px;
+	}
+
+	.quality p {
+		color: var(--gray-600);
+		line-height: 1.7;
+		font-size: 0.95rem;
+	}
+
+	/* Anti-hazing */
+	.section--dark {
+		background: var(--black, #1a1a1a);
+		color: white;
+	}
+
+	.hazing-notice {
+		text-align: center;
+		max-width: 680px;
+		margin: 0 auto;
+	}
+
+	.hazing-notice h2 {
+		font-family: var(--font-serif);
+		font-size: clamp(1.3rem, 3vw, 1.6rem);
+		font-weight: 700;
+		margin-bottom: 16px;
+	}
+
+	.hazing-notice p {
+		color: var(--gray-300, #d1d5db);
+		line-height: 1.85;
+		font-size: 1rem;
+	}
+
+	/* CTA section */
+	.cta-section {
+		text-align: center;
+	}
+
+	.cta-section p {
+		max-width: 600px;
+		margin: 0 auto 32px;
+		color: var(--gray-600);
+		line-height: 1.85;
+	}
+
+	.cta-buttons {
+		display: flex;
+		gap: 16px;
+		justify-content: center;
+		flex-wrap: wrap;
+	}
+
+	/* Responsive */
+	@media (max-width: 768px) {
+		.pillars {
+			grid-template-columns: 1fr;
+			gap: 32px;
+		}
+
+		.paths {
+			grid-template-columns: 1fr;
+		}
+	}
+</style>

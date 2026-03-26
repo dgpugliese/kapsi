@@ -1,5 +1,5 @@
 import type { PageServerLoad } from './$types';
-import { findContactByEmail, sfUpdate } from '$lib/salesforce';
+import { findContactByEmail, sfUpdate, sfQuery } from '$lib/salesforce';
 
 export const load: PageServerLoad = async ({ locals, parent }) => {
 	const { session, user } = await parent();
@@ -56,5 +56,36 @@ export const load: PageServerLoad = async ({ locals, parent }) => {
 		console.error('Profile SF load error:', err);
 	}
 
-	return { sfContact };
+	// Fetch education records if we have a contact
+	let education: any[] = [];
+	if (sfContact?.id) {
+		try {
+			education = await sfQuery(
+				`SELECT Id, School_University_College__c, FON_University_College_Name__c,
+					Degree__c, Field_Of_Study__c, Year_Graduated__c, Currently_Enrolled__c,
+					City__c, State__c, FON_Discipline__c,
+					Education_Field_of_Study__r.Name, Education_Major__r.Name,
+					New_Education_Field_of_Study__c, New_Education_Major__c
+				FROM Contact_Professional_Studies__c
+				WHERE Contact__c = '${sfContact.id}'
+				ORDER BY Year_Graduated__c DESC NULLS LAST`
+			);
+			education = education.map((e: any) => ({
+				id: e.Id,
+				school: e.FON_University_College_Name__c || e.School_University_College__c,
+				degree: e.Degree__c,
+				fieldOfStudy: e.Education_Field_of_Study__r?.Name || e.Field_Of_Study__c || e.New_Education_Field_of_Study__c,
+				major: e.Education_Major__r?.Name || e.New_Education_Major__c,
+				discipline: e.FON_Discipline__c,
+				yearGraduated: e.Year_Graduated__c,
+				currentlyEnrolled: e.Currently_Enrolled__c,
+				city: e.City__c,
+				state: e.State__c
+			}));
+		} catch (err) {
+			console.error('Education fetch error:', err);
+		}
+	}
+
+	return { sfContact, education };
 };

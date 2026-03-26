@@ -5,8 +5,11 @@
 	import { onMount } from 'svelte';
 	import { invalidateAll } from '$app/navigation';
 	import { supabase } from '$lib/supabase';
+	import { page } from '$app/stores';
 
 	let { children } = $props();
+
+	const isPortal = $derived($page.url.pathname.startsWith('/portal'));
 
 	onMount(() => {
 		const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
@@ -25,10 +28,14 @@
 	<meta property="og:site_name" content="Kappa Alpha Psi Fraternity, Inc." />
 </svelte:head>
 
-<div class="flex min-h-screen flex-col">
-	<Header />
-	<main class="flex-1">
-		{@render children()}
-	</main>
-	<Footer />
-</div>
+{#if isPortal}
+	{@render children()}
+{:else}
+	<div class="flex min-h-screen flex-col">
+		<Header />
+		<main class="flex-1">
+			{@render children()}
+		</main>
+		<Footer />
+	</div>
+{/if}

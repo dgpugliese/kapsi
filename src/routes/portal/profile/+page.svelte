@@ -54,10 +54,6 @@
 		'Law','Military Science','Choose not to declare'
 	];
 
-	const PROFESSION_ROLES = [
-		'C-Suite','VP/Director','Manager','Individual Contributor','Consultant','Educator','Student','Other'
-	];
-
 	// Edit form
 	let form = $state({
 		phone: '',
@@ -361,12 +357,7 @@
 					</div>
 					<div>
 						<label class="form-label" for="profRole">Role</label>
-						<select id="profRole" bind:value={form.professionRole} class="form-control">
-							<option value="">Select Role</option>
-							{#each PROFESSION_ROLES as role}
-								<option value={role}>{role}</option>
-							{/each}
-						</select>
+						<input id="profRole" type="text" bind:value={form.professionRole} class="form-control" placeholder="e.g. Director, Manager, Engineer" />
 					</div>
 					<div>
 						<label class="form-label" for="achievementAcademy">Achievement Academy</label>
@@ -537,10 +528,10 @@
 			<p class="hint">Membership details are managed by International Headquarters.</p>
 		</div>
 
-		<!-- Education -->
-		<div class="card">
-			<h2 class="section-header">Education</h2>
-			{#if education.length > 0}
+		<!-- Education (only shown if records exist) -->
+		{#if education.length > 0}
+			<div class="card">
+				<h2 class="section-header">Education</h2>
 				<div style="display:flex; flex-direction:column; gap:16px;">
 					{#each education as edu}
 						<div style="padding:16px; background:var(--gray-50); border-radius:10px; border-left:3px solid var(--crimson);">
@@ -569,11 +560,8 @@
 						</div>
 					{/each}
 				</div>
-			{:else}
-				<p style="font-size:0.88rem; color:var(--gray-400); text-align:center; padding:16px 0;">No education records on file.</p>
-			{/if}
-			<p class="hint">Education details are managed by International Headquarters.</p>
-		</div>
+			</div>
+		{/if}
 
 		<!-- High School Information -->
 		{#if sf.highSchool || sf.highSchoolCity || sf.highSchoolState || sf.highSchoolYearGraduated}

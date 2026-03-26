@@ -5,16 +5,23 @@ import { env } from '$env/dynamic/private';
 
 /**
  * POST /api/create-event-payment
- * Creates a Stripe PaymentIntent for event registration.
+ * Creates a Stripe PaymentIntent for event registration (supports multiple tickets).
  *
- * Body: { eventId, ticketTypeId, ticketName, amount }
+ * Body: { eventId, items: [{ ticketTypeId, ticketName, quantity, unitPrice }], totalAmount }
+ * Legacy: { eventId, ticketTypeId, ticketName, amount } (single ticket)
  */
 export const POST: RequestHandler = async ({ request, locals }) => {
 	const { session, user } = await locals.safeGetSession();
 	if (!session || !user) throw error(401, 'Unauthorized');
 
-	const { eventId, ticketTypeId, ticketName, amount } = await request.json();
-	if (!eventId || !ticketTypeId || !amount) throw error(400, 'Missing required fields');
+	const body = await request.json();
+	const eventId = body.eventId;
+
+	// Support both new multi-item format and legacy single-ticket format
+	const items = body.items || [{ ticketTypeId: body.ticketTypeId, ticketName: body.ticketName, quantity: 1, unitPrice: body.amount }];
+	const totalAmount = body.totalAmount ?? body.amount;
+
+	if (!eventId || !totalAmount) throw error(400, 'Missing required fields');
 
 	const stripeSecretKey = env.STRIPE_SECRET_KEY;
 	if (!stripeSecretKey) throw error(500, 'Stripe not configured');
@@ -23,7 +30,12 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	if (!contact) throw error(404, 'No Salesforce contact found');
 
 	try {
-		const totalCents = Math.round(amount * 100);
+		const totalCents = Math.round(totalAmount * 100);
+
+		// Build description from all items
+		const description = items
+			.map((i: any) => `${i.ticketName}${i.quantity > 1 ? ` x${i.quantity}` : ''}`)
+			.join(', ') + ` - ${contact.FirstName} ${contact.LastName}`;
 
 		const stripeRes = await fetch('https://api.stripe.com/v1/payment_intents', {
 			method: 'POST',
@@ -36,9 +48,9 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 				'currency': 'usd',
 				'automatic_payment_methods[enabled]': 'true',
 				'metadata[sf_event_id]': eventId,
-				'metadata[sf_ticket_type_id]': ticketTypeId,
 				'metadata[sf_contact_id]': contact.Id,
-				'description': `${ticketName || 'Event Registration'} - ${contact.FirstName} ${contact.LastName}`
+				'metadata[item_count]': items.length.toString(),
+				'description': description
 			})
 		});
 
@@ -53,7 +65,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			success: true,
 			clientSecret: paymentIntent.client_secret,
 			paymentIntentId: paymentIntent.id,
-			amount
+			amount: totalAmount
 		});
 	} catch (err: any) {
 		console.error('Create event payment error:', err);

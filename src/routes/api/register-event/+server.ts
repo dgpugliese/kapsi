@@ -5,45 +5,64 @@ import { env } from '$env/dynamic/private';
 
 /**
  * POST /api/register-event
- * Registers a member for an event in Fonteva.
+ * Registers a member for an event in Fonteva (supports multiple ticket types).
  *
- * Body: { eventId, ticketTypeId, paymentIntentId? (for paid events) }
+ * Body: {
+ *   eventId,
+ *   items: [{ ticketTypeId, ticketName, quantity, unitPrice }],
+ *   paymentIntentId? (for paid events)
+ * }
+ * Legacy: { eventId, ticketTypeId, paymentIntentId? }
  *
  * Flow:
  * 1. Look up Contact
- * 2. Get ticket type details (name, price)
- * 3. Create Sales Order + Line Item
- * 4. If paid: create ePayment + Receipt, close SO
- * 5. If free: close SO immediately
- * 6. Create Attendee record
+ * 2. Get ticket type details for all items
+ * 3. Create single Sales Order
+ * 4. Create Sales Order Line for each item (ticket type × quantity)
+ * 5. If paid: create ePayment + Receipt, close SO
+ * 6. If free: close SO immediately
+ * 7. Create Attendee record for each ticket type
  */
 export const POST: RequestHandler = async ({ request, locals }) => {
 	const { session, user } = await locals.safeGetSession();
 	if (!session || !user) throw error(401, 'Unauthorized');
 
-	const { eventId, ticketTypeId, paymentIntentId } = await request.json();
-	if (!eventId || !ticketTypeId) throw error(400, 'Missing eventId or ticketTypeId');
+	const body = await request.json();
+	const { eventId, paymentIntentId } = body;
+
+	// Support both multi-item and legacy single-ticket format
+	const items: { ticketTypeId: string; ticketName?: string; quantity: number; unitPrice?: number }[] =
+		body.items || [{ ticketTypeId: body.ticketTypeId, quantity: 1 }];
+
+	if (!eventId || items.length === 0) throw error(400, 'Missing eventId or items');
 
 	const contact = await findContactByEmail(user.email!);
 	if (!contact) throw error(404, 'No Salesforce contact found');
 
 	const today = new Date().toISOString().split('T')[0];
 	const gatewayId = env.SF_GATEWAY_ID || 'a18Su000008QU13IAG';
-	const steps: Record<string, { ok: boolean; id?: string; error?: string }> = {};
+	const steps: Record<string, { ok: boolean; id?: string; ids?: string[]; error?: string }> = {};
 
 	try {
-		// Get ticket type details including linked Item
+		// Get ticket type details for all items
+		const ticketIds = items.map(i => `'${i.ticketTypeId}'`).join(',');
 		const ticketTypes = await sfQuery<any>(
 			`SELECT Id, Name, EventApi__Price__c, EventApi__Event__c, EventApi__Item__c
 			 FROM EventApi__Ticket_Type__c
-			 WHERE Id = '${ticketTypeId}' LIMIT 1`
+			 WHERE Id IN (${ticketIds})`
 		);
-		if (ticketTypes.length === 0) throw error(404, 'Ticket type not found');
 
-		const ticket = ticketTypes[0];
-		const price = ticket.EventApi__Price__c ?? 0;
-		const isFree = price === 0;
-		const itemId = ticket.EventApi__Item__c; // The actual OrderApi__Item__c linked to this ticket type
+		const ticketMap = new Map(ticketTypes.map((t: any) => [t.Id, t]));
+
+		// Calculate total
+		let totalAmount = 0;
+		for (const item of items) {
+			const ticket = ticketMap.get(item.ticketTypeId);
+			const price = item.unitPrice ?? ticket?.EventApi__Price__c ?? 0;
+			totalAmount += price * item.quantity;
+		}
+
+		const isFree = totalAmount === 0;
 
 		// Step 1: Create Sales Order
 		let orderId = '';
@@ -61,22 +80,29 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			throw new Error('Failed to create sales order: ' + err.message);
 		}
 
-		// Step 2: Create Line Item (use the Item linked to the Ticket Type, not the Ticket Type itself)
-		try {
-			const lineId = await sfCreate('OrderApi__Sales_Order_Line__c', {
-				OrderApi__Sales_Order__c: orderId,
-				OrderApi__Item__c: itemId || ticketTypeId,
-				OrderApi__Quantity__c: 1,
-				OrderApi__Sale_Price__c: price
-			});
-			steps.lineItem = { ok: true, id: lineId };
-		} catch (err: any) {
-			steps.lineItem = { ok: false, error: err.message };
+		// Step 2: Create Sales Order Lines (one per ticket type × quantity)
+		const lineIds: string[] = [];
+		for (const item of items) {
+			const ticket = ticketMap.get(item.ticketTypeId);
+			const price = item.unitPrice ?? ticket?.EventApi__Price__c ?? 0;
+			const itemId = ticket?.EventApi__Item__c;
+
+			try {
+				const lineId = await sfCreate('OrderApi__Sales_Order_Line__c', {
+					OrderApi__Sales_Order__c: orderId,
+					OrderApi__Item__c: itemId || item.ticketTypeId,
+					OrderApi__Quantity__c: item.quantity,
+					OrderApi__Sale_Price__c: price
+				});
+				lineIds.push(lineId);
+			} catch (err: any) {
+				console.error(`Failed to create line item for ${item.ticketTypeId}:`, err.message);
+			}
 		}
+		steps.lineItems = { ok: lineIds.length > 0, ids: lineIds };
 
 		// Step 3: Payment processing (paid events only)
 		if (!isFree && paymentIntentId) {
-			// Get card details from Stripe
 			let cardLast4 = '', cardBrand = '', cardholderName = '';
 			try {
 				const stripeKey = env.STRIPE_SECRET_KEY;
@@ -104,18 +130,18 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 					OrderApi__Date__c: today,
 					OrderApi__Payment_Method_Token__c: paymentIntentId,
 					OrderApi__Reference_Token__c: paymentIntentId,
-										OrderApi__Card_Number__c: cardLast4 ? `xxxx-xxxx-xxxx-${cardLast4}` : null,
+					OrderApi__Card_Number__c: cardLast4 ? `xxxx-xxxx-xxxx-${cardLast4}` : null,
 					OrderApi__Card_Type__c: cardBrand ? cardBrand.charAt(0).toUpperCase() + cardBrand.slice(1) : null,
 					OrderApi__Full_Name__c: cardholderName || null
 				});
 				steps.ePayment = { ok: true, id: ePaymentId };
 
-				// Create Receipt
+				// Create Receipt with total amount
 				const receiptId = await sfCreate('OrderApi__Receipt__c', {
 					OrderApi__Sales_Order__c: orderId,
 					OrderApi__Contact__c: contact.Id,
 					OrderApi__Account__c: contact.AccountId,
-					OrderApi__Total__c: price,
+					OrderApi__Total__c: totalAmount,
 					OrderApi__Date__c: today,
 					OrderApi__Is_Posted__c: true,
 					OrderApi__Payment_Type__c: 'Credit Card',
@@ -141,34 +167,37 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			steps.closeOrder = { ok: false, error: err.message };
 		}
 
-		// Step 5: Create Attendee record
-		let attendeeId = '';
-		try {
-			attendeeId = await sfCreate('EventApi__Attendee__c', {
-				EventApi__Attendee_Event__c: eventId,
-				EventApi__Contact__c: contact.Id,
-				EventApi__Account__c: contact.AccountId,
-				EventApi__Ticket_Type__c: ticketTypeId,
-				EventApi__Sales_Order__c: orderId,
-				EventApi__Status__c: 'Registered',
-				EventApi__Is_Registered__c: true,
-				EventApi__Registration_Date__c: today,
-				EventApi__Email__c: contact.Email,
-				EventApi__First_Name__c: contact.FirstName,
-				EventApi__Last_Name__c: contact.LastName,
-				EventApi__Full_Name__c: `${contact.FirstName} ${contact.LastName}`
-			});
-			steps.attendee = { ok: true, id: attendeeId };
-		} catch (err: any) {
-			steps.attendee = { ok: false, error: err.message };
+		// Step 5: Create Attendee records (one per ticket type)
+		const attendeeIds: string[] = [];
+		for (const item of items) {
+			try {
+				const attendeeId = await sfCreate('EventApi__Attendee__c', {
+					EventApi__Attendee_Event__c: eventId,
+					EventApi__Contact__c: contact.Id,
+					EventApi__Account__c: contact.AccountId,
+					EventApi__Ticket_Type__c: item.ticketTypeId,
+					EventApi__Sales_Order__c: orderId,
+					EventApi__Status__c: 'Registered',
+					EventApi__Is_Registered__c: true,
+					EventApi__Registration_Date__c: today,
+					EventApi__Email__c: contact.Email,
+					EventApi__First_Name__c: contact.FirstName,
+					EventApi__Last_Name__c: contact.LastName,
+					EventApi__Full_Name__c: `${contact.FirstName} ${contact.LastName}`
+				});
+				attendeeIds.push(attendeeId);
+			} catch (err: any) {
+				console.error(`Failed to create attendee for ${item.ticketTypeId}:`, err.message);
+			}
 		}
+		steps.attendees = { ok: attendeeIds.length > 0, ids: attendeeIds };
 
 		const allOk = Object.values(steps).every(s => s.ok);
 
 		return json({
 			success: allOk,
 			steps,
-			attendeeId: attendeeId || null,
+			attendeeIds,
 			orderId: orderId || null,
 			message: allOk ? 'Registration complete' : 'Some steps failed — see details'
 		});

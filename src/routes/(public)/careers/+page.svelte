@@ -22,11 +22,8 @@
 
 		<div class="openings">
 			<div class="no-openings">
-				<div class="no-openings-icon">
-					<svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="12.01"/></svg>
-				</div>
 				<h3>No Open Positions</h3>
-				<p>There are currently no open positions. Please check back regularly for new opportunities, or contact <a href="mailto:careers@kappaalphapsi1911.org">careers@kappaalphapsi1911.org</a> to submit your resume for future consideration.</p>
+				<p>There are currently no open positions. Please check back regularly for new opportunities, or contact <a href="mailto:ihqjobs@kappaalphapsi1911.com">ihqjobs@kappaalphapsi1911.com</a> to submit your resume for future consideration.</p>
 			</div>
 		</div>
 	</div>
@@ -58,11 +55,6 @@
 		background: var(--gray-50, #f9fafb);
 		border-radius: 12px;
 		border: 1px solid var(--gray-200, #e5e7eb);
-	}
-
-	.no-openings-icon {
-		color: var(--crimson, #c8102e);
-		margin-bottom: 16px;
 	}
 
 	.no-openings h3 {

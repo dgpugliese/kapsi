@@ -23,7 +23,7 @@ export const GET: RequestHandler = async ({ url }) => {
 
 			if (ticketObjs.length === 0) return json({ ticketObjs: [], fields: [] });
 
-			const desc = await sfDescribe(ticketObjs[0].name);
+			const desc = await sfDescribe('EventApi__Ticket_Type__c');
 			const fields = desc.fields
 				.filter((f: any) => {
 					const name = (f.name || '').toLowerCase();

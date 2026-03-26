@@ -13,10 +13,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	const { session, user } = await locals.safeGetSession();
 	if (!session || !user) throw error(401, 'Unauthorized');
 
-	const { duesType, paymentMethod } = await request.json();
+	const { duesType } = await request.json();
 	if (!duesType) throw error(400, 'Missing duesType');
-	if (!paymentMethod || !['card', 'us_bank_account'].includes(paymentMethod))
-		throw error(400, 'Missing or invalid paymentMethod (card or us_bank_account)');
 
 	try {
 		const contact = await findContactByEmail(user.email!);
@@ -41,11 +39,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		if (items.length === 0) throw error(404, 'No dues item found');
 
 		const item = items[0];
-		const SURCHARGE_RATE = 0.04; // 4% credit card surcharge
-		const baseAmount = duesType === 'undergraduate' ? 100 : 200;
-		const surcharge = paymentMethod === 'card' ? Math.round(baseAmount * SURCHARGE_RATE * 100) / 100 : 0;
-		const total = baseAmount + surcharge;
-		const totalCents = Math.round(total * 100);
+		const total = duesType === 'undergraduate' ? 100 : 200;
+		const totalCents = total * 100;
 
 		// Check for existing active subscription (renewal detection)
 		const existingSubs = await sfQuery<any>(
@@ -61,7 +56,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		const isRenewal = !!existingSubId;
 
 		// Step 1: Find existing open order OR create new one
-		let orderId = await findOpenDuesOrder(contact.Id);
+		let orderId = await findOpenDuesOrder(contact.Id, item.Id);
 		let reusedOrder = false;
 
 		if (orderId) {
@@ -96,14 +91,10 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			body: new URLSearchParams({
 				'amount': totalCents.toString(),
 				'currency': 'usd',
-				// Lock to the selected payment method type so amount matches surcharge
-				'payment_method_types[]': paymentMethod,
+				'automatic_payment_methods[enabled]': 'true',
 				'metadata[sf_order_id]': orderId,
 				'metadata[sf_contact_id]': contact.Id,
 				'metadata[dues_type]': duesType,
-				'metadata[payment_method]': paymentMethod,
-				'metadata[base_amount]': baseAmount.toString(),
-				'metadata[surcharge]': surcharge.toString(),
 				'metadata[is_renewal]': isRenewal ? 'true' : 'false',
 				'description': `${duesType === 'undergraduate' ? 'Undergraduate' : 'Alumni'} Annual Dues ${isRenewal ? '(Renewal)' : ''} - ${contact.FirstName} ${contact.LastName}`
 			})
@@ -121,16 +112,10 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			clientSecret: paymentIntent.client_secret,
 			orderId,
 			total,
-			baseAmount,
-			surcharge,
 			isRenewal,
 			reusedOrder,
 			paymentIntentId: paymentIntent.id,
-			paymentMethod,
-			items: [
-				{ name: `${duesType === 'undergraduate' ? 'Undergraduate' : 'Alumni'} Annual Dues`, price: baseAmount },
-				...(surcharge > 0 ? [{ name: 'Credit Card Processing Fee (4%)', price: surcharge }] : [])
-			]
+			items: [{ name: `${duesType === 'undergraduate' ? 'Undergraduate' : 'Alumni'} Annual Dues`, price: total }]
 		});
 
 	} catch (err: any) {

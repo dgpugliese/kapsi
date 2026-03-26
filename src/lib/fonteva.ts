@@ -168,17 +168,22 @@ export async function getPaymentHistory(contactId: string): Promise<PaymentRecei
 // ──────────────────────────────────────────────
 
 /**
- * Find an existing open (unposted) Sales Order for a Contact.
+ * Find an existing open Sales Order for a Contact with a specific dues item.
  * Returns the order ID if found (and order is < 24h old), null otherwise.
  * Orders older than 24h are considered stale and will be skipped.
  */
-export async function findOpenDuesOrder(contactId: string): Promise<string | null> {
+export async function findOpenDuesOrder(contactId: string, itemId: string): Promise<string | null> {
 	const orders = await sfQuery<any>(`
 		SELECT Id, CreatedDate
 		FROM OrderApi__Sales_Order__c
 		WHERE OrderApi__Contact__c = '${contactId}'
 			AND OrderApi__Status__c != 'Closed'
 			AND OrderApi__Is_Posted__c = false
+			AND Id IN (
+				SELECT OrderApi__Sales_Order__c
+				FROM OrderApi__Sales_Order_Line__c
+				WHERE OrderApi__Item__c = '${itemId}'
+			)
 		ORDER BY CreatedDate DESC
 		LIMIT 1
 	`);

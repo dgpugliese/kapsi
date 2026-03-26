@@ -5,6 +5,7 @@
 	let { data }: { data: PageData } = $props();
 	let event = $derived(data.event);
 	let tickets = $derived(data.tickets);
+	let ticketsRestricted = $derived(data.ticketsRestricted ?? false);
 
 	let selectedTicket = $state('');
 	let processing = $state(false);
@@ -43,7 +44,8 @@
 		registrationError = '';
 		registrationSuccess = false;
 
-		const isFree = (ticket.price ?? 0) === 0;
+		const { price: effectivePrice } = getEffectivePrice(ticket);
+		const isFree = effectivePrice === 0;
 
 		if (isFree) {
 			// Free event — register directly
@@ -83,7 +85,7 @@
 						eventId: event.sf_event_id,
 						ticketTypeId: ticket.sf_ticket_type_id,
 						ticketName: ticket.name,
-						amount: ticket.price
+						amount: effectivePrice
 					})
 				});
 
@@ -177,6 +179,16 @@
 		if (!end || start === end) return formatDate(start);
 		return `${formatDate(start)} — ${formatDate(end)}`;
 	}
+
+	function getEffectivePrice(ticket: any): { price: number; isEarlyBird: boolean } {
+		if (ticket.enable_early_bird && ticket.early_bird_price != null && ticket.early_bird_end_date) {
+			const ebEnd = new Date(ticket.early_bird_end_date);
+			if (new Date() < ebEnd) {
+				return { price: ticket.early_bird_price, isEarlyBird: true };
+			}
+		}
+		return { price: ticket.price ?? 0, isEarlyBird: false };
+	}
 </script>
 
 <svelte:head>
@@ -257,6 +269,12 @@
 				</div>
 			{/if}
 
+			{#if ticketsRestricted}
+				<div style="background:#FEF3C7; color:#92400E; padding:10px 14px; border-radius:8px; font-size:0.82rem; margin-bottom:16px;">
+					Some ticket types are restricted based on your membership and are not shown.
+				</div>
+			{/if}
+
 			{#if tickets.length === 0}
 				<p style="color:var(--gray-500);">No ticket types available for this event.</p>
 			{:else}
@@ -264,6 +282,7 @@
 					{#each tickets as ticket}
 						{@const avail = ticket.capacity > 0 ? ticket.capacity - (ticket.quantity_sold ?? 0) : null}
 						{@const soldOut = avail !== null && avail <= 0}
+						{@const ep = getEffectivePrice(ticket)}
 						<label class="ticket-option" class:ticket-option--selected={selectedTicket === ticket.sf_ticket_type_id} class:ticket-option--disabled={soldOut}>
 							<input
 								type="radio"
@@ -275,30 +294,45 @@
 							/>
 							<div style="flex:1;">
 								<div style="font-weight:700; font-size:0.95rem;">{ticket.name}</div>
+								{#if ticket.description}
+									<div style="font-size:0.8rem; color:var(--gray-500); margin-top:3px; line-height:1.4;">{ticket.description}</div>
+								{/if}
 								{#if avail !== null}
 									<div style="font-size:0.75rem; color:{soldOut ? '#991B1B' : 'var(--gray-500)'}; margin-top:2px;">
 										{soldOut ? 'Sold Out' : `${avail.toLocaleString()} spots remaining`}
 									</div>
 								{/if}
 							</div>
-							<div style="font-family:var(--font-serif); font-size:1.3rem; font-weight:700; color:var(--crimson);">
-								{ticket.price > 0 ? `$${ticket.price.toFixed(2)}` : 'Free'}
+							<div style="text-align:right;">
+								{#if ep.isEarlyBird}
+									<div style="font-family:var(--font-serif); font-size:1.3rem; font-weight:700; color:var(--crimson);">
+										${ep.price.toFixed(2)}
+									</div>
+									<div style="font-size:0.7rem; color:var(--gray-400); text-decoration:line-through;">${ticket.price.toFixed(2)}</div>
+									<div style="font-size:0.68rem; color:#065F46; font-weight:600;">Early Bird</div>
+								{:else}
+									<div style="font-family:var(--font-serif); font-size:1.3rem; font-weight:700; color:var(--crimson);">
+										{ep.price > 0 ? `$${ep.price.toFixed(2)}` : 'Free'}
+									</div>
+								{/if}
 							</div>
 						</label>
 					{/each}
 				</div>
 
 				{#if step === 'pay'}
+					{@const selTicket = getSelectedTicket()}
+					{@const selEp = selTicket ? getEffectivePrice(selTicket) : { price: 0, isEarlyBird: false }}
 					<div style="background:var(--cream); border-radius:10px; padding:20px; margin-bottom:20px;">
 						<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-							<span style="font-weight:600;">{getSelectedTicket()?.name}</span>
-							<span style="font-family:var(--font-serif); font-size:1.2rem; font-weight:700; color:var(--crimson);">${getSelectedTicket()?.price?.toFixed(2)}</span>
+							<span style="font-weight:600;">{selTicket?.name}</span>
+							<span style="font-family:var(--font-serif); font-size:1.2rem; font-weight:700; color:var(--crimson);">${selEp.price.toFixed(2)}{selEp.isEarlyBird ? ' (Early Bird)' : ''}</span>
 						</div>
 					</div>
 					<form onsubmit={handlePayment}>
 						<div id="event-payment-element" style="margin-bottom:20px;"></div>
 						<button type="submit" disabled={processing || !stripeReady} class="btn btn--primary" style="width:100%; justify-content:center; padding:14px; font-size:1rem;">
-							{processing ? 'Processing...' : `Pay $${getSelectedTicket()?.price?.toFixed(2)} & Register`}
+							{processing ? 'Processing...' : `Pay $${selEp.price.toFixed(2)} & Register`}
 						</button>
 					</form>
 					<button onclick={() => { step = 'select'; selectedTicket = ''; }} style="display:block; margin:12px auto 0; background:none; border:none; color:var(--gray-500); font-size:0.82rem; cursor:pointer;">
@@ -313,8 +347,8 @@
 					>
 						{#if processing}
 							Registering...
-						{:else if getSelectedTicket()?.price > 0}
-							Continue to Payment — ${getSelectedTicket()?.price?.toFixed(2)}
+						{:else if getSelectedTicket() && getEffectivePrice(getSelectedTicket()).price > 0}
+							Continue to Payment — ${getEffectivePrice(getSelectedTicket()).price.toFixed(2)}
 						{:else}
 							Register Now
 						{/if}

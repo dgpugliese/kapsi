@@ -7,7 +7,8 @@
 	let tickets = $derived(data.tickets);
 	let ticketsRestricted = $derived(data.ticketsRestricted ?? false);
 
-	let selectedTicket = $state('');
+	let selectedRegistration = $state(''); // SF ticket type ID for the main registration ticket
+	let cart = $state<Record<string, number>>({}); // { sf_ticket_type_id: quantity } for a la carte items
 	let processing = $state(false);
 	let registrationError = $state('');
 	let registrationSuccess = $state(false);
@@ -34,6 +35,7 @@
 	let stripeReady = $state(false);
 
 	const STRIPE_PK = 'pk_test_51S8RNnRqCcfg1CMWL8HMCwExLbKLMQBMBeHzEaKGeQc7ewjlocccVlcVYnnA0YRkOyMqt7Bs0ImQagBMFfuGlKEg00TlkjTeUy';
+	const MAX_QUANTITY = 10;
 
 	onMount(async () => {
 		if (typeof window !== 'undefined') {
@@ -44,8 +46,52 @@
 		}
 	});
 
-	function getSelectedTicket() {
-		return tickets.find((t: any) => t.sf_ticket_type_id === selectedTicket);
+	function isRegistrationTicket(ticket: any): boolean {
+		const name = (ticket.name || '').toLowerCase();
+		return name.includes('registration') || name.includes('early bird');
+	}
+
+	let registrationTickets = $derived(tickets.filter((t: any) => isRegistrationTicket(t)));
+	let aLaCarteTickets = $derived(tickets.filter((t: any) => !isRegistrationTicket(t)));
+
+	function getCartItems(): { ticket: any; quantity: number; subtotal: number }[] {
+		const items: { ticket: any; quantity: number; subtotal: number }[] = [];
+
+		// Add the selected registration ticket
+		if (selectedRegistration) {
+			const regTicket = tickets.find((t: any) => t.sf_ticket_type_id === selectedRegistration);
+			if (regTicket) {
+				const { price } = getEffectivePrice(regTicket);
+				items.push({ ticket: regTicket, quantity: 1, subtotal: price });
+			}
+		}
+
+		// Add a la carte items
+		for (const [id, qty] of Object.entries(cart)) {
+			if (qty > 0) {
+				const ticket = tickets.find((t: any) => t.sf_ticket_type_id === id);
+				if (ticket) {
+					const { price } = getEffectivePrice(ticket);
+					items.push({ ticket, quantity: qty, subtotal: price * qty });
+				}
+			}
+		}
+
+		return items;
+	}
+
+	function getCartTotal(): number {
+		return getCartItems().reduce((sum, item) => sum + item.subtotal, 0);
+	}
+
+	function updateQuantity(ticketId: string, delta: number) {
+		const current = cart[ticketId] || 0;
+		const next = Math.max(0, Math.min(MAX_QUANTITY, current + delta));
+		cart = { ...cart, [ticketId]: next };
+	}
+
+	function hasItems(): boolean {
+		return !!selectedRegistration;
 	}
 
 	function validateForm(): boolean {
@@ -100,15 +146,23 @@
 	}
 
 	async function handleRegister() {
-		const ticket = getSelectedTicket();
-		if (!ticket) return;
+		if (!selectedRegistration) return;
+
+		const cartItems = getCartItems();
+		const totalAmount = getCartTotal();
 
 		processing = true;
 		registrationError = '';
 		registrationSuccess = false;
 
-		const { price: effectivePrice } = getEffectivePrice(ticket);
-		const isFree = effectivePrice === 0;
+		const items = cartItems.map(item => ({
+			ticketTypeId: item.ticket.sf_ticket_type_id,
+			ticketName: item.ticket.name,
+			quantity: item.quantity,
+			unitPrice: getEffectivePrice(item.ticket).price
+		}));
+
+		const isFree = totalAmount === 0;
 
 		if (isFree) {
 			try {
@@ -117,7 +171,8 @@
 					headers: { 'Content-Type': 'application/json' },
 					body: JSON.stringify({
 						eventId: event.sf_event_id,
-						ticketTypeId: ticket.sf_ticket_type_id
+						ticketTypeId: selectedRegistration,
+						items
 					})
 				});
 				const result = await res.json();
@@ -144,9 +199,10 @@
 					headers: { 'Content-Type': 'application/json' },
 					body: JSON.stringify({
 						eventId: event.sf_event_id,
-						ticketTypeId: ticket.sf_ticket_type_id,
-						ticketName: ticket.name,
-						amount: effectivePrice
+						ticketTypeId: selectedRegistration,
+						ticketName: cartItems[0]?.ticket.name,
+						amount: totalAmount,
+						items
 					})
 				});
 
@@ -201,14 +257,23 @@
 			return;
 		}
 
+		const cartItems = getCartItems();
+		const items = cartItems.map(item => ({
+			ticketTypeId: item.ticket.sf_ticket_type_id,
+			ticketName: item.ticket.name,
+			quantity: item.quantity,
+			unitPrice: getEffectivePrice(item.ticket).price
+		}));
+
 		try {
 			const res = await fetch('/api/register-event', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
 					eventId: event.sf_event_id,
-					ticketTypeId: selectedTicket,
-					paymentIntentId: paymentIntent.id
+					ticketTypeId: selectedRegistration,
+					paymentIntentId: paymentIntent.id,
+					items
 				})
 			});
 			const result = await res.json();
@@ -500,79 +565,183 @@
 				{#if tickets.length === 0}
 					<p style="color:var(--gray-500);">No ticket types available for this event.</p>
 				{:else}
-					<div style="display:flex; flex-direction:column; gap:10px; margin-bottom:20px;">
-						{#each tickets as ticket}
-							{@const avail = ticket.capacity > 0 ? ticket.capacity - (ticket.quantity_sold ?? 0) : null}
-							{@const soldOut = avail !== null && avail <= 0}
-							{@const ep = getEffectivePrice(ticket)}
-							<label class="ticket-option" class:ticket-option--selected={selectedTicket === ticket.sf_ticket_type_id} class:ticket-option--disabled={soldOut}>
-								<input
-									type="radio"
-									name="ticket"
-									value={ticket.sf_ticket_type_id}
-									bind:group={selectedTicket}
-									disabled={soldOut}
-									style="accent-color:var(--crimson);"
-								/>
-								<div style="flex:1;">
-									<div style="font-weight:700; font-size:0.95rem;">{ticket.name}</div>
-									{#if ticket.description}
-										<div style="font-size:0.8rem; color:var(--gray-500); margin-top:3px; line-height:1.4;">{ticket.description}</div>
-									{/if}
-									{#if avail !== null}
-										<div style="font-size:0.75rem; color:{soldOut ? '#991B1B' : 'var(--gray-500)'}; margin-top:2px;">
-											{soldOut ? 'Sold Out' : `${avail.toLocaleString()} spots remaining`}
+					<!-- Registration Tickets Section -->
+					{#if registrationTickets.length > 0}
+						<div class="ticket-section ticket-section--registration">
+							<div class="ticket-section-header">
+								<span>Event Registration</span>
+								<span class="badge badge--required">Required</span>
+							</div>
+							<div class="ticket-section-body">
+								{#each registrationTickets as ticket}
+									{@const avail = ticket.capacity > 0 ? ticket.capacity - (ticket.quantity_sold ?? 0) : null}
+									{@const soldOut = avail !== null && avail <= 0}
+									{@const ep = getEffectivePrice(ticket)}
+									<label class="ticket-option" class:ticket-option--selected={selectedRegistration === ticket.sf_ticket_type_id} class:ticket-option--disabled={soldOut}>
+										<input
+											type="radio"
+											name="registration-ticket"
+											value={ticket.sf_ticket_type_id}
+											bind:group={selectedRegistration}
+											disabled={soldOut}
+											style="accent-color:var(--crimson);"
+										/>
+										<div style="flex:1;">
+											<div style="font-weight:700; font-size:0.95rem;">{ticket.name}</div>
+											{#if ticket.description}
+												<div style="font-size:0.8rem; color:var(--gray-500); margin-top:3px; line-height:1.4;">{ticket.description}</div>
+											{/if}
+											{#if avail !== null}
+												<div style="font-size:0.75rem; color:{soldOut ? '#991B1B' : 'var(--gray-500)'}; margin-top:2px;">
+													{soldOut ? 'Sold Out' : `${avail.toLocaleString()} spots remaining`}
+												</div>
+											{/if}
 										</div>
-									{/if}
-								</div>
-								<div style="text-align:right;">
-									{#if ep.isEarlyBird}
-										<div style="font-family:var(--font-serif); font-size:1.3rem; font-weight:700; color:var(--crimson);">
-											${ep.price.toFixed(2)}
+										<div style="text-align:right;">
+											{#if ep.isEarlyBird}
+												<div style="font-family:var(--font-serif); font-size:1.3rem; font-weight:700; color:var(--crimson);">
+													${ep.price.toFixed(2)}
+												</div>
+												<div style="font-size:0.7rem; color:var(--gray-400); text-decoration:line-through;">${ticket.price.toFixed(2)}</div>
+												<div style="font-size:0.68rem; color:#065F46; font-weight:600;">Early Bird</div>
+											{:else}
+												<div style="font-family:var(--font-serif); font-size:1.3rem; font-weight:700; color:var(--crimson);">
+													{ep.price > 0 ? `$${ep.price.toFixed(2)}` : 'Free'}
+												</div>
+											{/if}
 										</div>
-										<div style="font-size:0.7rem; color:var(--gray-400); text-decoration:line-through;">${ticket.price.toFixed(2)}</div>
-										<div style="font-size:0.68rem; color:#065F46; font-weight:600;">Early Bird</div>
-									{:else}
-										<div style="font-family:var(--font-serif); font-size:1.3rem; font-weight:700; color:var(--crimson);">
-											{ep.price > 0 ? `$${ep.price.toFixed(2)}` : 'Free'}
+									</label>
+								{/each}
+							</div>
+						</div>
+					{/if}
+
+					<!-- A La Carte Tickets Section -->
+					{#if aLaCarteTickets.length > 0}
+						<div class="ticket-section ticket-section--alacarte">
+							<div class="ticket-section-header">
+								<span>Additional Events</span>
+								<span class="badge badge--optional">Optional</span>
+							</div>
+							<div class="ticket-section-body">
+								{#each aLaCarteTickets as ticket}
+									{@const avail = ticket.capacity > 0 ? ticket.capacity - (ticket.quantity_sold ?? 0) : null}
+									{@const soldOut = avail !== null && avail <= 0}
+									{@const ep = getEffectivePrice(ticket)}
+									{@const qty = cart[ticket.sf_ticket_type_id] || 0}
+									{@const maxAvail = avail !== null ? Math.min(MAX_QUANTITY, avail) : MAX_QUANTITY}
+									<div class="ticket-card" class:ticket-card--active={qty > 0} class:ticket-card--disabled={soldOut}>
+										<div style="flex:1;">
+											<div style="font-weight:700; font-size:0.95rem;">{ticket.name}</div>
+											{#if ticket.description}
+												<div style="font-size:0.8rem; color:var(--gray-500); margin-top:3px; line-height:1.4;">{ticket.description}</div>
+											{/if}
+											{#if avail !== null}
+												<div style="font-size:0.75rem; color:{soldOut ? '#991B1B' : 'var(--gray-500)'}; margin-top:2px;">
+													{soldOut ? 'Sold Out' : `${avail.toLocaleString()} spots remaining`}
+												</div>
+											{/if}
 										</div>
-									{/if}
-								</div>
-							</label>
-						{/each}
-					</div>
+										<div style="display:flex; flex-direction:column; align-items:flex-end; gap:8px;">
+											<div style="text-align:right;">
+												{#if ep.isEarlyBird}
+													<div style="font-family:var(--font-serif); font-size:1.3rem; font-weight:700; color:var(--crimson);">
+														${ep.price.toFixed(2)}
+													</div>
+													<div style="font-size:0.7rem; color:var(--gray-400); text-decoration:line-through;">${ticket.price.toFixed(2)}</div>
+													<div style="font-size:0.68rem; color:#065F46; font-weight:600;">Early Bird</div>
+												{:else}
+													<div style="font-family:var(--font-serif); font-size:1.3rem; font-weight:700; color:var(--crimson);">
+														{ep.price > 0 ? `$${ep.price.toFixed(2)}` : 'Free'}
+													</div>
+												{/if}
+											</div>
+											{#if !soldOut}
+												<div class="qty-selector">
+													<button
+														class="qty-btn"
+														disabled={qty <= 0}
+														onclick={() => updateQuantity(ticket.sf_ticket_type_id, -1)}
+														aria-label="Decrease quantity"
+													>-</button>
+													<span class="qty-value">{qty}</span>
+													<button
+														class="qty-btn"
+														disabled={qty >= maxAvail}
+														onclick={() => updateQuantity(ticket.sf_ticket_type_id, 1)}
+														aria-label="Increase quantity"
+													>+</button>
+												</div>
+											{/if}
+										</div>
+									</div>
+								{/each}
+							</div>
+						</div>
+					{/if}
+
+					<!-- If all tickets are registration-type or all are a la carte, handle gracefully -->
+					{#if registrationTickets.length === 0}
+						<!-- No registration tickets found; treat all as selectable via quantity -->
+						<!-- This case is already handled above by aLaCarteTickets -->
+					{/if}
+
+					<!-- Order Summary -->
+					{#if getCartItems().length > 0}
+						<div class="order-summary">
+							<div class="order-summary-header">Order Summary</div>
+							<div class="order-summary-items">
+								{#each getCartItems() as item}
+									<div class="order-summary-row">
+										<div style="flex:1;">
+											<span style="font-weight:600; font-size:0.9rem;">{item.ticket.name}</span>
+											{#if item.quantity > 1}
+												<span style="color:var(--gray-500); font-size:0.82rem;"> x{item.quantity}</span>
+											{/if}
+										</div>
+										<div style="font-weight:700; font-size:0.9rem; color:var(--crimson);">
+											{item.subtotal > 0 ? `$${item.subtotal.toFixed(2)}` : 'Free'}
+										</div>
+									</div>
+								{/each}
+							</div>
+							<div class="order-summary-total">
+								<span style="font-weight:700; font-size:1rem;">Total</span>
+								<span style="font-family:var(--font-serif); font-weight:700; font-size:1.25rem; color:var(--crimson);">
+									{getCartTotal() > 0 ? `$${getCartTotal().toFixed(2)}` : 'Free'}
+								</span>
+							</div>
+						</div>
+					{/if}
 
 					{#if step === 'pay'}
-						{@const selTicket = getSelectedTicket()}
-						{@const selEp = selTicket ? getEffectivePrice(selTicket) : { price: 0, isEarlyBird: false }}
 						<div style="background:var(--cream); border-radius:10px; padding:20px; margin-bottom:20px;">
-							<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-								<span style="font-weight:600;">{selTicket?.name}</span>
-								<span style="font-family:var(--font-serif); font-size:1.2rem; font-weight:700; color:var(--crimson);">${selEp.price.toFixed(2)}{selEp.isEarlyBird ? ' (Early Bird)' : ''}</span>
-							</div>
+							<div style="font-weight:600; margin-bottom:12px; font-size:0.95rem;">Payment Details</div>
 						</div>
 						<form onsubmit={handlePayment}>
 							<div id="event-payment-element" style="margin-bottom:20px;"></div>
 							<button type="submit" disabled={processing || !stripeReady} class="btn btn--primary" style="width:100%; justify-content:center; padding:14px; font-size:1rem;">
-								{processing ? 'Processing...' : `Pay $${selEp.price.toFixed(2)} & Register`}
+								{processing ? 'Processing...' : `Pay $${getCartTotal().toFixed(2)} & Register`}
 							</button>
 						</form>
-						<button onclick={() => { step = 'select'; selectedTicket = ''; }} style="display:block; margin:12px auto 0; background:none; border:none; color:var(--gray-500); font-size:0.82rem; cursor:pointer;">
-							Cancel
+						<button onclick={() => { step = 'select'; }} style="display:block; margin:12px auto 0; background:none; border:none; color:var(--gray-500); font-size:0.82rem; cursor:pointer;">
+							Back to Ticket Selection
 						</button>
 					{:else}
 						<button
-							disabled={!selectedTicket || processing}
+							disabled={!selectedRegistration || processing}
 							class="btn btn--primary"
 							style="width:100%; justify-content:center; padding:14px; font-size:1rem;"
 							onclick={handleRegister}
 						>
 							{#if processing}
 								Registering...
-							{:else if getSelectedTicket() && getEffectivePrice(getSelectedTicket()).price > 0}
-								Continue to Payment — ${getEffectivePrice(getSelectedTicket()).price.toFixed(2)}
+							{:else if !selectedRegistration}
+								Select a Registration Ticket
+							{:else if getCartTotal() > 0}
+								Continue to Payment — ${getCartTotal().toFixed(2)}
 							{:else}
-								Register Now
+								Register Now — Free
 							{/if}
 						</button>
 						<button onclick={() => { step = 'form'; }} style="display:block; margin:12px auto 0; background:none; border:none; color:var(--gray-500); font-size:0.82rem; cursor:pointer;">
@@ -644,6 +813,43 @@
 		color: var(--gray-500); font-style: italic;
 	}
 
+	/* Ticket sections */
+	.ticket-section {
+		border: 1px solid var(--gray-100); border-radius: 10px;
+		overflow: hidden; margin-bottom: 20px;
+	}
+	.ticket-section--registration {
+		background: rgba(139, 0, 0, 0.015);
+	}
+	.ticket-section--alacarte {
+		background: var(--white);
+	}
+	.ticket-section-header {
+		display: flex; align-items: center; justify-content: space-between;
+		padding: 12px 18px;
+		font-family: var(--font-serif); font-weight: 700; font-size: 0.95rem;
+		color: var(--black);
+		background: rgba(139, 0, 0, 0.04);
+		border-bottom: 1px solid var(--gray-100);
+	}
+	.ticket-section-body {
+		display: flex; flex-direction: column; gap: 10px;
+		padding: 14px;
+	}
+
+	.badge {
+		font-family: var(--font-sans, sans-serif);
+		font-size: 0.68rem; font-weight: 700;
+		padding: 3px 10px; border-radius: 20px;
+		text-transform: uppercase; letter-spacing: 0.04em;
+	}
+	.badge--required {
+		background: var(--crimson); color: white;
+	}
+	.badge--optional {
+		background: var(--gray-100); color: var(--gray-600);
+	}
+
 	.ticket-option {
 		display: flex; align-items: center; gap: 14px;
 		padding: 16px 20px; border: 2px solid var(--gray-100);
@@ -653,6 +859,79 @@
 	.ticket-option--selected { border-color: var(--crimson); background: rgba(139, 0, 0, 0.04); }
 	.ticket-option--disabled { opacity: 0.5; cursor: not-allowed; }
 	.ticket-option--disabled:hover { border-color: var(--gray-100); background: transparent; }
+
+	/* A la carte ticket card */
+	.ticket-card {
+		display: flex; align-items: center; gap: 14px;
+		padding: 16px 20px; border: 2px solid var(--gray-100);
+		border-radius: 10px; transition: all 0.2s;
+	}
+	.ticket-card--active {
+		border-color: var(--crimson); background: rgba(139, 0, 0, 0.04);
+	}
+	.ticket-card--disabled {
+		opacity: 0.5;
+	}
+
+	/* Quantity selector */
+	.qty-selector {
+		display: inline-flex; align-items: center; gap: 0;
+		border: 2px solid var(--crimson); border-radius: 8px;
+		overflow: hidden;
+	}
+	.qty-btn {
+		width: 34px; height: 34px;
+		display: flex; align-items: center; justify-content: center;
+		background: white; border: none;
+		font-size: 1.1rem; font-weight: 700; color: var(--crimson);
+		cursor: pointer; transition: background 0.15s;
+		padding: 0;
+	}
+	.qty-btn:hover:not(:disabled) {
+		background: rgba(139, 0, 0, 0.06);
+	}
+	.qty-btn:disabled {
+		color: var(--gray-300); cursor: not-allowed;
+	}
+	.qty-value {
+		width: 36px; text-align: center;
+		font-weight: 700; font-size: 0.95rem; color: var(--black);
+		border-left: 1px solid var(--gray-200);
+		border-right: 1px solid var(--gray-200);
+		line-height: 34px;
+	}
+
+	/* Order Summary */
+	.order-summary {
+		border-top: 3px solid var(--crimson);
+		background: white;
+		border-radius: 0 0 10px 10px;
+		margin-bottom: 20px;
+		box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+	}
+	.order-summary-header {
+		font-family: var(--font-serif); font-weight: 700;
+		font-size: 1rem; padding: 16px 20px 8px;
+		color: var(--black);
+	}
+	.order-summary-items {
+		padding: 0 20px;
+	}
+	.order-summary-row {
+		display: flex; align-items: center; justify-content: space-between;
+		padding: 8px 0;
+		border-bottom: 1px solid var(--gray-50);
+	}
+	.order-summary-row:last-child {
+		border-bottom: none;
+	}
+	.order-summary-total {
+		display: flex; align-items: center; justify-content: space-between;
+		padding: 14px 20px;
+		border-top: 2px solid var(--gray-100);
+		background: var(--cream, #FFFDF7);
+		border-radius: 0 0 10px 10px;
+	}
 
 	/* Progress indicator */
 	.reg-progress {
@@ -752,5 +1031,13 @@
 		.reg-step-line { min-width: 20px; }
 		.field-group-body { padding: 14px; }
 		.instructional-text { padding: 10px 12px; }
+		.ticket-section-body { padding: 10px; }
+		.ticket-option { padding: 12px 14px; gap: 10px; }
+		.ticket-card { padding: 12px 14px; gap: 10px; flex-wrap: wrap; }
+		.order-summary {
+			position: sticky; bottom: 0; z-index: 10;
+			border-radius: 10px 10px 0 0;
+			box-shadow: 0 -4px 12px rgba(0,0,0,0.1);
+		}
 	}
 </style>

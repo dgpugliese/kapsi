@@ -25,17 +25,23 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	const today = new Date().toISOString().split('T')[0];
 
 	try {
-		// 1. Create Form Response
+		// 1. Create Form Response (linked to the 88th GCM registration form)
+		const GCM_FORM_ID = 'a0SSu0000017kAPMAY'; // 88th Grand Chapter Meeting Information
 		const formResponseId = await sfCreate('PagesApi__Form_Response__c', {
+			PagesApi__Form__c: GCM_FORM_ID,
 			PagesApi__Contact__c: contactId,
+			PagesApi__Account__c: accountId,
 			PagesApi__Date__c: today,
-			OrderApi__Contact__c: contactId
+			OrderApi__Contact__c: contactId,
+			OrderApi__Account__c: accountId
 		});
 
-		// 2. Create Field Responses for each answer
+		// 2. Create Field Responses for each answer (linked to form + form response)
 		for (const answer of answers) {
 			await sfCreate('PagesApi__Field_Response__c', {
 				PagesApi__Form_Response__c: formResponseId,
+				OrderApi__Form_Response__c: formResponseId,
+				OrderApi__Form__c: GCM_FORM_ID,
 				PagesApi__Response__c: String(answer.value),
 				Question_Label__c: answer.label
 			});

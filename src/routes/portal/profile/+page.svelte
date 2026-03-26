@@ -292,12 +292,16 @@
 					{ label: 'Member Type', value: sf.memberType },
 					{ label: 'Chapter of Initiation', value: sf.chapterOfInitiation },
 					{ label: 'Current Chapter', value: sf.currentChapter },
-					{ label: 'Initiation Date', value: sf.initiationDate ? new Date(sf.initiationDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : null },
-					{ label: 'Year of Initiation', value: sf.yearOfInitiation },
 					{ label: 'Province of Initiation', value: sf.provinceOfInitiation },
-					{ label: 'Life Member', value: sf.isLifeMember ? 'Yes' : 'No' },
-					{ label: 'Directory Status', value: sf.directoryStatus },
-					{ label: 'Chapter ID', value: sf.chapterId }
+					{ label: 'Initiated', value: (() => {
+						if (!sf.initiationDate && !sf.yearOfInitiation) return null;
+						if (sf.initiationDate) {
+							const month = new Date(sf.initiationDate).getMonth();
+							const season = month >= 0 && month <= 5 ? 'Spring' : 'Fall';
+							return `${season} ${sf.yearOfInitiation || new Date(sf.initiationDate).getFullYear()}`;
+						}
+						return sf.yearOfInitiation;
+					})() }
 				].filter(f => f.value) as field}
 					<div style="padding:10px 14px; background:var(--gray-50); border-radius:8px;">
 						<div style="font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:var(--gray-400); margin-bottom:3px;">{field.label}</div>

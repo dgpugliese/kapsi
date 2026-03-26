@@ -292,7 +292,6 @@
 					{ label: 'Member Type', value: sf.memberType },
 					{ label: 'Chapter of Initiation', value: sf.chapterOfInitiation },
 					{ label: 'Current Chapter', value: sf.currentChapter },
-					{ label: 'Province of Initiation', value: sf.provinceOfInitiation },
 					{ label: 'Initiated', value: (() => {
 						if (!sf.initiationDate && !sf.yearOfInitiation) return null;
 						if (sf.initiationDate) {

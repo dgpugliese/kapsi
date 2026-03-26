@@ -86,24 +86,33 @@
 	</div>
 </nav>
 
-<!-- Introduction -->
+<!-- Introduction — Executive Director's Message -->
 <section class="section" id="introduction">
 	<div class="container">
 		<div class="content-block">
 			<div class="section-label">Welcome</div>
 			<div class="rule"></div>
-			<h2>Introduction</h2>
-			<div class="quote-block">
-				<p>"The Kappa Alpha Psi® brand is not only who we are as an organization but also who we want to be as leaders and how we are perceived by the world."</p>
-				<cite>— John Burrell, Executive Director</cite>
+			<h2>A Message from the Executive Director</h2>
+			<p class="ed-preface">A message from the Executive Director of Kappa Alpha Psi Fraternity, Inc. for Brothers, Vendors and viewers of this publication.</p>
+			<p>
+				The Kappa Alpha Psi® image is more than just the Greek letters KAΨ and our commitment to Achievement through ΦNΠ. The Kappa Alpha Psi® brand is not only who we are as an organization but also who we want to be as leaders and how we are perceived by the world—all at the same time.
+			</p>
+			<p>
+				The Founders of our fraternity exercised great care and reasoning in the development of our image and subsequent leaders have built upon this foundation. Our reputation is the intangible yet valuable assets we possess and it should always be managed carefully and our name and brand used appropriately.
+			</p>
+			<p>
+				The Kappa "brand" is experienced every time our fraternity engages on the college/university campus and in the greater community and world. With the interaction with a student, professor, university administrator, prospect, a local business, church or organization, our brand must be consistent and positive. Whether the person sees the brand in official communication, on a website or social media, in person or during a community service event, each encounter is an opportunity to make an impression that is not only long-lasting but positive. The Kappa Alpha Psi® brand and communications should always be a reflection of our "Achievements in every field of human endeavor."
+			</p>
+			<p>
+				The purpose of brand guidelines is to ensure that everyone responsible for communicating on behalf of Kappa Alpha Psi® is consistent in the usage of marks and words that represent our organization. The appropriate and proper repetition of our brand elements allows people to know they are receiving official Kappa communications. Our brand materials are also designed to best represent the values and legacy of our organization when used properly. The misuse of our name and likeness in a way that is inconsistent with brand guidelines erodes the power of our brand and its impact. Therefore, always refer to the brand guidelines when communicating to all audiences, even internally.
+			</p>
+			<p>
+				The official brand identity for Kappa Alpha Psi® has been developed since the founding of the fraternity. There have been some refinements to usage to be applicable to today's mediums and standards. While the guidelines cover most situations, there may be times when further clarification is required. In those cases, always contact International Headquarters for the proper way to represent our brand.
+			</p>
+			<div class="ed-signature">
+				<span class="ed-name">John F. Burrell</span>
+				<span class="ed-title">Executive Director</span>
 			</div>
-			<p>
-				The Kappa Alpha Psi® image is more than just the Greek letters KAΨ and our commitment to Achievement through ΦNΠ.
-				This media kit provides guidelines for creating clear and distinct communications using elements of the Kappa Alpha Psi visual identity.
-			</p>
-			<p>
-				For clarification or supporting materials, contact <a href="mailto:IHQip@kappaalphapsi1911.com">IHQip@kappaalphapsi1911.com</a>.
-			</p>
 		</div>
 	</div>
 </section>
@@ -505,6 +514,35 @@
 		font-weight: 500;
 		text-decoration: underline;
 		text-underline-offset: 2px;
+	}
+
+	/* Executive Director Message */
+	.ed-preface {
+		font-style: italic;
+		color: var(--gray-500);
+		font-size: 0.925rem;
+		margin-bottom: 24px;
+	}
+
+	.ed-signature {
+		margin-top: 32px;
+		padding-top: 24px;
+		border-top: 1px solid var(--gray-200, #e5e7eb);
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+	}
+
+	.ed-name {
+		font-family: var(--font-serif);
+		font-size: 1.1rem;
+		font-weight: 700;
+		color: var(--black);
+	}
+
+	.ed-title {
+		font-size: 0.875rem;
+		color: var(--gray-500);
 	}
 
 	/* Quote Block */

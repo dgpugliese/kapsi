@@ -36,6 +36,7 @@
 						<li><a href="/about/chapter-locator">Chapter Locator</a></li>
 						<li><a href="/about/history">Our History</a></li>
 						<li><a href="/story">Story of Kappa</a></li>
+						<li><a href="/careers">Careers</a></li>
 					</ul>
 				</div>
 				<div class="footer-col">

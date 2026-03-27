@@ -90,10 +90,13 @@ async function handlePaymentSucceeded(paymentIntent: any) {
 	}
 	const contact = contacts[0];
 
-	// Card details from PaymentIntent
+	// Card details and charge ID from PaymentIntent
 	const card = paymentIntent.payment_method?.card ?? paymentIntent.charges?.data?.[0]?.payment_method_details?.card;
 	const cardLast4 = card?.last4 ?? '';
 	const cardBrand = card?.brand ?? '';
+	const chargeId = typeof paymentIntent.latest_charge === 'string'
+		? paymentIntent.latest_charge
+		: paymentIntent.latest_charge?.id ?? paymentIntent.charges?.data?.[0]?.id ?? paymentIntent.id;
 
 	// Create ePayment (idempotent)
 	let ePaymentId = '';
@@ -111,17 +114,33 @@ async function handlePaymentSucceeded(paymentIntent: any) {
 			OrderApi__Account__c: contact.AccountId,
 			OrderApi__Sales_Order__c: orderId,
 			OrderApi__Date__c: today,
+			OrderApi__Total__c: amount,
+			OrderApi__Amount__c: amount,
+			OrderApi__Succeeded__c: true,
+			OrderApi__Transaction_Type__c: 'card',
+			OrderApi__Gateway_Transaction_ID__c: chargeId,
 			OrderApi__Payment_Method_Token__c: paymentIntent.id,
 			OrderApi__Reference_Token__c: paymentIntent.id,
 			OrderApi__Card_Number__c: cardLast4 ? `xxxx-xxxx-xxxx-${cardLast4}` : null,
 			OrderApi__Card_Type__c: cardBrand ? cardBrand.charAt(0).toUpperCase() + cardBrand.slice(1) : null,
+			OrderApi__Entity__c: 'Contact'
 		});
+		// Fonteva trigger resets Total on insert — force it back
+		try {
+			await new Promise(r => setTimeout(r, 1500));
+			await sfUpdate('OrderApi__EPayment__c', ePaymentId, {
+				OrderApi__Total__c: amount,
+				OrderApi__Amount__c: amount
+			});
+		} catch { /* best effort */ }
 	}
 
 	// Create Receipt (idempotent)
 	const existingReceipt = await sfQuery<any>(
 		`SELECT Id FROM OrderApi__Receipt__c
-		 WHERE OrderApi__Sales_Order__c = '${orderId}' AND OrderApi__Gateway_Transaction_Id__c = '${paymentIntent.id}'
+		 WHERE OrderApi__Sales_Order__c = '${orderId}'
+		   AND (OrderApi__Gateway_Transaction_Id__c = '${chargeId}'
+		     OR OrderApi__Gateway_Transaction_Id__c = '${paymentIntent.id}')
 		 LIMIT 1`
 	);
 	if (existingReceipt.length === 0) {
@@ -134,7 +153,7 @@ async function handlePaymentSucceeded(paymentIntent: any) {
 			OrderApi__Is_Posted__c: true,
 			OrderApi__Payment_Type__c: 'Credit Card',
 			OrderApi__Payment_Gateway__c: gatewayId,
-			OrderApi__Gateway_Transaction_Id__c: paymentIntent.id,
+			OrderApi__Gateway_Transaction_Id__c: chargeId,
 			OrderApi__Reference_Number__c: paymentIntent.id,
 			...(ePaymentId ? { OrderApi__EPayment__c: ePaymentId } : {})
 		});
@@ -145,7 +164,9 @@ async function handlePaymentSucceeded(paymentIntent: any) {
 		await sfUpdate('OrderApi__Sales_Order__c', orderId, {
 			OrderApi__Status__c: 'Closed',
 			OrderApi__Posting_Status__c: 'Posted',
-			OrderApi__Is_Posted__c: true
+			OrderApi__Is_Posted__c: true,
+			OrderApi__Paid_Date__c: today,
+			OrderApi__Amount_Paid__c: amount
 		});
 	} catch (err: any) {
 		console.error('Webhook: failed to close order:', err.message);

@@ -109,7 +109,11 @@ export const load: PageServerLoad = async ({ locals, parent }) => {
 		state: e.state
 	}));
 
-	return { sfContact, education };
+	const badgesList = (badgesRes.data ?? [])
+		.map((mb: any) => mb.badges)
+		.filter(Boolean);
+
+	return { sfContact, education, badges: badgesList };
 };
 
 function formatStatus(status: string | null): string {

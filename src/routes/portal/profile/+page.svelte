@@ -6,11 +6,8 @@
 	let member = $derived(data.member);
 	let sf = $derived(data.sfContact);
 	let education = $derived(data.education ?? []);
-	let nationalAwards = $derived(
-		sf?.nationalAwards
-			? sf.nationalAwards.split(';').map((a: string) => a.trim()).filter(Boolean)
-			: []
-	);
+	let badges = $derived(data.badges ?? []);
+	// sf is built from Supabase member data in +page.server.ts — same shape as before
 
 	let editing = $state(false);
 	let saving = $state(false);
@@ -209,7 +206,7 @@
 			await supabase
 				.from('members')
 				.update({ profile_photo_url: urlData.publicUrl })
-				.eq('id', data.user?.id);
+				.eq('auth_user_id', data.user?.id);
 
 			message = 'Photo updated.';
 			await invalidateAll();
@@ -221,12 +218,12 @@
 
 	function getInitiatedDisplay() {
 		if (!sf?.initiationDate && !sf?.yearOfInitiation) return null;
-		if (sf.initiationDate) {
+		if (sf?.initiationDate) {
 			const month = new Date(sf.initiationDate).getMonth();
 			const season = month >= 0 && month <= 5 ? 'Spring' : 'Fall';
-			return `${season} ${sf.yearOfInitiation || new Date(sf.initiationDate).getFullYear()}`;
+			return `${season} ${sf?.yearOfInitiation || new Date(sf.initiationDate).getFullYear()}`;
 		}
-		return sf.yearOfInitiation;
+		return sf?.yearOfInitiation;
 	}
 </script>
 
@@ -523,14 +520,17 @@
 					</div>
 				{/each}
 			</div>
-			{#if sf.badges}
-				<div style="margin-top:16px; display:flex; gap:8px; flex-wrap:wrap;">
-					{#each sf.badges.split(',') as badge}
-						<span style="padding:4px 12px; background:rgba(139,0,0,0.06); color:var(--crimson); font-size:0.72rem; font-weight:600; border-radius:20px;">{badge.trim()}</span>
+			{#if badges.length > 0}
+				<div style="margin-top:16px; display:flex; gap:6px; flex-wrap:wrap;">
+					{#each badges.slice(0, 10) as badge}
+						<span style="padding:4px 10px; background:rgba(139,0,0,0.06); color:var(--crimson); font-size:0.7rem; font-weight:600; border-radius:20px;">{badge.name}</span>
 					{/each}
+					{#if badges.length > 10}
+						<span style="padding:4px 10px; background:var(--gray-100); color:var(--gray-500); font-size:0.7rem; font-weight:600; border-radius:20px;">+{badges.length - 10} more</span>
+					{/if}
 				</div>
 			{/if}
-			<p class="hint">Membership details are managed by International Headquarters.</p>
+			<p class="hint">Fraternity information is managed by International Headquarters.</p>
 		</div>
 
 		<!-- Grand Chapter Awards -->

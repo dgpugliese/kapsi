@@ -76,7 +76,8 @@
 			items: [
 				{ label: 'Dashboard', href: '/portal', icon: 'home' },
 				{ label: 'My Info', href: '/portal/profile', icon: 'user' },
-				{ label: 'Pay Grand Chapter Dues', href: '/portal/dues', icon: 'credit-card' }
+				{ label: 'Pay Grand Chapter Dues', href: '/portal/dues', icon: 'credit-card' },
+				{ label: 'Events', href: '/portal/events', icon: 'calendar' }
 			]
 		},
 		{

@@ -84,7 +84,7 @@ export const load: LayoutServerLoad = async ({ locals, cookies, url }) => {
 
 	// Block NIGS members from restricted pages
 	if (member && !isGoodStanding) {
-		const allowedPaths = ['/portal', '/portal/profile', '/portal/dues', '/portal/store', '/portal/documents'];
+		const allowedPaths = ['/portal', '/portal/profile', '/portal/dues', '/portal/store', '/portal/documents', '/portal/events'];
 		const currentPath = url.pathname;
 		const isAllowed = allowedPaths.some(p => currentPath === p) ||
 			currentPath.startsWith('/about/');

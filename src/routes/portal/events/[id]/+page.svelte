@@ -7,6 +7,7 @@
 	let event = $derived(data.event);
 	let tickets = $derived(data.tickets);
 	let ticketsRestricted = $derived(data.ticketsRestricted ?? false);
+	const isGoodStanding = $derived(data.member?.membership_status === 'active');
 
 	let selectedRegistration = $state(''); // SF ticket type ID for the main registration ticket
 	let cart = $state<Record<string, number>>({}); // { sf_ticket_type_id: quantity } for a la carte items
@@ -433,10 +434,17 @@
 		<!-- Event Info — show Register button -->
 		<div class="event-section">
 			<h2>Register</h2>
-			<p style="color:var(--gray-600); margin-bottom:16px;">Ready to attend? Click below to begin the registration process.</p>
-			<button class="btn btn--primary" style="width:100%; justify-content:center; padding:14px; font-size:1rem;" onclick={() => { step = 'form'; }}>
-				Register for This Event
-			</button>
+			{#if !isGoodStanding}
+				<div style="background:#fef2f2; border:1px solid #fecaca; border-radius:10px; padding:16px 20px; color:#991b1b; font-size:0.9rem; line-height:1.5;">
+					<strong>Registration unavailable.</strong> Your membership must be in good standing to register for events.
+					<a href="/portal/dues" style="color:var(--crimson); font-weight:600; margin-left:4px;">Pay Dues</a>
+				</div>
+			{:else}
+				<p style="color:var(--gray-600); margin-bottom:16px;">Ready to attend? Click below to begin the registration process.</p>
+				<button class="btn btn--primary" style="width:100%; justify-content:center; padding:14px; font-size:1rem;" onclick={() => { step = 'form'; }}>
+					Register for This Event
+				</button>
+			{/if}
 		</div>
 	{:else}
 		<!-- Progress Indicator -->

@@ -45,10 +45,16 @@ export const load: LayoutServerLoad = async ({ locals, cookies, url }) => {
 				.single();
 
 			if (impersonatedMember) {
-				const access = await checkChapterAccess(locals.supabase, user!.id, impersonatedMember.chapter_id);
+				const impIsGoodStanding = impersonatedMember.membership_status === 'active';
+				let impChapterAccess = false;
+				if (impIsGoodStanding) {
+					const access = await checkChapterAccess(locals.supabase, user!.id, impersonatedMember.chapter_id);
+					impChapterAccess = access.hasAccess;
+				}
 				return {
 					session, user, member: impersonatedMember,
-					hasChapterAccess: access.hasAccess,
+					hasChapterAccess: impChapterAccess,
+					isGoodStanding: impIsGoodStanding,
 					impersonating: true,
 					impersonatingName: `${impersonatedMember.first_name} ${impersonatedMember.last_name}`
 				};

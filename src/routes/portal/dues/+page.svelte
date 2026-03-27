@@ -143,6 +143,9 @@
 			currentOrderId = result.orderId;
 			currentPaymentIntentId = result.paymentIntentId;
 			orderTotal = result.total;
+			// Update surcharge from SF-calculated values
+			if (result.baseTotal !== undefined) baseAmount = result.baseTotal;
+			if (result.surcharge !== undefined) surchargeAmount = result.surcharge;
 			orderItems = result.items || [];
 
 			if (stripe && clientSecret) {

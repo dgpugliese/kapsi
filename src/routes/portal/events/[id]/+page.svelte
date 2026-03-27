@@ -15,9 +15,9 @@
 	let registrationSuccess = $state(false);
 	let step = $state<'info' | 'form' | 'select' | 'method' | 'pay' | 'done'>('info');
 	let paymentMethod = $state<'card' | 'ach'>('card');
+	let eventTotalAmount = $state(0);
 	let eventBaseAmount = $state(0);
 	let eventSurcharge = $state(0);
-	let eventTotalAmount = $state(0);
 
 	// Registration form state
 	let formResponseId = $state('');
@@ -160,9 +160,8 @@
 		if (isFree) {
 			processFreeRegistration();
 		} else {
-			// Go to payment method selection
+			// Go to payment method selection — surcharge will be calculated by SF
 			eventBaseAmount = totalAmount;
-			eventSurcharge = Math.round(totalAmount * 0.04 * 100) / 100;
 			paymentMethod = 'card';
 			step = 'method';
 		}
@@ -212,9 +211,6 @@
 			unitPrice: getEffectivePrice(item.ticket).price
 		}));
 
-		const finalAmount = paymentMethod === 'card' ? eventBaseAmount + eventSurcharge : eventBaseAmount;
-		eventTotalAmount = finalAmount;
-
 		processing = true;
 		registrationError = '';
 
@@ -230,9 +226,6 @@
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
 					eventId: event.sf_event_id,
-					ticketTypeId: selectedRegistration || items[0]?.ticketTypeId,
-					ticketName: cartItems[0]?.ticket.name,
-					totalAmount: eventBaseAmount,
 					items,
 					paymentMethod
 				})
@@ -248,7 +241,10 @@
 			const data = await res.json();
 			clientSecret = data.clientSecret;
 			currentPaymentIntentId = data.paymentIntentId;
-			eventTotalAmount = data.amount;
+			currentOrderId = data.orderId;
+			eventBaseAmount = data.baseAmount;
+			eventSurcharge = data.surcharge;
+			eventTotalAmount = data.totalAmount;
 
 			elements = stripe.elements({
 				clientSecret,
@@ -303,10 +299,9 @@
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
 					eventId: event.sf_event_id,
-					ticketTypeId: selectedRegistration,
+					orderId: currentOrderId,
 					paymentIntentId: paymentIntent.id,
 					items,
-					totalAmount: eventTotalAmount,
 					paymentMethod
 				})
 			});
@@ -805,13 +800,8 @@
 										<span>Subtotal</span>
 										<span>${eventBaseAmount.toFixed(2)}</span>
 									</div>
-									<div class="payment-method-row">
-										<span>Processing Fee (4%)</span>
-										<span>${eventSurcharge.toFixed(2)}</span>
-									</div>
-									<div class="payment-method-row payment-method-row--total">
-										<span>Total</span>
-										<span>${(eventBaseAmount + eventSurcharge).toFixed(2)}</span>
+									<div class="payment-method-row" style="color:var(--gray-500); font-style:italic;">
+										<span>4% processing fee applies</span>
 									</div>
 								</div>
 							</button>
@@ -833,14 +823,6 @@
 										<span>Subtotal</span>
 										<span>${eventBaseAmount.toFixed(2)}</span>
 									</div>
-									<div class="payment-method-row">
-										<span>Processing Fee</span>
-										<span>$0.00</span>
-									</div>
-									<div class="payment-method-row payment-method-row--total">
-										<span>Total</span>
-										<span>${eventBaseAmount.toFixed(2)}</span>
-									</div>
 								</div>
 								<div class="no-fee-badge">No processing fee</div>
 							</button>
@@ -850,7 +832,7 @@
 							<ProgressButton
 								type="button"
 								loading={processing}
-								label={`Continue — $${(paymentMethod === 'card' ? eventBaseAmount + eventSurcharge : eventBaseAmount).toFixed(2)}`}
+								label={`Continue — $${eventBaseAmount.toFixed(2)}`}
 								loadingLabel="Creating Payment..."
 								onclick={proceedToPayment}
 							/>

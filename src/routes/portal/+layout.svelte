@@ -445,9 +445,20 @@
 
 	/* ===== Mobile ===== */
 	@media (max-width: 1023px) {
-		.portal-mobile-header { display: block; }
+		.portal-mobile-header { display: block; position: sticky; top: 0; z-index: 30; }
 		.bottom-tab-bar { display: flex; }
-		.portal-main { padding: 20px 16px 100px; }
+		.portal-main { padding: 16px 12px 100px; }
 		.link-card { margin: 40px 16px; padding: 32px 24px; }
+
+		/* Compact sidebar on mobile */
+		.sidebar-profile { padding: 16px 16px 14px; }
+		.sidebar-profile .avatar { width: 48px; height: 48px; }
+		.sidebar-name { font-size: 0.88rem; }
+		.sidebar-section-label { padding: 6px 16px 2px; font-size: 0.6rem; }
+		.sidebar-link { padding: 9px 16px; font-size: 0.82rem; gap: 8px; }
+		.sidebar-icon { width: 16px; height: 16px; }
+		.sidebar-divider { margin: 6px 12px; }
+		.sidebar-footer { padding: 8px 12px; }
+		.sidebar-logout { padding: 8px 10px; font-size: 0.82rem; }
 	}
 </style>

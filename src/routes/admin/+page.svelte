@@ -172,6 +172,22 @@
 	{/each}
 </div>
 
+<!-- Quick Links -->
+<div style="display:flex; gap:12px; margin-bottom:24px; flex-wrap:wrap;">
+	<a href="/admin/chapter-reports" style="display:inline-flex; align-items:center; gap:8px; padding:10px 18px; background:var(--white); border:1px solid var(--gray-100); border-radius:10px; text-decoration:none; color:var(--black); font-size:0.88rem; font-weight:600; transition:all 0.2s;" onmouseenter="this.style.borderColor='var(--crimson)'" onmouseleave="this.style.borderColor='var(--gray-100)'">
+		<span style="color:var(--crimson);">&#9776;</span> Chapter Reports
+	</a>
+	<a href="/admin/chapters" style="display:inline-flex; align-items:center; gap:8px; padding:10px 18px; background:var(--white); border:1px solid var(--gray-100); border-radius:10px; text-decoration:none; color:var(--black); font-size:0.88rem; font-weight:600; transition:all 0.2s;" onmouseenter="this.style.borderColor='var(--crimson)'" onmouseleave="this.style.borderColor='var(--gray-100)'">
+		<span style="color:var(--crimson);">&#9881;</span> Manage Chapters
+	</a>
+	<a href="/admin/members" style="display:inline-flex; align-items:center; gap:8px; padding:10px 18px; background:var(--white); border:1px solid var(--gray-100); border-radius:10px; text-decoration:none; color:var(--black); font-size:0.88rem; font-weight:600; transition:all 0.2s;" onmouseenter="this.style.borderColor='var(--crimson)'" onmouseleave="this.style.borderColor='var(--gray-100)'">
+		<span style="color:var(--crimson);">&#128101;</span> All Members
+	</a>
+	<a href="/admin/reports" style="display:inline-flex; align-items:center; gap:8px; padding:10px 18px; background:var(--white); border:1px solid var(--gray-100); border-radius:10px; text-decoration:none; color:var(--black); font-size:0.88rem; font-weight:600; transition:all 0.2s;" onmouseenter="this.style.borderColor='var(--crimson)'" onmouseleave="this.style.borderColor='var(--gray-100)'">
+		<span style="color:var(--crimson);">&#128200;</span> Financial Reports
+	</a>
+</div>
+
 <!-- Recent Members -->
 <div style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; overflow:hidden;">
 	<div style="padding:16px 20px; border-bottom:1px solid var(--gray-100); display:flex; justify-content:space-between; align-items:center;">

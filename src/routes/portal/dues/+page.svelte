@@ -1,116 +1,55 @@
 <script lang="ts">
-	import { onMount, onDestroy } from 'svelte';
+	import { onMount } from 'svelte';
 	import { invalidateAll } from '$app/navigation';
-	import { page } from '$app/stores';
 	import type { PageData } from './$types';
-	import ProgressButton from '$components/ProgressButton.svelte';
 
 	let { data }: { data: PageData } = $props();
-	let member = $derived(data.member);
-	let membership = $derived(data.membership);
-	let balance = $derived(data.balance);
-	let history = $derived(data.history);
-	let duesItems = $derived(data.duesItems);
-	let sfLinked = $derived(data.sfLinked);
+	const member = $derived(data.member);
+	const fiscalYear = $derived(data.fiscalYear);
+	const memberDues = $derived(data.memberDues);
+	const paymentHistory = $derived(data.paymentHistory ?? []);
+	const duesAmount = $derived(data.duesAmount ?? 0);
+	const isExempt = $derived(data.isExempt ?? false);
+	const surchargeRate = $derived(data.surchargeRate ?? 0.04);
 
-	// Payment state
-	let selectedDuesType = $state('');
+	// Payment flow
+	let paymentStep = $state<'overview' | 'method' | 'pay' | 'done'>('overview');
+	let paymentMethod = $state<'card' | 'ach'>('card');
 	let processing = $state(false);
 	let paymentError = $state('');
-	let paymentSuccess = $state(false);
-	let paymentStep = $state<'select' | 'method' | 'pay' | 'done'>('select');
-	let paymentMethod = $state<'card' | 'ach'>('card');
-	let totalBalance = $derived(balance.reduce((sum: number, b: any) => sum + (b.balance ?? 0), 0));
-
-	// Stripe
 	let stripe: any = null;
 	let elements: any = null;
 	let clientSecret = $state('');
 	let currentOrderId = $state('');
-	let currentPaymentIntentId = $state('');
-	let orderTotal = $state(0);
-	let baseAmount = $state(0);
-	let surchargeAmount = $state(0);
-	let orderItems = $state<any[]>([]);
+	let currentPiId = $state('');
 	let stripeReady = $state(false);
 
-	let ready = $state(false);
+	const surcharge = $derived(paymentMethod === 'card' ? Math.round(duesAmount * surchargeRate * 100) / 100 : 0);
+	const totalAmount = $derived(duesAmount + surcharge);
+	const duesType = $derived(member?.membership_type === 'undergraduate' ? 'undergraduate' : 'alumni');
+	const isPaid = $derived(memberDues?.status === 'paid' || memberDues?.status === 'exempt');
+	const fyDisplay = $derived(fiscalYear ? `FY ${fiscalYear.year - 1}-${fiscalYear.year}` : '');
 
 	const STRIPE_PK = 'pk_test_51S8RNnRqCcfg1CMWL8HMCwExLbKLMQBMBeHzEaKGeQc7ewjlocccVlcVYnnA0YRkOyMqt7Bs0ImQagBMFfuGlKEg00TlkjTeUy';
 
+	let ready = $state(false);
 	onMount(async () => {
 		ready = true;
-		if (typeof window !== 'undefined') {
-			const script = document.createElement('script');
-			script.src = 'https://js.stripe.com/v3/';
-			script.onload = () => {
-				stripe = (window as any).Stripe(STRIPE_PK);
-			};
-			document.head.appendChild(script);
-
-			// Handle ?success=true return from Stripe redirect
-			const url = new URL(window.location.href);
-			if (url.searchParams.get('success') === 'true') {
-				paymentSuccess = true;
-				paymentStep = 'done';
-				// Clean URL
-				url.searchParams.delete('success');
-				window.history.replaceState({}, '', url.pathname);
-			}
+		// Check for success return
+		const url = new URL(window.location.href);
+		if (url.searchParams.get('success') === 'true') {
+			paymentStep = 'done';
+			url.searchParams.delete('success');
+			window.history.replaceState({}, '', url.pathname);
 		}
+		// Load Stripe
+		const script = document.createElement('script');
+		script.src = 'https://js.stripe.com/v3/';
+		script.onload = () => { stripe = (window as any).Stripe(STRIPE_PK); };
+		document.head.appendChild(script);
 	});
 
-	/** Cancel the current Stripe PaymentIntent (best-effort, fire-and-forget) */
-	async function cancelCurrentPaymentIntent() {
-		if (!currentPaymentIntentId) return;
-		try {
-			await fetch('/api/cancel-payment-intent', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ paymentIntentId: currentPaymentIntentId })
-			});
-		} catch {
-			// Best effort — don't block the UI
-		}
-	}
-
-	/** Reset payment UI state */
-	function resetPaymentState() {
-		clientSecret = '';
-		currentOrderId = '';
-		currentPaymentIntentId = '';
-		orderTotal = 0;
-		baseAmount = 0;
-		surchargeAmount = 0;
-		orderItems = [];
-		stripeReady = false;
-		elements = null;
-		paymentMethod = 'card';
-	}
-
-	/** Back button handler — cancel Stripe PI and reset */
-	async function handleBack() {
-		await cancelCurrentPaymentIntent();
-		resetPaymentState();
-		paymentStep = 'select';
-	}
-
-	async function handleBackToMethod() {
-		await cancelCurrentPaymentIntent();
-		clientSecret = '';
-		currentOrderId = '';
-		currentPaymentIntentId = '';
-		stripeReady = false;
-		elements = null;
-		paymentStep = 'method';
-	}
-
-	function goToMethodStep() {
-		if (!selectedDuesType) return;
-		// Calculate base amount for display
-		baseAmount = selectedDuesType === 'undergraduate' ? 100 : 200;
-		surchargeAmount = Math.round(baseAmount * 0.04 * 100) / 100;
-		paymentMethod = 'card';
+	async function startPayment() {
 		paymentStep = 'method';
 	}
 
@@ -118,64 +57,39 @@
 		processing = true;
 		paymentError = '';
 
-		const finalAmount = paymentMethod === 'card' ? baseAmount + surchargeAmount : baseAmount;
-
 		try {
 			const res = await fetch('/api/create-payment', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ duesType: selectedDuesType, paymentMethod })
+				body: JSON.stringify({ duesType, paymentMethod })
 			});
 
 			if (!res.ok) {
 				const err = await res.json().catch(() => ({ message: 'Failed to create order' }));
-				throw new Error(err.message || 'Failed to create order');
+				throw new Error(err.message);
 			}
 
 			const result = await res.json();
-
-			if (result.method === 'redirect' && result.redirectUrl) {
-				window.location.href = result.redirectUrl;
-				return;
-			}
-
 			clientSecret = result.clientSecret;
 			currentOrderId = result.orderId;
-			currentPaymentIntentId = result.paymentIntentId;
-			orderTotal = result.total;
-			// Update surcharge from SF-calculated values
-			if (result.baseTotal !== undefined) baseAmount = result.baseTotal;
-			if (result.surcharge !== undefined) surchargeAmount = result.surcharge;
-			orderItems = result.items || [];
+			currentPiId = result.paymentIntentId;
+			paymentStep = 'pay';
 
-			if (stripe && clientSecret) {
+			setTimeout(() => {
+				if (!stripe || !clientSecret) return;
 				elements = stripe.elements({
 					clientSecret,
 					appearance: {
 						theme: 'stripe',
-						variables: {
-							colorPrimary: '#8B0000',
-							colorText: '#2A2A2A',
-							fontFamily: 'Inter, system-ui, sans-serif',
-							borderRadius: '8px'
-						}
+						variables: { colorPrimary: '#8B0000', fontFamily: 'Inter, system-ui, sans-serif', borderRadius: '10px' }
 					}
 				});
-
-				paymentStep = 'pay';
-
-				setTimeout(() => {
-					const paymentElement = elements.create('payment', {
-						layout: 'tabs'
-					});
-					paymentElement.mount('#stripe-payment-element');
-					stripeReady = true;
-				}, 100);
-			} else {
-				throw new Error('Stripe not loaded or no client secret received');
-			}
+				const pe = elements.create('payment', { layout: 'tabs' });
+				pe.mount('#stripe-element');
+				stripeReady = true;
+			}, 100);
 		} catch (err: any) {
-			paymentError = err.message || 'Failed to create order';
+			paymentError = err.message;
 		}
 		processing = false;
 	}
@@ -183,50 +97,29 @@
 	async function confirmPayment(e: Event) {
 		e.preventDefault();
 		if (!stripe || !elements) return;
-
 		processing = true;
 		paymentError = '';
 
 		try {
-			const { error: stripeError } = await stripe.confirmPayment({
+			const { error: stripeErr } = await stripe.confirmPayment({
 				elements,
-				confirmParams: {
-					return_url: `${window.location.origin}/portal/dues?success=true`
-				},
+				confirmParams: { return_url: `${window.location.origin}/portal/dues?success=true` },
 				redirect: 'if_required'
 			});
 
-			if (stripeError) {
-				throw new Error(stripeError.message);
+			if (stripeErr) {
+				paymentError = stripeErr.message || 'Payment failed';
+				processing = false;
+				return;
 			}
 
-			const confirmRes = await fetch('/api/confirm-payment', {
+			// Payment succeeded without redirect
+			await fetch('/api/confirm-payment', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					orderId: currentOrderId,
-					paymentIntentId: currentPaymentIntentId,
-					amount: orderTotal,
-					duesType: selectedDuesType,
-					paymentMethod
-				})
+				body: JSON.stringify({ paymentIntentId: currentPiId, orderId: currentOrderId })
 			});
 
-			const confirmData = await confirmRes.json().catch(() => null);
-			console.log('Confirm payment result:', confirmData);
-
-			if (!confirmRes.ok || (confirmData && !confirmData.success)) {
-				const failedSteps = confirmData?.steps
-					? Object.entries(confirmData.steps)
-						.filter(([, v]: [string, any]) => !v.ok)
-						.map(([k, v]: [string, any]) => `${k}: ${v.error}`)
-						.join('; ')
-					: 'Unknown error';
-				console.error('SF confirmation issues:', failedSteps);
-				paymentError = `Payment processed but Salesforce update had issues: ${failedSteps}`;
-			}
-
-			paymentSuccess = true;
 			paymentStep = 'done';
 			await invalidateAll();
 		} catch (err: any) {
@@ -235,685 +128,257 @@
 		processing = false;
 	}
 
-	const statusColors: Record<string, { bg: string; color: string }> = {
-		Completed: { bg: '#ECFDF5', color: '#065F46' },
-		completed: { bg: '#ECFDF5', color: '#065F46' },
-		Pending: { bg: '#FEF3C7', color: '#92400E' },
-		pending: { bg: '#FEF3C7', color: '#92400E' },
-		Failed: { bg: '#FEF2F2', color: '#991B1B' },
-		failed: { bg: '#FEF2F2', color: '#991B1B' },
-		Refunded: { bg: '#EFF6FF', color: '#1E40AF' },
-		refunded: { bg: '#EFF6FF', color: '#1E40AF' }
-	};
+	function reset() {
+		paymentStep = 'overview';
+		paymentError = '';
+		clientSecret = '';
+		stripeReady = false;
+		elements = null;
+	}
 </script>
 
 <svelte:head>
-	<title>Pay Dues — Brother's Only — Kappa Alpha Psi®</title>
+	<title>Pay Grand Chapter Dues — Brothers Only — Kappa Alpha Psi</title>
 </svelte:head>
 
 <div class="dues-page" class:dues-page--ready={ready}>
-	<h1 class="dues-title fade-up" style="--delay:0;">Dues & Payments</h1>
+	<h1 class="page-title fade-up" style="--d:0;">Pay Grand Chapter Dues</h1>
 
-	<!-- SF Link Warning -->
-	{#if !sfLinked}
-		<div class="warning-banner fade-up" style="--delay:1;">
-			<strong>Account Not Linked</strong> — Your email was not found in the membership system. Please contact IHQ at (215) 228-7184 to verify your membership record.
-		</div>
-	{/if}
-
-	<!-- Status Cards -->
-	<div class="dues-status-grid fade-up" style="--delay:1;">
-		<div class="portal-card">
-			<div class="card-label">Membership Status</div>
-			{#if membership}
-				<div class="card-value" style="color:{membership.isActive ? '#065F46' : '#991B1B'};">
-					{membership.isActive ? 'Active' : membership.status}
-				</div>
-				<p class="card-sub">
-					{membership.type}
-					{#if membership.endDate}
-						 — Expires {new Date(membership.endDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-					{/if}
-				</p>
-			{:else}
-				<div class="card-value" style="color:var(--gray-400);">
-					{sfLinked ? 'Not Financial' : '—'}
-				</div>
-			{/if}
-		</div>
-		<div class="portal-card">
-			<div class="card-label">Balance Due</div>
-			<div class="card-value" style="color:{totalBalance > 0 ? '#991B1B' : '#065F46'};">
-				${totalBalance.toFixed(2)}
+	{#if paymentStep === 'done'}
+		<!-- SUCCESS -->
+		<div class="card success-card fade-up" style="--d:1;">
+			<div class="success-icon">
+				<svg width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="#065f46" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
 			</div>
-			{#if balance.length > 0}
-				<p class="card-sub">
-					{balance.length} open order{balance.length !== 1 ? 's' : ''}
-				</p>
-			{:else}
-				<p class="card-sub">No outstanding balance</p>
-			{/if}
+			<h2 class="success-title">Payment Successful</h2>
+			<p class="success-msg">Your Grand Chapter dues have been paid for {fyDisplay}. Your membership status has been updated to In Good Standing.</p>
+			<button class="btn btn--primary" onclick={reset}>Back to Dues</button>
 		</div>
-	</div>
 
-	<!-- Outstanding Orders -->
-	{#if balance.length > 0}
-		<div class="portal-card section-card fade-up" style="--delay:2;">
-			<div class="section-header">
-				<h2>Outstanding Orders</h2>
+	{:else if isExempt}
+		<!-- EXEMPT -->
+		<div class="card fade-up" style="--d:1; text-align:center; padding:40px;">
+			<div style="font-size:2rem; margin-bottom:12px;">&#x1F451;</div>
+			<h2 style="font-family:var(--font-serif); font-size:1.2rem; color:var(--gold, #D4AF37); margin-bottom:8px;">Life Member</h2>
+			<p style="color:var(--gray-500); font-size:0.9rem;">You are exempt from annual Grand Chapter dues. No payment required.</p>
+		</div>
+
+	{:else if paymentStep === 'overview'}
+		<!-- OVERVIEW -->
+		<div class="dues-summary fade-up" style="--d:1;">
+			<div class="summary-row">
+				<span class="summary-label">Fiscal Year</span>
+				<span class="summary-value">{fyDisplay}</span>
 			</div>
-			<div style="padding:16px 24px;">
-				{#each balance as order}
-					<div class="order-row">
-						<div style="display:flex; justify-content:space-between; align-items:center;">
+			<div class="summary-row">
+				<span class="summary-label">Dues Type</span>
+				<span class="summary-value">{duesType === 'undergraduate' ? 'Undergraduate' : 'Alumni'} Annual Dues</span>
+			</div>
+			<div class="summary-row">
+				<span class="summary-label">Amount</span>
+				<span class="summary-value summary-value--lg">${duesAmount.toFixed(2)}</span>
+			</div>
+			<div class="summary-row">
+				<span class="summary-label">Status</span>
+				{#if isPaid}
+					<span class="status-tag status-tag--paid">Paid</span>
+				{:else}
+					<span class="status-tag status-tag--due">Due</span>
+				{/if}
+			</div>
+		</div>
+
+		{#if !isPaid}
+			<div class="fade-up" style="--d:2;">
+				<button class="btn btn--primary btn--full" onclick={startPayment}>
+					Pay ${duesAmount.toFixed(2)} Now
+				</button>
+			</div>
+		{/if}
+
+		<!-- Payment History -->
+		{#if paymentHistory.length > 0}
+			<div class="card fade-up" style="--d:3;">
+				<h2 class="section-title">Payment History</h2>
+				<div class="history-list">
+					{#each paymentHistory as p}
+						<div class="history-item">
 							<div>
-								<strong style="font-size:0.9rem;">{order.orderName}</strong>
-								<span style="font-size:0.78rem; color:var(--gray-400); margin-left:8px;">{order.status}</span>
+								<div class="history-desc">{p.description || 'Dues Payment'}</div>
+								<div class="history-date">{new Date(p.paid_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
 							</div>
-							<span style="font-family:var(--font-serif); font-size:1.1rem; font-weight:700; color:var(--crimson);">
-								${order.balance.toFixed(2)}
-							</span>
+							<div class="history-amount">${p.total.toFixed(2)}</div>
 						</div>
-						{#if order.lineItems.length > 0}
-							<div style="margin-top:8px;">
-								{#each order.lineItems as li}
-									<div style="font-size:0.82rem; color:var(--gray-600); padding:2px 0;">
-										{li.itemName} — ${li.totalPrice.toFixed(2)}
-									</div>
-								{/each}
-							</div>
-						{/if}
-					</div>
-				{/each}
+					{/each}
+				</div>
 			</div>
-		</div>
-	{/if}
+		{/if}
 
-	<!-- Make a Payment -->
-	{#if paymentStep === 'done' || paymentSuccess}
-		<div class="success-card fade-up" style="--delay:2;">
-			<div style="font-size:2.5rem; margin-bottom:12px;">&#10003;</div>
-			<h2 style="font-size:1.3rem; color:#065F46; margin-bottom:8px;">Payment Successful</h2>
-			<p style="color:#065F46; font-size:0.95rem;">Your payment has been processed. Your membership status will update shortly. Thank you!</p>
+	{:else if paymentStep === 'method'}
+		<!-- PAYMENT METHOD SELECTION -->
+		<div class="card fade-up" style="--d:1;">
+			<h2 class="section-title">Choose Payment Method</h2>
+
+			<div class="method-options">
+				<button class="method-btn" class:method-btn--active={paymentMethod === 'card'} onclick={() => paymentMethod = 'card'}>
+					<svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z"/></svg>
+					<span>Credit / Debit Card</span>
+					<span class="method-note">{surchargeRate * 100}% processing fee</span>
+				</button>
+				<button class="method-btn" class:method-btn--active={paymentMethod === 'ach'} onclick={() => paymentMethod = 'ach'}>
+					<svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z"/></svg>
+					<span>Bank Account (ACH)</span>
+					<span class="method-note">No processing fee</span>
+				</button>
+			</div>
+
+			<div class="order-summary">
+				<div class="summary-row">
+					<span>{duesType === 'undergraduate' ? 'Undergraduate' : 'Alumni'} Annual Dues</span>
+					<span>${duesAmount.toFixed(2)}</span>
+				</div>
+				{#if surcharge > 0}
+					<div class="summary-row summary-row--sub">
+						<span>Processing Fee ({surchargeRate * 100}%)</span>
+						<span>${surcharge.toFixed(2)}</span>
+					</div>
+				{/if}
+				<div class="summary-row summary-row--total">
+					<span>Total</span>
+					<span>${totalAmount.toFixed(2)}</span>
+				</div>
+			</div>
+
 			{#if paymentError}
-				<div class="warning-note">
-					<strong>Note:</strong> {paymentError}
-				</div>
+				<div class="error-msg">{paymentError}</div>
 			{/if}
-			<button class="btn btn--primary" style="margin-top:16px;" onclick={() => { paymentStep = 'select'; paymentSuccess = false; paymentError = ''; }}>Make Another Payment</button>
-		</div>
-	{:else if paymentStep === 'pay' && sfLinked}
-		<!-- Step 2: Payment form -->
-		<div class="portal-card section-card fade-up" style="--delay:2;">
-			<div class="section-header" style="display:flex; justify-content:space-between; align-items:center;">
-				<h2>Complete Payment</h2>
-				<button class="back-btn" onclick={handleBackToMethod}>← Back</button>
-			</div>
-			<div style="padding:24px;">
-				<!-- Order summary -->
-				<div class="order-summary">
-					<div class="card-label" style="margin-bottom:8px;">Order Summary</div>
-					<div style="display:flex; justify-content:space-between; font-size:0.95rem; padding:4px 0;">
-						<span style="font-weight:600;">{selectedDuesType === 'undergraduate' ? 'Undergraduate' : 'Alumni'} Annual Dues</span>
-						<span style="font-weight:700;">${baseAmount.toFixed(2)}</span>
-					</div>
-					{#if paymentMethod === 'card'}
-						<div style="display:flex; justify-content:space-between; font-size:0.88rem; padding:4px 0; color:var(--gray-600);">
-							<span>Processing Fee (4%)</span>
-							<span>${surchargeAmount.toFixed(2)}</span>
-						</div>
-					{:else}
-						<div style="display:flex; justify-content:space-between; font-size:0.88rem; padding:4px 0; color:#065F46;">
-							<span>Processing Fee</span>
-							<span>$0.00</span>
-						</div>
-					{/if}
-					<div style="display:flex; justify-content:space-between; font-size:1.05rem; padding:8px 0 0; border-top:1px solid var(--gray-100); margin-top:4px;">
-						<span style="font-weight:700;">Total</span>
-						<span style="font-weight:700; color:var(--crimson);">${orderTotal.toFixed(2)}</span>
-					</div>
-					<div style="font-size:0.75rem; color:var(--gray-400); margin-top:4px;">
-						Paying via {paymentMethod === 'card' ? 'Credit/Debit Card' : 'Bank Account (ACH)'}
-					</div>
-				</div>
 
-				{#if paymentError}
-					<div class="error-msg">{paymentError}</div>
-				{/if}
-
-				<form onsubmit={confirmPayment}>
-					<div id="stripe-payment-element" style="min-height:100px; margin-bottom:20px;"></div>
-
-					<ProgressButton
-						loading={processing}
-						disabled={!stripeReady}
-						label={`Pay $${orderTotal.toFixed(2)}`}
-						loadingLabel="Processing Payment..."
-					/>
-				</form>
-
-				<p style="text-align:center; margin-top:12px; font-size:0.75rem; color:var(--gray-400);">
-					Payments are processed securely through Stripe.
-				</p>
-			</div>
-		</div>
-	{:else if paymentStep === 'method' && sfLinked}
-		<!-- Step 2: Select payment method -->
-		<div class="portal-card section-card fade-up" style="--delay:2;">
-			<div class="section-header" style="display:flex; justify-content:space-between; align-items:center;">
-				<h2>Choose Payment Method</h2>
-				<button class="back-btn" onclick={handleBack}>← Back</button>
-			</div>
-			<div style="padding:24px;">
-				{#if paymentError}
-					<div class="error-msg">{paymentError}</div>
-				{/if}
-
-				<div class="payment-method-grid">
-					<!-- Card option -->
-					<button
-						class="payment-method-card"
-						class:payment-method-card--selected={paymentMethod === 'card'}
-						onclick={() => { paymentMethod = 'card'; }}
-					>
-						<div class="payment-method-icon">
-							<svg width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-								<path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
-							</svg>
-						</div>
-						<div class="payment-method-title">Credit/Debit Card</div>
-						<div class="payment-method-sub">Includes Apple Pay & Google Pay</div>
-						<div class="payment-method-breakdown">
-							<div class="payment-method-row">
-								<span>Base</span>
-								<span>${baseAmount.toFixed(2)}</span>
-							</div>
-							<div class="payment-method-row">
-								<span>Processing Fee (4%)</span>
-								<span>${surchargeAmount.toFixed(2)}</span>
-							</div>
-							<div class="payment-method-row payment-method-row--total">
-								<span>Total</span>
-								<span>${(baseAmount + surchargeAmount).toFixed(2)}</span>
-							</div>
-						</div>
-					</button>
-
-					<!-- ACH option -->
-					<button
-						class="payment-method-card"
-						class:payment-method-card--selected={paymentMethod === 'ach'}
-						onclick={() => { paymentMethod = 'ach'; }}
-					>
-						<div class="payment-method-icon">
-							<svg width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-								<path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z" />
-							</svg>
-						</div>
-						<div class="payment-method-title">Bank Account (ACH)</div>
-						<div class="payment-method-sub">Direct bank transfer</div>
-						<div class="payment-method-breakdown">
-							<div class="payment-method-row">
-								<span>Base</span>
-								<span>${baseAmount.toFixed(2)}</span>
-							</div>
-							<div class="payment-method-row">
-								<span>Processing Fee</span>
-								<span>$0.00</span>
-							</div>
-							<div class="payment-method-row payment-method-row--total">
-								<span>Total</span>
-								<span>${baseAmount.toFixed(2)}</span>
-							</div>
-						</div>
-						<div class="no-fee-badge">No processing fee</div>
-					</button>
-				</div>
-
-				<div style="margin-top:20px;">
-					<ProgressButton
-						type="button"
-						loading={processing}
-						label={`Continue — $${(paymentMethod === 'card' ? baseAmount + surchargeAmount : baseAmount).toFixed(2)}`}
-						loadingLabel="Creating Order..."
-						onclick={createOrder}
-					/>
-				</div>
-			</div>
-		</div>
-	{:else if sfLinked}
-		<!-- Step 1: Select dues type -->
-		<div class="portal-card section-card fade-up" style="--delay:2;">
-			<div class="section-header">
-				<h2>Pay Dues</h2>
-			</div>
-			<div style="padding:24px;">
-				{#if paymentError}
-					<div class="error-msg">{paymentError}</div>
-				{/if}
-
-				<div style="display:flex; flex-direction:column; gap:12px; margin-bottom:24px;">
-					<label class="dues-option" class:dues-option--selected={selectedDuesType === 'alumni'}>
-						<input type="radio" name="duesType" value="alumni" bind:group={selectedDuesType} style="accent-color:var(--crimson);" />
-						<div style="flex:1;">
-							<div style="font-weight:700; font-size:0.95rem;">Alumni Annual Dues</div>
-							<div style="font-size:0.78rem; color:var(--gray-600); margin-top:2px;">Annual Assessment, Housing Fund, Scholarship, Publication, NAACP/UNCF, Endowment</div>
-						</div>
-						<div style="font-family:var(--font-serif); font-size:1.3rem; font-weight:700; color:var(--crimson);">$200.00</div>
-					</label>
-
-					<!-- Undergraduate dues hidden for now
-					<label class="dues-option" class:dues-option--selected={selectedDuesType === 'undergraduate'}>
-						<input type="radio" name="duesType" value="undergraduate" bind:group={selectedDuesType} style="accent-color:var(--crimson);" />
-						<div style="flex:1;">
-							<div style="font-weight:700; font-size:0.95rem;">Undergraduate Annual Dues</div>
-							<div style="font-size:0.78rem; color:var(--gray-600); margin-top:2px;">Annual Assessment, Housing Fund, Scholarship, Publication, NAACP/UNCF, Endowment</div>
-						</div>
-						<div style="font-family:var(--font-serif); font-size:1.3rem; font-weight:700; color:var(--crimson);">$200.00</div>
-					</label>
-					-->
-				</div>
-
-				<button
-					disabled={!selectedDuesType || processing}
-					class="btn btn--primary"
-					style="width:100%; justify-content:center; font-size:1rem; padding:14px;"
-					onclick={goToMethodStep}
-				>
-					Continue to Payment
+			<div class="btn-row">
+				<button class="btn btn--outline" onclick={reset}>Back</button>
+				<button class="btn btn--primary" onclick={createOrder} disabled={processing}>
+					{processing ? 'Creating order...' : `Continue — $${totalAmount.toFixed(2)}`}
 				</button>
 			</div>
 		</div>
+
+	{:else if paymentStep === 'pay'}
+		<!-- STRIPE PAYMENT -->
+		<div class="card fade-up" style="--d:1;">
+			<h2 class="section-title">Complete Payment</h2>
+
+			<div class="order-summary" style="margin-bottom:20px;">
+				<div class="summary-row summary-row--total">
+					<span>Total Due</span>
+					<span>${totalAmount.toFixed(2)}</span>
+				</div>
+			</div>
+
+			<form onsubmit={confirmPayment}>
+				<div id="stripe-element" style="min-height:44px;"></div>
+
+				{#if paymentError}
+					<div class="error-msg" style="margin-top:16px;">{paymentError}</div>
+				{/if}
+
+				<div class="btn-row" style="margin-top:24px;">
+					<button type="button" class="btn btn--outline" onclick={reset}>Cancel</button>
+					<button type="submit" class="btn btn--primary" disabled={!stripeReady || processing}>
+						{processing ? 'Processing...' : `Pay $${totalAmount.toFixed(2)}`}
+					</button>
+				</div>
+			</form>
+		</div>
 	{/if}
 
-	<!-- Payment History -->
-	<div class="portal-card section-card fade-up" style="--delay:3;">
-		<div class="section-header">
-			<h2>Payment History</h2>
-		</div>
-		{#if history.length === 0}
-			<div class="empty-state">
-				<svg style="width:40px; height:40px; color:var(--gray-200); margin-bottom:8px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-					<path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-				</svg>
-				<p>No payment history</p>
-			</div>
-		{:else}
-			<!-- Desktop table -->
-			<div class="history-table-wrap">
-				<table class="history-table">
-					<thead>
-						<tr>
-							<th>Date</th>
-							<th>Receipt</th>
-							<th>Order</th>
-							<th style="text-align:right;">Amount</th>
-							<th style="text-align:center;">Status</th>
-						</tr>
-					</thead>
-					<tbody>
-						{#each history as receipt}
-							{@const sc = statusColors[receipt.status] ?? { bg: 'var(--gray-50)', color: 'var(--gray-600)' }}
-							<tr>
-								<td>{receipt.paymentDate ? new Date(receipt.paymentDate).toLocaleDateString() : '—'}</td>
-								<td class="text-muted">{receipt.receiptName}</td>
-								<td class="text-muted">{receipt.orderName}</td>
-								<td style="text-align:right; font-weight:600;">${receipt.amount.toFixed(2)}</td>
-								<td style="text-align:center;">
-									<span class="status-badge" style="background:{sc.bg}; color:{sc.color};">
-										{receipt.status}
-									</span>
-								</td>
-							</tr>
-						{/each}
-					</tbody>
-				</table>
-			</div>
-
-			<!-- Mobile card layout -->
-			<div class="history-cards">
-				{#each history as receipt}
-					{@const sc = statusColors[receipt.status] ?? { bg: 'var(--gray-50)', color: 'var(--gray-600)' }}
-					<div class="history-card-item">
-						<div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px;">
-							<span style="font-weight:600; font-size:0.95rem;">${receipt.amount.toFixed(2)}</span>
-							<span class="status-badge" style="background:{sc.bg}; color:{sc.color};">{receipt.status}</span>
-						</div>
-						<div style="font-size:0.82rem; color:var(--gray-600);">
-							{receipt.paymentDate ? new Date(receipt.paymentDate).toLocaleDateString() : '—'}
-						</div>
-						<div style="font-size:0.78rem; color:var(--gray-400); margin-top:2px;">
-							{receipt.receiptName} &middot; {receipt.orderName}
-						</div>
-					</div>
-				{/each}
-			</div>
-		{/if}
+	<!-- Key Points -->
+	<div class="card info-card fade-up" style="--d:4;">
+		<h3 class="info-title">Key Points on Dues</h3>
+		<ul class="info-list">
+			<li>Annual Grand Chapter dues are <strong>${fiscalYear?.alumni_dues ?? 200}</strong> for alumni and <strong>${fiscalYear?.undergrad_dues ?? 100}</strong> for undergraduate members.</li>
+			<li>Grand Chapter dues are payable as of October 1st.</li>
+			<li>Dues are not prorated and are applied to the current fiscal year.</li>
+			<li>Payments processed after July 15th are applied to the following fiscal year.</li>
+			<li>Members paying by bank account (ACH) avoid processing fees.</li>
+		</ul>
 	</div>
 </div>
 
 <style>
-	/* ===== Page container ===== */
-	.dues-page {
-		max-width: 800px;
-	}
-	.dues-title {
-		font-family: var(--font-serif);
-		font-size: 1.6rem;
-		color: var(--crimson);
-		margin-bottom: 24px;
-	}
+	.dues-page .fade-up { opacity: 0; transform: translateY(12px); transition: opacity 0.4s ease, transform 0.4s ease; transition-delay: calc(var(--d, 0) * 60ms); }
+	.dues-page--ready .fade-up { opacity: 1; transform: translateY(0); }
 
-	/* ===== Entrance animations ===== */
-	.dues-page .fade-up {
-		opacity: 0;
-		transform: translateY(16px);
-		transition: opacity 0.5s ease, transform 0.5s ease;
-		transition-delay: calc(var(--delay, 0) * 80ms);
-	}
-	.dues-page--ready .fade-up {
-		opacity: 1;
-		transform: translateY(0);
-	}
+	.dues-page { max-width: 600px; }
+	.page-title { font-family: var(--font-serif); font-size: 1.5rem; color: var(--crimson, #c8102e); margin-bottom: 24px; }
 
-	/* ===== Portal cards ===== */
-	.portal-card {
-		background: var(--white);
-		border: 1px solid var(--gray-100);
-		border-radius: 12px;
-		padding: 20px;
-		transition: box-shadow 0.25s ease;
-	}
-	.portal-card:hover {
-		box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
-	}
-	.section-card {
-		padding: 0;
-		overflow: hidden;
-		margin-bottom: 32px;
-	}
+	.card { background: white; border: 1px solid var(--gray-100, #f3f4f6); border-radius: 12px; padding: 24px; margin-bottom: 20px; }
+	.section-title { font-family: var(--font-serif); font-size: 1.05rem; font-weight: 700; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--gray-100); }
 
-	/* ===== Common elements ===== */
-	.card-label {
-		font-size: 0.68rem;
-		font-weight: 700;
-		text-transform: uppercase;
-		letter-spacing: 0.8px;
-		color: var(--gray-400);
-		margin-bottom: 6px;
-	}
-	.card-value {
-		font-family: var(--font-serif);
-		font-size: 1.4rem;
-		font-weight: 700;
-	}
-	.card-sub {
-		font-size: 0.82rem;
-		color: var(--gray-600);
-		margin-top: 4px;
-	}
-	.section-header {
-		padding: 20px 24px;
-		border-bottom: 1px solid var(--gray-100);
-		background: linear-gradient(180deg, var(--white), var(--gray-50));
-	}
-	.section-header h2 {
-		font-size: 1.15rem;
-	}
+	/* Dues summary */
+	.dues-summary { background: white; border: 1px solid var(--gray-100); border-radius: 12px; padding: 24px; margin-bottom: 20px; }
+	.summary-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--gray-50, #f9fafb); }
+	.summary-row:last-child { border-bottom: none; }
+	.summary-label { font-size: 0.88rem; color: var(--gray-500); }
+	.summary-value { font-size: 0.88rem; font-weight: 600; color: var(--black); }
+	.summary-value--lg { font-family: var(--font-serif); font-size: 1.4rem; }
+	.summary-row--sub { font-size: 0.82rem; color: var(--gray-400); }
+	.summary-row--total { border-top: 2px solid var(--gray-200); padding-top: 12px; font-weight: 700; font-size: 1rem; }
 
-	/* ===== Status grid ===== */
-	.dues-status-grid {
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 16px;
-		margin-bottom: 32px;
+	.status-tag { padding: 4px 12px; border-radius: 20px; font-size: 0.78rem; font-weight: 700; }
+	.status-tag--paid { background: #ecfdf5; color: #065f46; }
+	.status-tag--due { background: #fef2f2; color: #991b1b; }
+
+	/* Method selection */
+	.method-options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+	.method-btn {
+		display: flex; align-items: center; gap: 12px; padding: 16px;
+		border: 2px solid var(--gray-200, #e5e7eb); border-radius: 12px;
+		background: white; cursor: pointer; font-family: inherit;
+		font-size: 0.9rem; font-weight: 600; color: var(--black);
+		transition: all 0.2s; text-align: left;
 	}
+	.method-btn:hover { border-color: var(--crimson, #c8102e); }
+	.method-btn--active { border-color: var(--crimson, #c8102e); background: rgba(200,16,46,0.03); }
+	.method-note { font-size: 0.75rem; font-weight: 400; color: var(--gray-400); margin-left: auto; }
+
+	/* Order summary */
+	.order-summary { background: var(--gray-50, #f9fafb); border-radius: 10px; padding: 16px; }
+	.order-summary .summary-row { padding: 6px 0; border-bottom: none; font-size: 0.88rem; }
+
+	/* Buttons */
+	.btn { padding: 12px 24px; border-radius: 10px; font-size: 0.9rem; font-weight: 600; cursor: pointer; font-family: inherit; transition: all 0.2s; border: none; }
+	.btn--primary { background: var(--crimson, #c8102e); color: white; }
+	.btn--primary:hover { background: var(--crimson-dark, #a00d25); }
+	.btn--primary:disabled { opacity: 0.5; cursor: not-allowed; }
+	.btn--outline { background: white; border: 1.5px solid var(--gray-200); color: var(--black); }
+	.btn--outline:hover { border-color: var(--gray-400); }
+	.btn--full { width: 100%; }
+	.btn-row { display: flex; gap: 12px; justify-content: flex-end; }
+
+	.error-msg { background: #fef2f2; color: #991b1b; padding: 12px 16px; border-radius: 8px; font-size: 0.88rem; margin-top: 12px; }
+
+	/* Success */
+	.success-card { text-align: center; padding: 48px 24px; }
+	.success-icon { margin-bottom: 16px; }
+	.success-title { font-family: var(--font-serif); font-size: 1.3rem; color: #065f46; margin-bottom: 8px; }
+	.success-msg { font-size: 0.9rem; color: var(--gray-500); margin-bottom: 24px; line-height: 1.5; }
+
+	/* Payment history */
+	.history-list { display: flex; flex-direction: column; gap: 8px; }
+	.history-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; background: var(--gray-50); border-radius: 8px; }
+	.history-desc { font-size: 0.88rem; font-weight: 500; color: var(--black); }
+	.history-date { font-size: 0.75rem; color: var(--gray-400); margin-top: 2px; }
+	.history-amount { font-family: var(--font-serif); font-weight: 700; font-size: 0.95rem; color: var(--black); }
+
+	/* Info card */
+	.info-card { background: var(--cream, #faf8f5); border-color: var(--gray-100); }
+	.info-title { font-family: var(--font-serif); font-size: 0.95rem; font-weight: 700; margin-bottom: 12px; color: var(--black); }
+	.info-list { list-style: none; padding: 0; margin: 0; }
+	.info-list li { font-size: 0.82rem; color: var(--gray-600); padding: 6px 0; padding-left: 16px; position: relative; line-height: 1.5; }
+	.info-list li::before { content: ''; position: absolute; left: 0; top: 12px; width: 6px; height: 6px; background: var(--crimson, #c8102e); border-radius: 50%; }
+
 	@media (max-width: 480px) {
-		.dues-status-grid {
-			grid-template-columns: 1fr;
-		}
-	}
-
-	/* ===== Warning / error ===== */
-	.warning-banner {
-		background: #FEF3C7;
-		color: #92400E;
-		padding: 16px 20px;
-		border-radius: 12px;
-		margin-bottom: 24px;
-		font-size: 0.9rem;
-		border-left: 4px solid var(--gold);
-	}
-	.error-msg {
-		background: #FEF2F2;
-		color: #991B1B;
-		padding: 12px 16px;
-		border-radius: 8px;
-		font-size: 0.9rem;
-		margin-bottom: 16px;
-	}
-	.warning-note {
-		background: #FEF3C7;
-		color: #92400E;
-		padding: 12px 16px;
-		border-radius: 8px;
-		font-size: 0.78rem;
-		margin-top: 16px;
-		text-align: left;
-		word-break: break-word;
-	}
-
-	/* ===== Success card ===== */
-	.success-card {
-		background: #ECFDF5;
-		border: 1px solid #A7F3D0;
-		border-radius: 12px;
-		padding: 32px;
-		text-align: center;
-		margin-bottom: 32px;
-	}
-
-	/* ===== Order rows ===== */
-	.order-row {
-		padding: 12px 0;
-		border-bottom: 1px solid var(--gray-50);
-		transition: background 0.15s;
-	}
-	.order-row:hover {
-		background: var(--gray-50);
-		margin: 0 -24px;
-		padding-left: 24px;
-		padding-right: 24px;
-	}
-
-	/* ===== Dues options ===== */
-	.dues-option {
-		display: flex;
-		align-items: center;
-		gap: 14px;
-		padding: 18px 20px;
-		border: 1.5px solid var(--gray-200);
-		border-radius: 10px;
-		cursor: pointer;
-		transition: all 0.25s;
-		background: var(--white);
-	}
-	.dues-option:hover {
-		border-color: rgba(139, 0, 0, 0.3);
-		box-shadow: 0 2px 8px rgba(139, 0, 0, 0.06);
-	}
-	.dues-option--selected {
-		border-color: var(--crimson);
-		background: rgba(139, 0, 0, 0.03);
-	}
-
-	/* ===== Order summary ===== */
-	.order-summary {
-		margin-bottom: 20px;
-		padding: 16px;
-		background: var(--cream);
-		border-radius: 8px;
-		border-left: 3px solid var(--gold);
-	}
-
-	/* ===== Back button ===== */
-	.back-btn {
-		font-size: 0.82rem;
-		color: var(--crimson);
-		background: none;
-		border: none;
-		cursor: pointer;
-		font-weight: 600;
-		transition: opacity 0.2s;
-	}
-	.back-btn:hover {
-		opacity: 0.7;
-	}
-
-	/* ===== Empty state ===== */
-	.empty-state {
-		padding: 48px 32px;
-		text-align: center;
-		color: var(--gray-400);
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-	}
-
-	/* ===== Payment history table ===== */
-	.history-table-wrap {
-		overflow-x: auto;
-	}
-	.history-table {
-		width: 100%;
-		border-collapse: collapse;
-		font-size: 0.875rem;
-	}
-	.history-table th {
-		text-align: left;
-		padding: 10px 16px;
-		font-size: 0.68rem;
-		font-weight: 700;
-		text-transform: uppercase;
-		letter-spacing: 0.5px;
-		color: var(--white);
-		background: var(--crimson-dark);
-	}
-	.history-table td {
-		padding: 12px 16px;
-		border-bottom: 1px solid var(--gray-50);
-	}
-	.history-table tbody tr {
-		transition: background 0.15s;
-	}
-	.history-table tbody tr:hover {
-		background: var(--gray-50);
-	}
-	.text-muted {
-		color: var(--gray-600);
-	}
-	.status-badge {
-		display: inline-block;
-		padding: 3px 10px;
-		border-radius: 10px;
-		font-size: 0.72rem;
-		font-weight: 700;
-		text-transform: capitalize;
-	}
-
-	/* ===== Mobile history cards ===== */
-	.history-cards {
-		display: none;
-	}
-	.history-card-item {
-		padding: 14px 20px;
-		border-bottom: 1px solid var(--gray-50);
-	}
-
-	/* ===== Payment method selection ===== */
-	.payment-method-grid {
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 16px;
-	}
-	.payment-method-card {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		text-align: center;
-		gap: 8px;
-		padding: 20px 16px;
-		border: 2px solid var(--gray-200);
-		border-radius: 12px;
-		cursor: pointer;
-		transition: all 0.25s;
-		background: var(--white);
-		position: relative;
-	}
-	.payment-method-card:hover {
-		border-color: rgba(139, 0, 0, 0.3);
-		box-shadow: 0 2px 8px rgba(139, 0, 0, 0.06);
-	}
-	.payment-method-card--selected {
-		border-color: var(--crimson);
-		background: rgba(139, 0, 0, 0.03);
-		box-shadow: 0 0 0 1px var(--crimson);
-	}
-	.payment-method-icon {
-		color: var(--crimson);
-		margin-bottom: 4px;
-	}
-	.payment-method-title {
-		font-weight: 700;
-		font-size: 1rem;
-		color: var(--black);
-	}
-	.payment-method-sub {
-		font-size: 0.78rem;
-		color: var(--gray-500);
-	}
-	.payment-method-breakdown {
-		width: 100%;
-		margin-top: 8px;
-		padding-top: 8px;
-		border-top: 1px solid var(--gray-100);
-	}
-	.payment-method-row {
-		display: flex;
-		justify-content: space-between;
-		font-size: 0.82rem;
-		color: var(--gray-600);
-		padding: 2px 0;
-	}
-	.payment-method-row--total {
-		font-weight: 700;
-		color: var(--crimson);
-		font-size: 0.95rem;
-		padding-top: 6px;
-		margin-top: 4px;
-		border-top: 1px solid var(--gray-100);
-	}
-	.no-fee-badge {
-		margin-top: 6px;
-		font-size: 0.72rem;
-		font-weight: 700;
-		color: #065F46;
-		background: #ECFDF5;
-		padding: 3px 10px;
-		border-radius: 20px;
-	}
-	@media (max-width: 480px) {
-		.payment-method-grid {
-			grid-template-columns: 1fr;
-		}
-	}
-
-	@media (max-width: 640px) {
-		.history-table-wrap {
-			display: none;
-		}
-		.history-cards {
-			display: block;
-		}
+		.btn-row { flex-direction: column-reverse; }
+		.btn-row .btn { width: 100%; }
+		.method-note { display: none; }
 	}
 </style>

@@ -1,66 +1,65 @@
 import type { PageServerLoad } from './$types';
-import { findContactByEmail } from '$lib/salesforce';
-import { getMembership, getDuesBalance, getPaymentHistory, getDuesItems } from '$lib/fonteva';
 
 export const load: PageServerLoad = async ({ locals, parent }) => {
-	const { session, user } = await parent();
-	if (!session) {
-		return {
-			sfLinked: false,
-			membership: null,
-			balance: [],
-			history: [],
-			duesItems: [],
-			contactId: null,
-			accountId: null
-		};
+	const { session, member } = await parent();
+	if (!session || !member) return { fiscalYear: null, memberDues: null, installments: [], paymentHistory: [] };
+
+	// Get current fiscal year + member dues status + payment history in parallel
+	const [fyRes, duesRes, historyRes] = await Promise.all([
+		locals.supabase
+			.from('fiscal_years')
+			.select('*')
+			.eq('is_current', true)
+			.maybeSingle(),
+		locals.supabase
+			.from('member_dues')
+			.select('*, fiscal_years(*)')
+			.eq('member_id', member.id)
+			.order('created_at', { ascending: false })
+			.limit(5),
+		locals.supabase
+			.from('payment_history')
+			.select('*')
+			.eq('member_id', member.id)
+			.order('paid_at', { ascending: false })
+			.limit(20)
+	]);
+
+	const fiscalYear = fyRes.data;
+	const allDues = duesRes.data ?? [];
+
+	// Current FY dues
+	const currentDues = fiscalYear
+		? allDues.find((d: any) => d.fiscal_year_id === fiscalYear.id)
+		: null;
+
+	// Get installments if on a plan
+	let installments: any[] = [];
+	if (currentDues?.payment_plan !== 'full') {
+		const { data } = await locals.supabase
+			.from('dues_installments')
+			.select('*')
+			.eq('member_dues_id', currentDues.id)
+			.order('installment_number');
+		installments = data ?? [];
 	}
 
-	let sfLinked = false;
-	let membership = null;
-	let balance: any[] = [];
-	let history: any[] = [];
-	let duesItems: any[] = [];
-	let contactId: string | null = null;
-	let accountId: string | null = null;
-
-	try {
-		if (user?.email) {
-			const contact = await findContactByEmail(user.email);
-			if (contact) {
-				sfLinked = true;
-				contactId = contact.Id;
-				accountId = contact.AccountId;
-
-				const [m, b, h, items] = await Promise.allSettled([
-					getMembership(contact.Id),
-					getDuesBalance(contact.Id),
-					getPaymentHistory(contact.Id),
-					getDuesItems()
-				]);
-
-				membership = m.status === 'fulfilled' ? m.value : null;
-				balance = b.status === 'fulfilled' ? b.value : [];
-				history = h.status === 'fulfilled' ? h.value : [];
-				duesItems = items.status === 'fulfilled' ? items.value : [];
-
-				if (m.status === 'rejected') console.error('getMembership failed:', m.reason);
-				if (b.status === 'rejected') console.error('getDuesBalance failed:', b.reason);
-				if (h.status === 'rejected') console.error('getPaymentHistory failed:', h.reason);
-				if (items.status === 'rejected') console.error('getDuesItems failed:', items.reason);
-			}
-		}
-	} catch (err) {
-		console.error('Dues page SF load error:', err);
+	// Determine dues amount for this member
+	let duesAmount = 0;
+	if (fiscalYear && !member.is_life_member) {
+		duesAmount = member.membership_type === 'undergraduate'
+			? fiscalYear.undergrad_dues
+			: fiscalYear.alumni_dues;
 	}
 
 	return {
-		sfLinked,
-		membership,
-		balance,
-		history,
-		duesItems,
-		contactId,
-		accountId
+		fiscalYear,
+		memberDues: currentDues,
+		duesHistory: allDues,
+		installments,
+		paymentHistory: historyRes.data ?? [],
+		duesAmount,
+		isExempt: member.is_life_member || member.membership_type === 'subscribing_life',
+		surchargeRate: fiscalYear?.card_surcharge_pct ?? 0.04
 	};
 };

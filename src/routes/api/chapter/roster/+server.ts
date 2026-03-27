@@ -1,22 +1,39 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { sfQuery } from '$lib/salesforce';
-import { getChapterOfficer } from '$lib/chapter-auth';
+import { checkChapterAccess } from '$lib/chapter-access';
 
 /**
  * GET /api/chapter/roster
  * Returns the chapter roster from Salesforce (read-only).
+ * Any chapter officer can view.
  */
 export const GET: RequestHandler = async ({ locals, url }) => {
 	const { session, user } = await locals.safeGetSession();
 	if (!session || !user) throw error(401, 'Unauthorized');
 
-	const officer = await getChapterOfficer(user.email!);
-	if (!officer) throw error(403, 'No chapter membership found. Your email may not match your Salesforce contact.');
+	// Get member's chapter
+	const { data: member } = await locals.supabase
+		.from('members')
+		.select('id, chapter_id, sf_contact_id')
+		.eq('auth_user_id', user.id)
+		.single();
+
+	if (!member?.chapter_id) throw error(403, 'No chapter assigned');
+
+	// Get SF account ID for this chapter
+	const { data: chapter } = await locals.supabase
+		.from('chapters')
+		.select('sf_account_id, name')
+		.eq('id', member.chapter_id)
+		.single();
+
+	if (!chapter?.sf_account_id) throw error(404, 'Chapter not linked to Salesforce');
+
+	const access = await checkChapterAccess(locals.supabase, user.id, member.chapter_id);
 
 	const search = url.searchParams.get('search')?.trim() || '';
-
-	let whereClause = `WHERE AccountId = '${officer.accountId}'`;
+	let whereClause = `WHERE AccountId = '${chapter.sf_account_id}'`;
 	if (search) {
 		const escaped = search.replace(/'/g, "\\'");
 		whereClause += ` AND (FirstName LIKE '%${escaped}%' OR LastName LIKE '%${escaped}%' OR Email LIKE '%${escaped}%' OR FON_Membership_Number__c LIKE '%${escaped}%')`;
@@ -35,16 +52,15 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 
 	return json({
 		chapter: {
-			name: officer.chapterName,
-			accountId: officer.accountId,
-			chapterId: officer.chapterId
+			name: chapter.name,
+			accountId: chapter.sf_account_id
 		},
 		officer: {
-			name: officer.contactName,
-			badges: officer.badges.filter(b => b.startsWith('Chapter ')),
-			isPolemarch: officer.isPolemarch,
-			isKOR: officer.isKOR,
-			isOfficer: officer.isOfficer
+			isPolemarch: access.isPolemarch,
+			isKOR: access.isKOR,
+			isKOE: access.isKOE,
+			isOfficer: access.isOfficer,
+			badges: access.badges.map(b => b.name).filter(n => n.startsWith('Chapter '))
 		},
 		members: members.map((m: any) => ({
 			id: m.Id,
@@ -67,10 +83,8 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 
 /**
  * POST /api/chapter/roster
- * Add or remove a member from the chapter roster in Supabase.
- * No Salesforce writes.
- *
- * Body: { action: 'add' | 'remove', memberId: string }
+ * Add or remove a member from the chapter roster.
+ * Only KOR (or global admin) can modify the roster.
  */
 export const POST: RequestHandler = async ({ request, locals }) => {
 	const { session, user } = await locals.safeGetSession();
@@ -78,31 +92,24 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
 	const { data: currentMember } = await locals.supabase
 		.from('members')
-		.select('id, chapter_id, role')
+		.select('id, chapter_id')
 		.eq('auth_user_id', user.id)
 		.single();
 
 	if (!currentMember?.chapter_id) throw error(403, 'No chapter assigned');
 
-	// Verify officer access
-	const { data: badges } = await locals.supabase
-		.from('member_badges')
-		.select('badges(name)')
-		.eq('member_id', currentMember.id)
-		.eq('is_active', true);
+	const access = await checkChapterAccess(locals.supabase, user.id, currentMember.chapter_id);
 
-	const badgeNames = (badges ?? []).map((b: any) => b.badges?.name).filter(Boolean);
-	const isOfficer = badgeNames.some((b: string) => b.startsWith('Chapter ')) ||
-		['super_admin', 'ihq_staff'].includes(currentMember.role);
-
-	if (!isOfficer) throw error(403, 'Chapter officer access required');
+	// Only KOR or global admin can modify roster
+	if (!access.isKOR && !access.isGlobalAdmin) {
+		throw error(403, 'Only the Keeper of Records can modify the roster');
+	}
 
 	const { action, memberId, contactId } = await request.json();
 	const targetId = memberId || contactId;
 	if (!action || !targetId) throw error(400, 'Missing action or memberId');
 
 	if (action === 'add') {
-		// Find member by Supabase ID or SF contact ID
 		let query = locals.supabase.from('members').select('id, membership_status, chapter_id');
 		if (targetId.length === 36 && targetId.includes('-')) {
 			query = query.eq('id', targetId);
@@ -125,7 +132,6 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		return json({ success: true, message: 'Member added to roster' });
 
 	} else if (action === 'remove') {
-		// Set chapter_id to null (unassigned)
 		let query = locals.supabase.from('members').select('id, chapter_id');
 		if (targetId.length === 36 && targetId.includes('-')) {
 			query = query.eq('id', targetId);

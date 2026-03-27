@@ -1,11 +1,10 @@
 import type { PageServerLoad } from './$types';
-import { error } from '@sveltejs/kit';
+import { checkChapterAccess } from '$lib/chapter-access';
 
 export const load: PageServerLoad = async ({ locals, parent }) => {
 	const { session, member } = await parent();
 	if (!session || !member) return { chapter: null, hasAccess: false };
 
-	// Find the member's chapter
 	if (!member.chapter_id) {
 		return { chapter: null, hasAccess: false, reason: 'no_chapter' };
 	}
@@ -19,24 +18,11 @@ export const load: PageServerLoad = async ({ locals, parent }) => {
 
 	if (!chapter) return { chapter: null, hasAccess: false, reason: 'chapter_not_found' };
 
-	// Check if this member has chapter management access
-	// Per guidebook: Polemarch, Vice Polemarch, KOR, KOE, Strategus, MTA Chair, UG Advisor
-	const accessBadges = [
-		'Chapter Polemarch', 'Chapter Vice Polemarch', 'Chapter Keeper of Records',
-		'Chapter Keeper of Exchequer', 'Chapter Strategus', 'Chapter MTA Chairman',
-		'Undergraduate Chapter Advisor'
-	];
+	// Scoped access check
+	const { session: s, user } = await locals.safeGetSession();
+	const access = await checkChapterAccess(locals.supabase, user!.id, member.chapter_id);
 
-	const { data: memberBadges } = await locals.supabase
-		.from('member_badges')
-		.select('badges(name)')
-		.eq('member_id', member.id)
-		.eq('is_active', true);
-
-	const badgeNames = (memberBadges ?? []).map((mb: any) => mb.badges?.name).filter(Boolean);
-	const hasAccess = badgeNames.some(b => accessBadges.includes(b)) || member.role === 'super_admin' || member.role === 'ihq_staff';
-
-	// Count members assigned to this chapter in Supabase (for basic stats)
+	// Count members assigned to this chapter in Supabase
 	const [activeRes, totalRes] = await Promise.all([
 		locals.supabase
 			.from('members')
@@ -51,8 +37,15 @@ export const load: PageServerLoad = async ({ locals, parent }) => {
 
 	return {
 		chapter,
-		hasAccess,
-		badgeNames,
+		hasAccess: access.hasAccess,
+		accessDetails: {
+			isPolemarch: access.isPolemarch,
+			isKOR: access.isKOR,
+			isKOE: access.isKOE,
+			isOfficer: access.isOfficer,
+			isGlobalAdmin: access.isGlobalAdmin
+		},
+		badgeNames: access.badges.map(b => b.name),
 		activeCount: activeRes.count ?? 0,
 		totalMembers: totalRes.count ?? 0,
 		fiscalYear: new Date().getFullYear()

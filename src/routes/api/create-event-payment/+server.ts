@@ -3,7 +3,7 @@ import type { RequestHandler } from './$types';
 import { findContactByEmail, sfCreate, sfQuery } from '$lib/salesforce';
 import { env } from '$env/dynamic/private';
 
-const SURCHARGE_ITEM_ID = 'a15VT000003kDOkYAM';
+// Fonteva surcharge item — set via SF_SURCHARGE_ITEM_ID env var
 
 /**
  * POST /api/create-event-payment
@@ -52,9 +52,10 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			OrderApi__Is_Posted__c: false
 		};
 
-		if (method === 'card') {
+		const surchargeItemId = env.SF_SURCHARGE_ITEM_ID;
+		if (method === 'card' && surchargeItemId) {
 			soFields.KAPSI_Payment_Type__c = 'card';
-			soFields.KAPSI_Surcharge_Item__c = SURCHARGE_ITEM_ID;
+			soFields.KAPSI_Surcharge_Item__c = surchargeItemId;
 		}
 
 		const orderId = await sfCreate('OrderApi__Sales_Order__c', soFields);

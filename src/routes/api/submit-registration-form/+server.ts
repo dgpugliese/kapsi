@@ -1,6 +1,7 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { sfCreate, findContactByEmail } from '$lib/salesforce';
+import { env } from '$env/dynamic/private';
 
 /**
  * POST /api/submit-registration-form
@@ -25,8 +26,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	const today = new Date().toISOString().split('T')[0];
 
 	try {
-		// 1. Create Form Response (linked to the 88th GCM registration form)
-		const GCM_FORM_ID = 'a0SSu0000017kAPMAY'; // 88th Grand Chapter Meeting Information
+		// 1. Create Form Response (linked to registration form)
+		const GCM_FORM_ID = env.SF_GCM_FORM_ID || 'a0SSu0000017kAPMAY';
 		const formResponseId = await sfCreate('PagesApi__Form_Response__c', {
 			PagesApi__Form__c: GCM_FORM_ID,
 			PagesApi__Contact__c: contactId,

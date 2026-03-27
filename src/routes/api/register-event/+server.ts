@@ -3,8 +3,6 @@ import type { RequestHandler } from './$types';
 import { findContactByEmail, sfCreate, sfUpdate, sfQuery } from '$lib/salesforce';
 import { env } from '$env/dynamic/private';
 
-const SURCHARGE_ITEM_ID = 'a15VT000003kDOkYAM';
-
 /**
  * POST /api/register-event
  * Completes event registration after payment (or inline for free events).
@@ -241,6 +239,65 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			}
 		}
 		steps.attendees = { ok: attendeeIds.length > 0, ids: attendeeIds };
+
+		// Save registration to Supabase (for "My Registrations" without SF queries)
+		try {
+			const { data: member } = await locals.supabase
+				.from('members')
+				.select('id')
+				.eq('auth_user_id', user.id)
+				.single();
+
+			if (member) {
+				for (const item of items) {
+					const ticket = ticketMap.get(item.ticketTypeId);
+					await locals.supabase.from('event_registrations').insert({
+						member_id: member.id,
+						sf_event_id: eventId,
+						sf_attendee_id: attendeeIds[0] || null,
+						sf_order_id: orderId,
+						ticket_type_name: item.ticketName || ticket?.Name || null,
+						ticket_type_id: item.ticketTypeId,
+						quantity: item.quantity,
+						amount_paid: (item.unitPrice ?? ticket?.EventApi__Price__c ?? 0) * item.quantity,
+						payment_method: paymentIntentId ? (isACH ? 'ach' : 'card') : 'free',
+						stripe_payment_intent_id: paymentIntentId || null,
+						status: 'registered'
+					});
+				}
+				steps.supabaseRegistration = { ok: true };
+			}
+		} catch (err: any) {
+			console.error('Supabase registration tracking failed (non-blocking):', err.message);
+			steps.supabaseRegistration = { ok: false, error: err.message };
+		}
+
+		// Update attendee count on sync_events (increment by total quantity)
+		try {
+			const totalQty = items.reduce((sum, i) => sum + i.quantity, 0);
+			await locals.supabase.rpc('increment_event_attendees', {
+				event_id: eventId,
+				qty: totalQty
+			});
+		} catch {
+			// Fall back to manual increment if RPC doesn't exist
+			try {
+				const { data: evt } = await locals.supabase
+					.from('sync_events')
+					.select('attendees')
+					.eq('sf_event_id', eventId)
+					.single();
+				if (evt) {
+					const totalQty = items.reduce((sum, i) => sum + i.quantity, 0);
+					await locals.supabase
+						.from('sync_events')
+						.update({ attendees: (evt.attendees ?? 0) + totalQty })
+						.eq('sf_event_id', eventId);
+				}
+			} catch (err: any) {
+				console.error('Attendee count update failed (non-blocking):', err.message);
+			}
+		}
 
 		const allOk = Object.values(steps).every(s => s.ok);
 

@@ -119,6 +119,10 @@ export const POST: RequestHandler = async ({ locals }) => {
 				if (acct[sfField]) updateFields[dbCol] = acct[sfField];
 			}
 
+			// Also populate city/state from billing address if empty
+			if (acct.BillingCity && !updateFields.city) updateFields.city = acct.BillingCity;
+			if (acct.BillingState && !updateFields.state) updateFields.state = acct.BillingState;
+
 			if (Object.keys(updateFields).length > 0) {
 				await locals.supabase
 					.from('chapters')

@@ -2,7 +2,7 @@ import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals, parent }) => {
 	const { session, member } = await parent();
-	if (!session || !member) return { fiscalYear: null, memberDues: null, installments: [], paymentHistory: [] };
+	if (!session || !member) return { fiscalYear: null, memberDues: null, installments: [], paymentHistory: [], duesAmount: 0, isExempt: false, surchargeRate: 0.04, duesHistory: [] };
 
 	// Get current fiscal year + member dues status + payment history in parallel
 	const [fyRes, duesRes, historyRes] = await Promise.all([
@@ -35,7 +35,7 @@ export const load: PageServerLoad = async ({ locals, parent }) => {
 
 	// Get installments if on a plan
 	let installments: any[] = [];
-	if (currentDues?.payment_plan !== 'full') {
+	if (currentDues && currentDues.payment_plan !== 'full') {
 		const { data } = await locals.supabase
 			.from('dues_installments')
 			.select('*')

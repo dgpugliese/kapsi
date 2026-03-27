@@ -26,7 +26,6 @@
 	let stripe: any = null;
 	let elements: any = null;
 	let clientSecret = $state('');
-	let currentOrderId = $state('');
 	let currentPaymentIntentId = $state('');
 	let orderTotal = $state(0);
 	let baseAmount = $state(0);
@@ -77,7 +76,6 @@
 	/** Reset payment UI state */
 	function resetPaymentState() {
 		clientSecret = '';
-		currentOrderId = '';
 		currentPaymentIntentId = '';
 		orderTotal = 0;
 		baseAmount = 0;
@@ -98,7 +96,6 @@
 	async function handleBackToMethod() {
 		await cancelCurrentPaymentIntent();
 		clientSecret = '';
-		currentOrderId = '';
 		currentPaymentIntentId = '';
 		stripeReady = false;
 		elements = null;
@@ -140,7 +137,6 @@
 			}
 
 			clientSecret = result.clientSecret;
-			currentOrderId = result.orderId;
 			currentPaymentIntentId = result.paymentIntentId;
 			orderTotal = result.total;
 			// Update surcharge from SF-calculated values
@@ -204,26 +200,17 @@
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
-					orderId: currentOrderId,
 					paymentIntentId: currentPaymentIntentId,
-					amount: orderTotal,
 					duesType: selectedDuesType,
 					paymentMethod
 				})
 			});
 
 			const confirmData = await confirmRes.json().catch(() => null);
-			console.log('Confirm payment result:', confirmData);
 
 			if (!confirmRes.ok || (confirmData && !confirmData.success)) {
-				const failedSteps = confirmData?.steps
-					? Object.entries(confirmData.steps)
-						.filter(([, v]: [string, any]) => !v.ok)
-						.map(([k, v]: [string, any]) => `${k}: ${v.error}`)
-						.join('; ')
-					: 'Unknown error';
-				console.error('SF confirmation issues:', failedSteps);
-				paymentError = `Payment processed but Salesforce update had issues: ${failedSteps}`;
+				console.error('Confirm payment error:', confirmData);
+				paymentError = 'Payment processed but record update had issues. Your payment is safe — please contact support if your status does not update.';
 			}
 
 			paymentSuccess = true;
@@ -545,23 +532,23 @@
 					<thead>
 						<tr>
 							<th>Date</th>
-							<th>Receipt</th>
-							<th>Order</th>
+							<th>Type</th>
+							<th>Card</th>
 							<th style="text-align:right;">Amount</th>
 							<th style="text-align:center;">Status</th>
 						</tr>
 					</thead>
 					<tbody>
-						{#each history as receipt}
-							{@const sc = statusColors[receipt.status] ?? { bg: 'var(--gray-50)', color: 'var(--gray-600)' }}
+						{#each history as payment}
+							{@const sc = statusColors[payment.status] ?? { bg: 'var(--gray-50)', color: 'var(--gray-600)' }}
 							<tr>
-								<td>{receipt.paymentDate ? new Date(receipt.paymentDate).toLocaleDateString() : '—'}</td>
-								<td class="text-muted">{receipt.receiptName}</td>
-								<td class="text-muted">{receipt.orderName}</td>
-								<td style="text-align:right; font-weight:600;">${receipt.amount.toFixed(2)}</td>
+								<td>{payment.date ? new Date(payment.date).toLocaleDateString() : '—'}</td>
+								<td class="text-muted">{payment.type}</td>
+								<td class="text-muted">{payment.cardBrand ? `${payment.cardBrand} ••${payment.cardLast4}` : '—'}</td>
+								<td style="text-align:right; font-weight:600;">${payment.amount.toFixed(2)}</td>
 								<td style="text-align:center;">
 									<span class="status-badge" style="background:{sc.bg}; color:{sc.color};">
-										{receipt.status}
+										{payment.status}
 									</span>
 								</td>
 							</tr>
@@ -572,18 +559,18 @@
 
 			<!-- Mobile card layout -->
 			<div class="history-cards">
-				{#each history as receipt}
-					{@const sc = statusColors[receipt.status] ?? { bg: 'var(--gray-50)', color: 'var(--gray-600)' }}
+				{#each history as payment}
+					{@const sc = statusColors[payment.status] ?? { bg: 'var(--gray-50)', color: 'var(--gray-600)' }}
 					<div class="history-card-item">
 						<div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px;">
-							<span style="font-weight:600; font-size:0.95rem;">${receipt.amount.toFixed(2)}</span>
-							<span class="status-badge" style="background:{sc.bg}; color:{sc.color};">{receipt.status}</span>
+							<span style="font-weight:600; font-size:0.95rem;">${payment.amount.toFixed(2)}</span>
+							<span class="status-badge" style="background:{sc.bg}; color:{sc.color};">{payment.status}</span>
 						</div>
 						<div style="font-size:0.82rem; color:var(--gray-600);">
-							{receipt.paymentDate ? new Date(receipt.paymentDate).toLocaleDateString() : '—'}
+							{payment.date ? new Date(payment.date).toLocaleDateString() : '—'}
 						</div>
 						<div style="font-size:0.78rem; color:var(--gray-400); margin-top:2px;">
-							{receipt.receiptName} &middot; {receipt.orderName}
+							{payment.type}{payment.cardBrand ? ` · ${payment.cardBrand} ••${payment.cardLast4}` : ''}
 						</div>
 					</div>
 				{/each}

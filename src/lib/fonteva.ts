@@ -1,10 +1,11 @@
 /**
  * Fonteva (OrderApi) helpers built on top of the Salesforce REST client.
  *
- * Provides membership, dues, and payment operations scoped to a Contact ID.
+ * Provides read-only membership and dues queries scoped to a Contact ID.
+ * Payment processing is handled by Stripe + Supabase (not Fonteva).
  */
 
-import { sfQuery, sfCreate, sfApexRest } from './salesforce';
+import { sfQuery } from './salesforce';
 
 // ──────────────────────────────────────────────
 // Types
@@ -38,23 +39,13 @@ export interface DuesLineItem {
 	totalPrice: number;
 }
 
-export interface PaymentReceipt {
-	id: string;
-	receiptName: string;
-	amount: number;
-	paymentDate: string;
-	method: string;
-	status: string;
-	orderName: string;
-}
-
 // ──────────────────────────────────────────────
 // Membership
 // ──────────────────────────────────────────────
 
 /**
  * Fetch the active (or most recent) membership for a Contact.
- * Fonteva tracks memberships via OrderApi__Subscription__c, not a separate Membership object.
+ * Fonteva tracks memberships via OrderApi__Subscription__c.
  */
 export async function getMembership(contactId: string): Promise<Membership | null> {
 	const records = await sfQuery<any>(`
@@ -87,7 +78,7 @@ export async function getMembership(contactId: string): Promise<Membership | nul
 }
 
 // ──────────────────────────────────────────────
-// Dues / Orders
+// Dues / Orders (read-only)
 // ──────────────────────────────────────────────
 
 /**
@@ -133,173 +124,8 @@ export async function getDuesBalance(contactId: string): Promise<DuesBalance[]> 
 	}));
 }
 
-/**
- * Fetch payment receipts (completed payments) for a Contact.
- */
-export async function getPaymentHistory(contactId: string): Promise<PaymentReceipt[]> {
-	const receipts = await sfQuery<any>(`
-		SELECT
-			Id,
-			Name,
-			OrderApi__Total__c,
-			OrderApi__Date__c,
-			OrderApi__Is_Posted__c,
-			OrderApi__Payment_Type__c,
-			OrderApi__Sales_Order__c
-		FROM OrderApi__Receipt__c
-		WHERE OrderApi__Contact__c = '${contactId}'
-		ORDER BY OrderApi__Date__c DESC
-		LIMIT 50
-	`);
-
-	return receipts.map((r: any) => ({
-		id: r.Id,
-		receiptName: r.Name,
-		amount: r.OrderApi__Total__c ?? 0,
-		paymentDate: r.OrderApi__Date__c ?? '',
-		method: r.OrderApi__Payment_Type__c ?? 'Credit Card',
-		status: r.OrderApi__Is_Posted__c ? 'Completed' : 'Pending',
-		orderName: r.OrderApi__Sales_Order__c ?? ''
-	}));
-}
-
 // ──────────────────────────────────────────────
-// Order Deduplication
-// ──────────────────────────────────────────────
-
-/**
- * Find an existing open Sales Order for a Contact with a specific dues item.
- * Returns the order ID if found (and order is < 24h old), null otherwise.
- * Orders older than 24h are considered stale and will be skipped.
- */
-export async function findOpenDuesOrder(contactId: string, itemId: string): Promise<string | null> {
-	const orders = await sfQuery<any>(`
-		SELECT Id, CreatedDate
-		FROM OrderApi__Sales_Order__c
-		WHERE OrderApi__Contact__c = '${contactId}'
-			AND OrderApi__Status__c != 'Closed'
-			AND OrderApi__Is_Posted__c = false
-			AND Id IN (
-				SELECT OrderApi__Sales_Order__c
-				FROM OrderApi__Sales_Order_Line__c
-				WHERE OrderApi__Item__c = '${itemId}'
-			)
-		ORDER BY CreatedDate DESC
-		LIMIT 1
-	`);
-
-	if (orders.length === 0) return null;
-
-	// Skip orders older than 24 hours
-	const created = new Date(orders[0].CreatedDate);
-	const ageMs = Date.now() - created.getTime();
-	if (ageMs > 24 * 60 * 60 * 1000) return null;
-
-	return orders[0].Id;
-}
-
-// ──────────────────────────────────────────────
-// Order Creation
-// ──────────────────────────────────────────────
-
-/**
- * Create a new dues order (Sales Order + Line Item) for a Contact.
- * Returns the Sales Order ID.
- */
-export async function createDuesOrder(
-	contactId: string,
-	accountId: string,
-	itemId: string,
-	amount: number
-): Promise<string> {
-	// Create the Sales Order
-	const orderId = await sfCreate('OrderApi__Sales_Order__c', {
-		OrderApi__Contact__c: contactId,
-		OrderApi__Account__c: accountId,
-		OrderApi__Status__c: 'Open',
-		OrderApi__Posting_Entity__c: 'Receipt',
-		OrderApi__Is_Posted__c: false
-	});
-
-	// Add the line item
-	await sfCreate('OrderApi__Sales_Order_Line__c', {
-		OrderApi__Sales_Order__c: orderId,
-		OrderApi__Item__c: itemId,
-		OrderApi__Quantity__c: 1,
-		OrderApi__Sale_Price__c: amount
-	});
-
-	return orderId;
-}
-
-// ──────────────────────────────────────────────
-// Payment Submission
-// ──────────────────────────────────────────────
-
-/**
- * Submit a payment to Fonteva using Stripe payment method.
- *
- * This calls the Fonteva payment Apex REST endpoint.
- * The endpoint creates a Receipt and charges the Stripe payment method
- * via the connected gateway.
- */
-export async function submitPayment(
-	orderId: string,
-	paymentMethodId: string,
-	gatewayId: string
-): Promise<{ success: boolean; receiptId?: string; error?: string }> {
-	try {
-		// Fonteva's payment endpoint — adjust path based on org configuration
-		const result = await sfApexRest('/OrderApi/v1/payment', 'POST', {
-			salesOrderId: orderId,
-			paymentMethodToken: paymentMethodId,
-			paymentGatewayId: gatewayId,
-			paymentType: 'card'
-		});
-
-		return {
-			success: true,
-			receiptId: result?.receiptId ?? result?.Id ?? null
-		};
-	} catch (err: any) {
-		// If the standard Apex REST path doesn't exist, fall back to
-		// creating the receipt directly and letting a trigger handle Stripe
-		console.error('Fonteva payment endpoint error:', err.message);
-
-		return {
-			success: false,
-			error: err.message || 'Payment processing failed'
-		};
-	}
-}
-
-/**
- * Alternative: Create a Receipt directly and attach the Stripe payment method.
- * Use this if the Apex REST payment endpoint is not available.
- */
-export async function createReceiptWithStripe(
-	orderId: string,
-	contactId: string,
-	amount: number,
-	stripePaymentMethodId: string,
-	gatewayId: string
-): Promise<string> {
-	const receiptId = await sfCreate('OrderApi__Receipt__c', {
-		OrderApi__Sales_Order__c: orderId,
-		OrderApi__Contact__c: contactId,
-		OrderApi__Total__c: amount,
-		OrderApi__Payment_Method__c: 'Credit Card',
-		OrderApi__Status__c: 'Pending',
-		OrderApi__Date__c: new Date().toISOString().split('T')[0],
-		OrderApi__Payment_Gateway__c: gatewayId,
-		OrderApi__Stripe_Payment_Method_Id__c: stripePaymentMethodId
-	});
-
-	return receiptId;
-}
-
-// ──────────────────────────────────────────────
-// Membership Types / Items for Dues
+// Membership Types / Items for Dues (read-only)
 // ──────────────────────────────────────────────
 
 /**

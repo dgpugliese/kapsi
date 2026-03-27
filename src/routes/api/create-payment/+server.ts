@@ -1,13 +1,14 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { findContactByEmail, sfCreate, sfQuery } from '$lib/salesforce';
-import { findOpenDuesOrder } from '$lib/fonteva';
+import { findContactByEmail } from '$lib/salesforce';
 import { env } from '$env/dynamic/private';
 
 /**
  * POST /api/create-payment
- * Creates (or reuses) a Sales Order in Fonteva + Stripe PaymentIntent.
- * Deduplicates: if an open order exists for the same member/dues item, reuse it.
+ *
+ * Creates a Stripe PaymentIntent for dues payment.
+ * No Salesforce Sales Orders — Stripe is the payment system,
+ * Supabase stores the record, n8n syncs to SF for reporting.
  */
 export const POST: RequestHandler = async ({ request, locals }) => {
 	const { session, user } = await locals.safeGetSession();
@@ -24,100 +25,29 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		const stripeSecretKey = env.STRIPE_SECRET_KEY;
 		if (!stripeSecretKey) throw error(500, 'Stripe not configured');
 
-		// Get the main Assessment item
-		const itemName = duesType === 'undergraduate'
-			? 'Undergraduate Annual Dues-Annual Assessment'
-			: 'Alumni Annual Dues-Annual Assessment';
-
-		const items = await sfQuery<any>(
-			`SELECT Id, Name, OrderApi__Price__c
-			 FROM OrderApi__Item__c
-			 WHERE OrderApi__Is_Active__c = true
-			   AND Name = '${itemName}'
-			 LIMIT 1`
-		);
-
-		if (items.length === 0) throw error(404, 'No dues item found');
-
-		const item = items[0];
-		const baseTotal = duesType === 'undergraduate' ? 100 : 200;
-		const SURCHARGE_ITEM_ID = 'a15VT000003kDOkYAM';
-
-		// Check for existing active subscription (renewal detection)
-		const existingSubs = await sfQuery<any>(
-			`SELECT OrderApi__Subscription__c
-			 FROM OrderApi__Subscription_Line__c
-			 WHERE OrderApi__Subscription__r.OrderApi__Contact__c = '${contact.Id}'
-			   AND OrderApi__Subscription__r.OrderApi__Is_Active__c = true
-			   AND OrderApi__Item__c = '${item.Id}'
-			 LIMIT 1`
-		);
-
-		const existingSubId = existingSubs.length > 0 ? existingSubs[0].OrderApi__Subscription__c : null;
-		const isRenewal = !!existingSubId;
-
-		// Step 1: Find existing open order OR create new one
-		let orderId = await findOpenDuesOrder(contact.Id, item.Id);
-		let reusedOrder = false;
-
-		if (orderId) {
-			reusedOrder = true;
-			console.log(`Reusing existing open order ${orderId} for contact ${contact.Id}`);
-		} else {
-			orderId = await sfCreate('OrderApi__Sales_Order__c', {
-				OrderApi__Contact__c: contact.Id,
-				OrderApi__Account__c: contact.AccountId,
-				OrderApi__Entity__c: 'Contact',
-				OrderApi__Posting_Entity__c: 'Receipt',
-				OrderApi__Is_Posted__c: false,
-				...(method === 'card' ? {
-					KAPSI_Payment_Type__c: 'card',
-					KAPSI_Surcharge_Item__c: SURCHARGE_ITEM_ID
-				} : {})
-			});
-
-			// Create line item for new orders only
-			await sfCreate('OrderApi__Sales_Order_Line__c', {
-				OrderApi__Sales_Order__c: orderId,
-				OrderApi__Item__c: item.Id,
-				OrderApi__Quantity__c: 1,
-				OrderApi__Sale_Price__c: total,
-				...(existingSubId ? { OrderApi__Subscription__c: existingSubId } : {})
-			});
-		}
-
-		// Step 2: Wait for SF surcharge automation, then read actual SO total
-		if (method === 'card' && !reusedOrder) {
-			await new Promise(r => setTimeout(r, 3000));
-		}
-
-		let soTotal = baseTotal;
-		try {
-			const soCheck = await sfQuery<any>(
-				`SELECT OrderApi__Overall_Total__c FROM OrderApi__Sales_Order__c WHERE Id = '${orderId}' LIMIT 1`
-			);
-			if (soCheck.length > 0 && soCheck[0].OrderApi__Overall_Total__c > 0) {
-				soTotal = soCheck[0].OrderApi__Overall_Total__c;
-			}
-		} catch { /* fallback to baseTotal */ }
-
-		const surcharge = soTotal - baseTotal;
-		const total = soTotal;
+		// Calculate amount locally — no SF query needed
+		const baseAmount = duesType === 'undergraduate' ? 100 : 200;
+		const surchargeRate = 0.04;
+		const surcharge = method === 'card' ? Math.round(baseAmount * surchargeRate * 100) / 100 : 0;
+		const total = baseAmount + surcharge;
 		const totalCents = Math.round(total * 100);
 
-		// Step 3: Create Stripe PaymentIntent with SF-calculated total
+		// Detect renewal from membership expiry
+		const isRenewal = !!(contact.Date_Membership_Expires__c || contact.Membership_End_Date__c);
+
+		// Create Stripe PaymentIntent
 		const paymentMethodTypes = method === 'ach' ? ['us_bank_account'] : ['card'];
 		const stripeParams = new URLSearchParams({
-			'amount': totalCents.toString(),
-			'currency': 'usd',
-			'metadata[sf_order_id]': orderId,
+			amount: totalCents.toString(),
+			currency: 'usd',
+			'metadata[member_id]': user.id,
 			'metadata[sf_contact_id]': contact.Id,
 			'metadata[dues_type]': duesType,
 			'metadata[is_renewal]': isRenewal ? 'true' : 'false',
 			'metadata[payment_method]': method,
-			'metadata[base_amount]': baseTotal.toString(),
+			'metadata[base_amount]': baseAmount.toString(),
 			'metadata[surcharge]': surcharge.toString(),
-			'description': `${duesType === 'undergraduate' ? 'Undergraduate' : 'Alumni'} Annual Dues ${isRenewal ? '(Renewal)' : ''} - ${contact.FirstName} ${contact.LastName}`
+			description: `${duesType === 'undergraduate' ? 'Undergraduate' : 'Alumni'} Annual Dues${isRenewal ? ' (Renewal)' : ''} — ${contact.FirstName} ${contact.LastName}`
 		});
 		paymentMethodTypes.forEach((t, i) => {
 			stripeParams.append(`payment_method_types[${i}]`, t);
@@ -126,7 +56,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		const stripeRes = await fetch('https://api.stripe.com/v1/payment_intents', {
 			method: 'POST',
 			headers: {
-				'Authorization': `Bearer ${stripeSecretKey}`,
+				Authorization: `Bearer ${stripeSecretKey}`,
 				'Content-Type': 'application/x-www-form-urlencoded'
 			},
 			body: stripeParams
@@ -142,17 +72,14 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		return json({
 			success: true,
 			clientSecret: paymentIntent.client_secret,
-			orderId,
 			total,
-			baseTotal,
+			baseTotal: baseAmount,
 			surcharge,
 			isRenewal,
-			reusedOrder,
 			paymentIntentId: paymentIntent.id,
 			paymentMethod: method,
-			items: [{ name: `${duesType === 'undergraduate' ? 'Undergraduate' : 'Alumni'} Annual Dues`, price: baseTotal }]
+			items: [{ name: `${duesType === 'undergraduate' ? 'Undergraduate' : 'Alumni'} Annual Dues`, price: baseAmount }]
 		});
-
 	} catch (err: any) {
 		console.error('Create payment error:', err);
 		if (err.status) throw err;

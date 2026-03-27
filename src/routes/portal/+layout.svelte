@@ -33,15 +33,22 @@
 		window.location.href = '/admin/members';
 	}
 
-	const bottomTabs = [
+	const isGoodStanding = $derived(member?.membership_status === 'active');
+
+	const bottomTabs = $derived(isGoodStanding ? [
 		{ label: 'Home', href: '/portal', icon: 'home' },
 		{ label: 'Dues', href: '/portal/dues', icon: 'credit-card' },
 		{ label: 'Card', href: '/portal/card', icon: 'card' },
 		{ label: 'Profile', href: '/portal/profile', icon: 'user' },
 		{ label: 'More', href: '#more', icon: 'menu' }
-	];
+	] : [
+		{ label: 'Home', href: '/portal', icon: 'home' },
+		{ label: 'Dues', href: '/portal/dues', icon: 'credit-card' },
+		{ label: 'Profile', href: '/portal/profile', icon: 'user' },
+		{ label: 'More', href: '#more', icon: 'menu' }
+	]);
 
-	const navSections = [
+	const navSections = $derived(isGoodStanding ? [
 		{
 			label: 'Member',
 			items: [
@@ -63,7 +70,24 @@
 				{ label: 'Documents', href: '/portal/documents', icon: 'folder' }
 			]
 		}
-	];
+	] : [
+		{
+			label: 'Member',
+			items: [
+				{ label: 'Dashboard', href: '/portal', icon: 'home' },
+				{ label: 'My Info', href: '/portal/profile', icon: 'user' },
+				{ label: 'Pay Grand Chapter Dues', href: '/portal/dues', icon: 'credit-card' }
+			]
+		},
+		{
+			label: 'Resources',
+			items: [
+				{ label: 'Chapter Locator', href: '/about/chapter-locator', icon: 'map' },
+				{ label: 'Kappa Store', href: '/portal/store', icon: 'store' },
+				{ label: 'Documents', href: '/portal/documents', icon: 'folder' }
+			]
+		}
+	]);
 
 	const adminSections = $derived(
 		hasChapterAccess ? [{

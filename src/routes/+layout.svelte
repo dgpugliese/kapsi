@@ -9,7 +9,7 @@
 
 	let { children } = $props();
 
-	const isPortal = $derived($page.url.pathname.startsWith('/portal'));
+	const isPortal = $derived($page.url.pathname.startsWith('/portal') || $page.url.pathname.startsWith('/admin'));
 
 	onMount(() => {
 		const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {

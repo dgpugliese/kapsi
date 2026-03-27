@@ -1,150 +1,178 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { sfQuery, sfCreate, sfUpdate } from '$lib/salesforce';
-import { getChapterOfficer } from '$lib/chapter-auth';
 
 /**
  * GET /api/chapter/eic
- * Returns EIC submissions for the officer's chapter.
- * Groups into: pending signature, needs action, submitted/approved.
+ * Returns EIC submissions for the member's chapter from Supabase.
  */
 export const GET: RequestHandler = async ({ locals }) => {
 	const { session, user } = await locals.safeGetSession();
 	if (!session || !user) throw error(401, 'Unauthorized');
 
-	const officer = await getChapterOfficer(user.email!);
-	if (!officer) throw error(403, 'No chapter found');
+	const { data: member } = await locals.supabase
+		.from('members')
+		.select('id, chapter_id, first_name, last_name, chapters(name)')
+		.eq('auth_user_id', user.id)
+		.single();
 
-	const submissions = await sfQuery<any>(`
-		SELECT Id, Name, Name_of_the_event__c, Date_of_the_event__c,
-			Event_Type__c, EIC_Status__c, Status__c, IHQ_Status__c,
-			Planners_Name__c, Status_Date__c, Date_of_Submission__c,
-			Polemarch_Signed__c, Polemarch_Signature__c,
-			Vice_Polemarch_Signature__c, Keeper_Of_Records_Signature__c,
-			Keeper_of_Exchequer_Signature__c, Chapter_Advisor_Signature__c,
-			Status_Note__c, IHQ_Status_Note__c, Reason_for_Denial__c
-		FROM Event_Insurance_Submissions__c
-		WHERE Chapter__c = '${officer.accountId}'
-		ORDER BY Date_of_the_event__c DESC
-		LIMIT 50
-	`);
+	if (!member?.chapter_id) throw error(403, 'No chapter assigned');
 
-	const pending = submissions.filter((s: any) =>
-		s.EIC_Status__c === 'Pending Signatures' || (!s.Polemarch_Signed__c && s.EIC_Status__c !== 'Draft')
-	);
-	const needsAction = submissions.filter((s: any) =>
-		s.EIC_Status__c === 'Draft' || s.EIC_Status__c === 'Province Denied' || s.EIC_Status__c === 'IHQ Denied'
-	);
-	const submitted = submissions.filter((s: any) =>
-		!['Draft', 'Pending Signatures', 'Province Denied', 'IHQ Denied'].includes(s.EIC_Status__c || '')
-	);
+	// Check officer badges
+	const { data: badges } = await locals.supabase
+		.from('member_badges')
+		.select('badges(name)')
+		.eq('member_id', member.id)
+		.eq('is_active', true);
+
+	const badgeNames = (badges ?? []).map((b: any) => b.badges?.name).filter(Boolean);
+	const isOfficer = badgeNames.some((b: string) => b.startsWith('Chapter ')) ||
+		['super_admin', 'ihq_staff'].includes(member.role);
+
+	const { data: submissions } = await locals.supabase
+		.from('eic_submissions')
+		.select('*')
+		.eq('chapter_id', member.chapter_id)
+		.order('event_date', { ascending: false })
+		.limit(50);
+
+	const all = submissions ?? [];
+	const pending = all.filter(s => s.status === 'pending_signatures');
+	const needsAction = all.filter(s => ['draft', 'province_denied', 'ihq_denied'].includes(s.status));
+	const submitted = all.filter(s => !['draft', 'pending_signatures', 'province_denied', 'ihq_denied'].includes(s.status));
 
 	return json({
-		chapter: { name: officer.chapterName, accountId: officer.accountId },
-		officer: { name: officer.contactName, isOfficer: officer.isOfficer },
+		chapter: { name: (member as any).chapters?.name, id: member.chapter_id },
+		officer: { name: `${member.first_name} ${member.last_name}`, isOfficer },
 		pending: pending.map(mapEIC),
 		needsAction: needsAction.map(mapEIC),
 		submitted: submitted.map(mapEIC),
-		total: submissions.length
+		total: all.length
 	});
 };
 
 function mapEIC(s: any) {
 	return {
-		id: s.Id,
-		name: s.Name,
-		eventName: s.Name_of_the_event__c,
-		eventDate: s.Date_of_the_event__c,
-		eventType: s.Event_Type__c,
-		eicStatus: s.EIC_Status__c,
-		provinceStatus: s.Status__c,
-		ihqStatus: s.IHQ_Status__c,
-		planner: s.Planners_Name__c,
-		statusDate: s.Status_Date__c,
-		submissionDate: s.Date_of_Submission__c,
+		id: s.id,
+		eventName: s.event_name,
+		eventDate: s.event_date,
+		eventType: s.event_type,
+		eicStatus: s.status,
+		provinceStatus: s.province_status,
+		ihqStatus: s.ihq_status,
+		planner: s.planner_name,
+		submissionDate: s.submitted_at,
 		signatures: {
-			polemarch: !!s.Polemarch_Signature__c,
-			vicePolemarch: !!s.Vice_Polemarch_Signature__c,
-			kor: !!s.Keeper_Of_Records_Signature__c,
-			koe: !!s.Keeper_of_Exchequer_Signature__c,
-			advisor: !!s.Chapter_Advisor_Signature__c
+			polemarch: !!s.polemarch_signature,
+			vicePolemarch: !!s.vice_polemarch_signature,
+			kor: !!s.kor_signature,
+			koe: !!s.koe_signature,
+			advisor: !!s.advisor_signature
 		},
-		notes: s.Status_Note__c || s.IHQ_Status_Note__c || s.Reason_for_Denial__c || null
+		notes: s.province_notes || s.ihq_notes || null
 	};
 }
 
 /**
  * POST /api/chapter/eic
- * Create or update an EIC submission.
- * Body: { action: 'create' | 'update' | 'sign', data: {...}, eicId?: string }
+ * Create, update, or sign an EIC submission in Supabase.
  */
 export const POST: RequestHandler = async ({ request, locals }) => {
 	const { session, user } = await locals.safeGetSession();
 	if (!session || !user) throw error(401, 'Unauthorized');
 
-	const officer = await getChapterOfficer(user.email!);
-	if (!officer || !officer.isOfficer) throw error(403, 'Chapter officer access required');
+	const { data: member } = await locals.supabase
+		.from('members')
+		.select('id, chapter_id, first_name, last_name, role')
+		.eq('auth_user_id', user.id)
+		.single();
+
+	if (!member?.chapter_id) throw error(403, 'No chapter assigned');
+
+	const { data: badges } = await locals.supabase
+		.from('member_badges')
+		.select('badges(name)')
+		.eq('member_id', member.id)
+		.eq('is_active', true);
+
+	const badgeNames = (badges ?? []).map((b: any) => b.badges?.name).filter(Boolean);
+	const isOfficer = badgeNames.some((b: string) => b.startsWith('Chapter ')) ||
+		['super_admin', 'ihq_staff'].includes(member.role);
+
+	if (!isOfficer) throw error(403, 'Chapter officer access required');
 
 	const { action, data, eicId } = await request.json();
+	const memberName = `${member.first_name} ${member.last_name}`;
 
 	if (action === 'create') {
-		// Create new EIC submission
-		const id = await sfCreate('Event_Insurance_Submissions__c', {
-			Chapter__c: officer.accountId,
-			Province__c: null, // will be auto-set by SF
-			Submitted_by_Contact__c: officer.contactId,
-			Submitter_s_Name__c: officer.contactName,
-			EIC_Status__c: 'Draft',
-			Date_of_Submission__c: new Date().toISOString().split('T')[0],
-			...data
-		});
-		return json({ success: true, id });
+		const { data: eic, error: err } = await locals.supabase
+			.from('eic_submissions')
+			.insert({
+				chapter_id: member.chapter_id,
+				submitted_by: member.id,
+				submitter_name: memberName,
+				status: 'draft',
+				event_type: data.Event_Type__c || data.event_type,
+				event_name: data.Name_of_the_event__c || data.event_name,
+				event_date: data.Date_of_the_event__c || data.event_date,
+				start_time: data.Beginning_time_of_the_event__c || data.start_time,
+				end_time: data.Ending_time_of_the_event__c || data.end_time,
+				location: data.Location_of_the_event__c || data.location,
+				venue_name: data.Name_of_the_venue__c || data.venue_name,
+				event_address: data.Address_of_event__c || data.event_address,
+				contact_info: data.Contact_Information__c || data.contact_info,
+				chapter_property: data.Chapter_Property__c || data.chapter_property || false,
+				rented_facility: data.Rented_Facility_Hotel_Restaurant_etc__c || data.rented_facility || false,
+				member_residence: data.Member_s_Residence__c || data.member_residence || false,
+				other_venue: data.Other_event_Details__c || data.other_venue || false,
+				other_describe: data.Other_Event_Describe__c || data.other_describe,
+				planner_name: data.Planners_Name__c || data.planner_name,
+				officer_title: data.Officer_Title__c || data.officer_title,
+				planner_email: data.Planners_Email__c || data.planner_email,
+				planner_phone: data.Planners_Phone__c || data.planner_phone
+			})
+			.select('id')
+			.single();
 
-	} else if (action === 'update' && eicId) {
-		await sfUpdate('Event_Insurance_Submissions__c', eicId, data);
-		return json({ success: true });
+		if (err) throw error(500, err.message);
+		return json({ success: true, id: eic.id });
 
 	} else if (action === 'sign' && eicId) {
-		// Sign the EIC based on officer's role
-		const signFields: Record<string, any> = {};
-		const today = new Date().toISOString().split('T')[0];
+		const now = new Date().toISOString();
+		const updates: Record<string, any> = { updated_at: now };
 
-		if (officer.isPolemarch) {
-			signFields.Polemarch_Signature__c = officer.contactName;
-			signFields.Polemarch_Signature_Date__c = today;
-			signFields.Polemarch_Signed__c = true;
-			signFields.Polemarch_Name__c = officer.contactName;
-			signFields.Polemarch_Email__c = user.email;
+		if (badgeNames.includes('Chapter Polemarch')) {
+			updates.polemarch_signature = memberName;
+			updates.polemarch_signed_at = now;
 		}
-		if (officer.badges.includes('Chapter Vice Polemarch')) {
-			signFields.Vice_Polemarch_Signature__c = officer.contactName;
-			signFields.Vice_Polemarch_Signature_Date__c = today;
-			signFields.Vice_Polemarch_Name__c = officer.contactName;
-			signFields.Vice_Polemarch_Email__c = user.email;
+		if (badgeNames.includes('Chapter Vice Polemarch')) {
+			updates.vice_polemarch_signature = memberName;
+			updates.vice_polemarch_signed_at = now;
 		}
-		if (officer.isKOR) {
-			signFields.Keeper_Of_Records_Signature__c = officer.contactName;
-			signFields.Keeper_Of_Records_Signature_Date__c = today;
-			signFields.Keeper_of_Records_Name__c = officer.contactName;
-			signFields.Keeper_of_Records_Email__c = user.email;
+		if (badgeNames.includes('Chapter Keeper of Records') || badgeNames.includes('Chapter Keeper of Records/Exchequer')) {
+			updates.kor_signature = memberName;
+			updates.kor_signed_at = now;
 		}
-		if (officer.badges.includes('Chapter Keeper of Exchequer')) {
-			signFields.Keeper_of_Exchequer_Signature__c = officer.contactName;
-			signFields.Keeper_of_Exchequer_Signature_Date__c = today;
+		if (badgeNames.includes('Chapter Keeper of Exchequer')) {
+			updates.koe_signature = memberName;
+			updates.koe_signed_at = now;
 		}
-		if (officer.badges.includes('Chapter Advisor')) {
-			signFields.Chapter_Advisor_Signature__c = officer.contactName;
-			signFields.Chapter_Advisor_Signature_Date__c = today;
-			signFields.Chapter_Advisor_Name__c = officer.contactName;
-			signFields.Chapter_Advisor_Email__c = user.email;
+		if (badgeNames.includes('Chapter Advisor') || badgeNames.includes('Undergraduate Chapter Advisor')) {
+			updates.advisor_signature = memberName;
+			updates.advisor_signed_at = now;
 		}
 
-		if (Object.keys(signFields).length === 0) {
+		if (Object.keys(updates).length <= 1) {
 			throw error(400, 'No matching officer badge found for signing');
 		}
 
-		await sfUpdate('Event_Insurance_Submissions__c', eicId, signFields);
-		return json({ success: true, signed: Object.keys(signFields) });
+		const { error: err } = await locals.supabase
+			.from('eic_submissions')
+			.update(updates)
+			.eq('id', eicId)
+			.eq('chapter_id', member.chapter_id);
+
+		if (err) throw error(500, err.message);
+		return json({ success: true, signed: Object.keys(updates) });
 
 	} else {
 		throw error(400, 'Invalid action');

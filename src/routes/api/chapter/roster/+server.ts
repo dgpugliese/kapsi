@@ -1,14 +1,11 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { sfQuery, sfUpdate } from '$lib/salesforce';
+import { sfQuery } from '$lib/salesforce';
 import { getChapterOfficer } from '$lib/chapter-auth';
 
 /**
  * GET /api/chapter/roster
- * Returns the chapter roster for the logged-in officer's chapter.
- *
- * Query params:
- *   ?search=term — filter roster by name/email/member#
+ * Returns the chapter roster from Salesforce (read-only).
  */
 export const GET: RequestHandler = async ({ locals, url }) => {
 	const { session, user } = await locals.safeGetSession();
@@ -46,7 +43,8 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 			name: officer.contactName,
 			badges: officer.badges.filter(b => b.startsWith('Chapter ')),
 			isPolemarch: officer.isPolemarch,
-			isKOR: officer.isKOR
+			isKOR: officer.isKOR,
+			isOfficer: officer.isOfficer
 		},
 		members: members.map((m: any) => ({
 			id: m.Id,
@@ -69,63 +67,84 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 
 /**
  * POST /api/chapter/roster
- * Add or remove a member from the chapter roster.
+ * Add or remove a member from the chapter roster in Supabase.
+ * No Salesforce writes.
  *
- * Body: { action: 'add' | 'remove', contactId: string }
+ * Body: { action: 'add' | 'remove', memberId: string }
  */
 export const POST: RequestHandler = async ({ request, locals }) => {
 	const { session, user } = await locals.safeGetSession();
 	if (!session || !user) throw error(401, 'Unauthorized');
 
-	const officer = await getChapterOfficer(user.email!);
-	if (!officer || !officer.isOfficer) throw error(403, 'Chapter officer access required');
+	const { data: currentMember } = await locals.supabase
+		.from('members')
+		.select('id, chapter_id, role')
+		.eq('auth_user_id', user.id)
+		.single();
 
-	const { action, contactId } = await request.json();
-	if (!action || !contactId) throw error(400, 'Missing action or contactId');
+	if (!currentMember?.chapter_id) throw error(403, 'No chapter assigned');
+
+	// Verify officer access
+	const { data: badges } = await locals.supabase
+		.from('member_badges')
+		.select('badges(name)')
+		.eq('member_id', currentMember.id)
+		.eq('is_active', true);
+
+	const badgeNames = (badges ?? []).map((b: any) => b.badges?.name).filter(Boolean);
+	const isOfficer = badgeNames.some((b: string) => b.startsWith('Chapter ')) ||
+		['super_admin', 'ihq_staff'].includes(currentMember.role);
+
+	if (!isOfficer) throw error(403, 'Chapter officer access required');
+
+	const { action, memberId, contactId } = await request.json();
+	const targetId = memberId || contactId;
+	if (!action || !targetId) throw error(400, 'Missing action or memberId');
 
 	if (action === 'add') {
-		// Verify the member is In Good Standing before adding
-		const contacts = await sfQuery<any>(
-			`SELECT Id, FON_Member_Status__c, FON_Chapter_Name__c, AccountId
-			 FROM Contact WHERE Id = '${contactId}' LIMIT 1`
-		);
-		if (contacts.length === 0) throw error(404, 'Contact not found');
+		// Find member by Supabase ID or SF contact ID
+		let query = locals.supabase.from('members').select('id, membership_status, chapter_id');
+		if (targetId.length === 36 && targetId.includes('-')) {
+			query = query.eq('id', targetId);
+		} else {
+			query = query.eq('sf_contact_id', targetId);
+		}
+		const { data: targetMember } = await query.single();
 
-		const contact = contacts[0];
-		if (contact.FON_Member_Status__c !== 'In Good Standing') {
+		if (!targetMember) throw error(404, 'Member not found');
+		if (targetMember.membership_status !== 'active') {
 			throw error(400, 'Member must be In Good Standing to be added to a chapter roster');
 		}
 
-		// Update the contact's chapter assignment
-		await sfUpdate('Contact', contactId, {
-			AccountId: officer.accountId
-		});
+		const { error: err } = await locals.supabase
+			.from('members')
+			.update({ chapter_id: currentMember.chapter_id, updated_at: new Date().toISOString() })
+			.eq('id', targetMember.id);
 
+		if (err) throw error(500, err.message);
 		return json({ success: true, message: 'Member added to roster' });
 
 	} else if (action === 'remove') {
-		// Verify the member is currently in this chapter
-		const contacts = await sfQuery<any>(
-			`SELECT Id, AccountId FROM Contact WHERE Id = '${contactId}' LIMIT 1`
-		);
-		if (contacts.length === 0) throw error(404, 'Contact not found');
-		if (contacts[0].AccountId !== officer.accountId) {
+		// Set chapter_id to null (unassigned)
+		let query = locals.supabase.from('members').select('id, chapter_id');
+		if (targetId.length === 36 && targetId.includes('-')) {
+			query = query.eq('id', targetId);
+		} else {
+			query = query.eq('sf_contact_id', targetId);
+		}
+		const { data: targetMember } = await query.single();
+
+		if (!targetMember) throw error(404, 'Member not found');
+		if (targetMember.chapter_id !== currentMember.chapter_id) {
 			throw error(400, 'Member is not in your chapter');
 		}
 
-		// Move to Grand Chapter (default/unassigned)
-		// Query for Grand Chapter account
-		const grandChapter = await sfQuery<any>(
-			`SELECT Id FROM Account WHERE Name = 'Grand Chapter' AND Type IN ('CHAP-A','CHAP-UG') LIMIT 1`
-		);
-		const grandChapterId = grandChapter.length > 0 ? grandChapter[0].Id : null;
+		const { error: err } = await locals.supabase
+			.from('members')
+			.update({ chapter_id: null, updated_at: new Date().toISOString() })
+			.eq('id', targetMember.id);
 
-		if (grandChapterId) {
-			await sfUpdate('Contact', contactId, {
-				AccountId: grandChapterId
-			});
-		}
-
+		if (err) throw error(500, err.message);
 		return json({ success: true, message: 'Member removed from roster' });
 
 	} else {

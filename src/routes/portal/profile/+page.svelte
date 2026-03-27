@@ -533,27 +533,7 @@
 			<p class="hint">Fraternity information is managed by International Headquarters.</p>
 		</div>
 
-		<!-- Grand Chapter Awards -->
-		{#if nationalAwards.length > 0}
-			<div class="card">
-				<h2 class="section-header">Grand Chapter Awards</h2>
-				<div class="awards-grid">
-					{#each nationalAwards as award}
-						{@const key = award.toLowerCase()}
-						<img
-							class="award-img"
-							src={key.includes('laurel wreath') ? '/images/awards/award_laurel_wreath.svg'
-								: key.includes('william') || key.includes('crump') ? '/images/awards/award_william_l_crump.svg'
-								: key.includes('elder watson diggs') ? '/images/awards/award_elder_watson_diggs.svg'
-								: key.includes('guy levis grant') ? '/images/awards/award_guy_levis_grant.svg'
-								: key.includes('byron') || key.includes('armstrong') ? '/images/awards/award_byron_k_armstrong.svg'
-								: '/images/crest.png'}
-							alt={award}
-						/>
-					{/each}
-				</div>
-			</div>
-		{/if}
+		<!-- Grand Chapter Awards (TODO: pull from member_awards table) -->
 
 		<!-- Education (only shown if records exist) -->
 		{#if education.length > 0}

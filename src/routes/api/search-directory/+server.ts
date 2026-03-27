@@ -19,7 +19,7 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 
 	const selectCols = `id, first_name, last_name, email, phone, city, state,
 		membership_number, membership_status, membership_type,
-		current_chapter_name, initiation_chapter, initiation_year,
+		current_chapter_name, initiation_chapter, initiation_year, initiation_date,
 		profession, employer, university, is_life_member,
 		profile_photo_url, show_email, show_phone, show_address,
 		show_in_directory, chapter_id,
@@ -65,6 +65,35 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 		throw error(500, dbError.message);
 	}
 
+	// Helper: format membership type for display
+	function fmtType(type: string | null): string {
+		switch (type) {
+			case 'life': return 'Life Member';
+			case 'alumni': return 'Alumni';
+			case 'undergraduate': return 'Undergraduate';
+			case 'subscribing_life': return 'Subscribing Life';
+			default: return type?.replace(/_/g, ' ') ?? '';
+		}
+	}
+
+	// Helper: format initiation season
+	function fmtInitiation(date: string | null, year: number | null): string | null {
+		if (!date && !year) return null;
+		if (date) {
+			const month = new Date(date).getMonth(); // 0-indexed
+			const season = month >= 0 && month <= 5 ? 'Spring' : 'Fall';
+			return `${season} ${year || new Date(date).getFullYear()}`;
+		}
+		return year?.toString() ?? null;
+	}
+
+	// Helper: filter out SF IDs masquerading as university names
+	function cleanUniversity(val: string | null): string | null {
+		if (!val) return null;
+		if (/^[a-zA-Z0-9]{15,18}$/.test(val) && !val.includes(' ')) return null;
+		return val;
+	}
+
 	return json({
 		contacts: (members ?? []).map((m: any) => ({
 			id: m.id,
@@ -76,15 +105,15 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 			state: m.state,
 			membership_number: m.membership_number,
 			member_status: m.membership_status === 'active' ? 'In Good Standing' : m.membership_status?.replace(/_/g, ' ') ?? '',
-			member_type: m.membership_type,
+			member_type: fmtType(m.membership_type),
 			chapter_name: m.current_chapter_name || m.chapters?.name,
 			chapter_of_initiation: m.initiation_chapter,
-			year_of_initiation: m.initiation_year,
+			year_of_initiation: fmtInitiation(m.initiation_date, m.initiation_year),
 			province: null,
 			is_life_member: m.is_life_member,
 			employer: m.employer,
 			profession: m.profession,
-			university: m.university,
+			university: cleanUniversity(m.university),
 			photo_url: m.profile_photo_url,
 			show_email: m.show_email,
 			show_phone: m.show_phone,

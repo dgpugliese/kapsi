@@ -232,7 +232,7 @@
 			});
 
 			if (!res.ok) {
-				const err = await res.json();
+				const err = await res.json().catch(() => ({ message: `Server error (${res.status})` }));
 				registrationError = err.message || 'Failed to create payment';
 				processing = false;
 				return;

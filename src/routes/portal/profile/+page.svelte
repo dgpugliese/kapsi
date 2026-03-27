@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { invalidateAll } from '$app/navigation';
+	import { page } from '$app/stores';
+	import { supabase } from '$lib/supabase';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -7,12 +9,47 @@
 	let sf = $derived(data.sfContact);
 	let education = $derived(data.education ?? []);
 	let badges = $derived(data.badges ?? []);
-	// sf is built from Supabase member data in +page.server.ts — same shape as before
 
 	let editing = $state(false);
 	let saving = $state(false);
 	let message = $state('');
 	let error = $state('');
+
+	// Password reset
+	let showPasswordReset = $state($page.url.searchParams.get('reset') === 'true');
+	let newPassword = $state('');
+	let confirmPassword = $state('');
+	let passwordSaving = $state(false);
+	let passwordMessage = $state('');
+	let passwordError = $state('');
+
+	async function updatePassword(e: Event) {
+		e.preventDefault();
+		passwordError = '';
+		passwordMessage = '';
+
+		if (newPassword.length < 8) {
+			passwordError = 'Password must be at least 8 characters.';
+			return;
+		}
+		if (newPassword !== confirmPassword) {
+			passwordError = 'Passwords do not match.';
+			return;
+		}
+
+		passwordSaving = true;
+		const { error: authError } = await supabase.auth.updateUser({ password: newPassword });
+
+		if (authError) {
+			passwordError = authError.message;
+		} else {
+			passwordMessage = 'Password updated successfully.';
+			newPassword = '';
+			confirmPassword = '';
+			showPasswordReset = false;
+		}
+		passwordSaving = false;
+	}
 
 	// Picklist options
 	const US_STATES = [
@@ -235,7 +272,10 @@
 	<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:32px; flex-wrap:wrap; gap:12px;">
 		<h1 style="font-family:var(--font-serif); font-size:1.6rem; color:var(--crimson);">My Info</h1>
 		{#if !editing && sf}
-			<button class="btn btn--primary" onclick={startEditing}>Edit Profile</button>
+			<div style="display:flex; gap:12px;">
+				<button class="btn btn--primary" onclick={startEditing}>Edit Profile</button>
+				<button class="btn btn--outline" onclick={() => { showPasswordReset = true; }}>Change Password</button>
+			</div>
 		{/if}
 	</div>
 
@@ -244,6 +284,37 @@
 	{/if}
 	{#if error}
 		<div style="background:#FEF2F2; color:#991B1B; padding:12px 16px; border-radius:8px; font-size:0.9rem; margin-bottom:24px;">{error}</div>
+	{/if}
+
+	<!-- Password Reset -->
+	{#if showPasswordReset}
+		<div class="card" style="border-left:4px solid var(--crimson); margin-bottom:24px;">
+			<h2 class="section-header">Set New Password</h2>
+			{#if passwordMessage}
+				<div style="background:#ECFDF5; color:#065F46; padding:12px 16px; border-radius:8px; font-size:0.9rem; margin-bottom:16px;">{passwordMessage}</div>
+			{/if}
+			{#if passwordError}
+				<div style="background:#FEF2F2; color:#991B1B; padding:12px 16px; border-radius:8px; font-size:0.9rem; margin-bottom:16px;">{passwordError}</div>
+			{/if}
+			<form onsubmit={updatePassword}>
+				<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+					<div>
+						<label class="form-label" for="newPassword">New Password</label>
+						<input id="newPassword" type="password" bind:value={newPassword} class="form-control" required minlength="8" placeholder="Min. 8 characters" />
+					</div>
+					<div>
+						<label class="form-label" for="confirmPassword">Confirm Password</label>
+						<input id="confirmPassword" type="password" bind:value={confirmPassword} class="form-control" required />
+					</div>
+				</div>
+				<div style="display:flex; gap:12px;">
+					<button type="submit" disabled={passwordSaving} class="btn btn--primary">
+						{passwordSaving ? 'Updating...' : 'Update Password'}
+					</button>
+					<button type="button" class="btn btn--outline" onclick={() => { showPasswordReset = false; }}>Cancel</button>
+				</div>
+			</form>
+		</div>
 	{/if}
 
 	{#if !sf}

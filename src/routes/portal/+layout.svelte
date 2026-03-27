@@ -24,6 +24,7 @@
 	const chapterDisplay = $derived(
 		member?.current_chapter_name ?? member?.chapters?.name ?? ''
 	);
+	const hasChapterAccess = $derived(data.hasChapterAccess ?? false);
 
 	const bottomTabs = [
 		{ label: 'Home', href: '/portal', icon: 'home' },
@@ -55,6 +56,15 @@
 			]
 		}
 	];
+
+	const adminSections = $derived(
+		hasChapterAccess ? [{
+			label: 'Chapter Administration',
+			items: [
+				{ label: 'Chapter Management', href: '/portal/chapter-management', icon: 'building' }
+			]
+		}] : []
+	);
 
 	const iconPaths: Record<string, string> = {
 		home: 'M2.25 12l8.954-8.955a1.126 1.126 0 011.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25',
@@ -165,6 +175,22 @@
 					{#if si > 0}
 						<div class="sidebar-divider"></div>
 					{/if}
+					<p class="sidebar-section-label">{section.label}</p>
+					{#each section.items as item}
+						<a
+							href={item.href}
+							class="sidebar-link"
+							class:sidebar-link--active={isActive(item.href)}
+						>
+							<svg class="sidebar-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+								<path stroke-linecap="round" stroke-linejoin="round" d={iconPaths[item.icon]} />
+							</svg>
+							{item.label}
+						</a>
+					{/each}
+				{/each}
+				{#each adminSections as section}
+					<div class="sidebar-divider"></div>
 					<p class="sidebar-section-label">{section.label}</p>
 					{#each section.items as item}
 						<a

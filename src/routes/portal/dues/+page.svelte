@@ -30,7 +30,7 @@
 	const isPaid = $derived(memberDues?.status === 'paid' || memberDues?.status === 'exempt');
 	const fyDisplay = $derived(fiscalYear ? `FY ${fiscalYear.year - 1}-${fiscalYear.year}` : '');
 
-	const STRIPE_PK = 'pk_test_51S8RNnRqCcfg1CMWL8HMCwExLbKLMQBMBeHzEaKGeQc7ewjlocccVlcVYnnA0YRkOyMqt7Bs0ImQagBMFfuGlKEg00TlkjTeUy';
+	const STRIPE_PK = import.meta.env.PUBLIC_STRIPE_PUBLISHABLE_KEY || 'pk_test_51TFapxRy9JTt9eUJRhjAdSsKgFcSNvp61V8XOPHq2Qs2toelvXxhVXOi9KCMH6zIRWyItk4y9zHJaDGXJ1rTdHUs00hVnP7u2v';
 
 	let ready = $state(false);
 	onMount(async () => {

@@ -2,7 +2,7 @@ import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals, parent }) => {
 	const { session, user, member } = await parent();
-	if (!session || !member) return { sfContact: null, education: [] };
+	if (!session || !member) return { sfContact: null, education: [], badges: [] };
 
 	// Fetch education + military + badges in parallel from Supabase
 	const [educationRes, militaryRes, badgesRes] = await Promise.all([

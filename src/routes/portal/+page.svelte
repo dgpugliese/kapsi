@@ -43,8 +43,21 @@
 </svelte:head>
 
 <div class="dashboard" class:dashboard--ready={ready}>
+	<!-- NIGS Banner -->
+	{#if !isGoodStanding}
+		<div class="nigs-banner fade-up" style="--delay:0;">
+			<div class="nigs-banner-icon">
+				<svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/></svg>
+			</div>
+			<div>
+				<strong>Your membership is not in good standing.</strong>
+				<p style="margin-top:4px;">Some features are restricted until your dues are current. <a href="/portal/dues" style="color:var(--crimson); font-weight:600;">Pay Dues</a></p>
+			</div>
+		</div>
+	{/if}
+
 	<!-- Welcome -->
-	<div class="welcome fade-up" style="--delay:0;">
+	<div class="welcome fade-up" style="--delay:{isGoodStanding ? 0 : 1};">
 		<h1 class="welcome-title">Welcome, {member?.first_name ?? 'Brother'}</h1>
 		<p class="welcome-sub">Your membership dashboard</p>
 	</div>
@@ -337,6 +350,15 @@
 	.event-day { font-family: var(--font-serif); font-size: 1.1rem; font-weight: 700; color: var(--black); }
 	.event-title { font-size: 0.88rem; font-weight: 600; color: var(--black); margin-bottom: 2px; }
 	.event-location { font-size: 0.75rem; color: var(--gray-500); }
+
+	/* NIGS Banner */
+	.nigs-banner {
+		display: flex; align-items: flex-start; gap: 12px;
+		background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px;
+		padding: 16px 20px; margin-bottom: 20px; font-size: 0.88rem;
+		color: #991b1b; line-height: 1.5;
+	}
+	.nigs-banner-icon { flex-shrink: 0; margin-top: 2px; }
 
 	/* Mobile */
 	@media (max-width: 768px) {

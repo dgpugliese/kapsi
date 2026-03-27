@@ -4,7 +4,7 @@ import { checkChapterAccess } from '$lib/chapter-access';
 
 const ADMIN_ROLES = ['national_officer', 'ihq_staff', 'super_admin'];
 
-export const load: LayoutServerLoad = async ({ locals, cookies }) => {
+export const load: LayoutServerLoad = async ({ locals, cookies, url }) => {
 	const { session, user } = await locals.safeGetSession();
 
 	if (!session) {
@@ -74,12 +74,25 @@ export const load: LayoutServerLoad = async ({ locals, cookies }) => {
 	}
 
 	const member = memberRes.data;
+	const isGoodStanding = member?.membership_status === 'active';
+
+	// Block NIGS members from restricted pages
+	if (member && !isGoodStanding) {
+		const allowedPaths = ['/portal', '/portal/profile', '/portal/dues', '/portal/store', '/portal/documents'];
+		const currentPath = url.pathname;
+		const isAllowed = allowedPaths.some(p => currentPath === p) ||
+			currentPath.startsWith('/about/');
+
+		if (!isAllowed && currentPath.startsWith('/portal/')) {
+			throw redirect(303, '/portal?restricted=true');
+		}
+	}
 
 	let hasChapterAccess = false;
-	if (member) {
+	if (member && isGoodStanding) {
 		const access = await checkChapterAccess(locals.supabase, user!.id, member.chapter_id);
 		hasChapterAccess = access.hasAccess;
 	}
 
-	return { session, user, member, hasChapterAccess, impersonating: false };
+	return { session, user, member, hasChapterAccess, isGoodStanding, impersonating: false };
 };

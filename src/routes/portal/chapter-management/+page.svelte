@@ -3,12 +3,10 @@
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
-	const member = $derived(data.member);
 	const chapter = $derived(data.chapter);
 	const hasAccess = $derived(data.hasAccess);
 	const activeCount = $derived(data.activeCount ?? 0);
 	const totalMembers = $derived(data.totalMembers ?? 0);
-	const fiscalYear = $derived(data.fiscalYear ?? new Date().getFullYear());
 
 	let activeTab = $state('details');
 	let ready = $state(false);
@@ -33,12 +31,13 @@
 		{ id: 'details', label: 'Details' },
 		{ id: 'roster', label: 'Roster Report' },
 		{ id: 'officers', label: 'Officer Report' },
-		{ id: 'financial', label: 'Financial Status' }
+		{ id: 'financial', label: 'Financial Status' },
+		{ id: 'eic', label: 'EIC' }
 	];
 
 	onMount(() => {
 		ready = true;
-		if (chapter && hasAccess) {
+		if (chapter) {
 			loadRoster();
 			loadOfficers();
 		}
@@ -357,6 +356,28 @@
 						</div>
 					{:else}
 						<p class="empty-roster">No members to display financial status.</p>
+					{/if}
+				</div>
+
+			{:else if activeTab === 'eic'}
+				<!-- EIC TAB -->
+				<div class="card">
+					<div class="roster-header">
+						<h2 class="section-title" style="margin-bottom:0; border:none; padding:0;">Event Insurance Checklist</h2>
+						<a href="/portal/chapter-management/eic" class="manage-link">
+							View All EICs &rarr;
+						</a>
+					</div>
+					<p style="font-size:0.85rem; color:var(--gray-500); line-height:1.5;">
+						Event Insurance Checklists must be submitted at least <strong>21 days prior</strong> to any chapter event.
+						All events require EIC approval from the Province Polemarch and IHQ before proceeding.
+					</p>
+					{#if hasAccess}
+						<div style="margin-top:16px;">
+							<a href="/portal/chapter-management/eic" class="btn btn--primary" style="display:inline-flex; padding:10px 20px; text-decoration:none;">
+								+ New EIC
+							</a>
+						</div>
 					{/if}
 				</div>
 			{/if}

@@ -103,6 +103,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			ePaymentId = existing[0].Id;
 			await sfUpdate('OrderApi__EPayment__c', ePaymentId, {
 				OrderApi__Total__c: amountPaid,
+				OrderApi__Amount__c: amountPaid,
 				OrderApi__Succeeded__c: true,
 				OrderApi__Transaction_Type__c: isACH ? 'ach' : 'card',
 				OrderApi__Gateway_Transaction_ID__c: chargeId,
@@ -119,6 +120,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 				OrderApi__Sales_Order__c: orderId,
 				OrderApi__Date__c: today,
 				OrderApi__Total__c: amountPaid,
+				OrderApi__Amount__c: amountPaid,
 				OrderApi__Succeeded__c: true,
 				OrderApi__Transaction_Type__c: isACH ? 'ach' : 'card',
 				OrderApi__Gateway_Transaction_ID__c: chargeId,
@@ -129,11 +131,19 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 				OrderApi__Full_Name__c: cardholderName,
 				OrderApi__Entity__c: 'Contact'
 			});
-			// Fonteva trigger resets Total on insert — force it back with delay
+			// Fonteva trigger resets Total on insert — force it back with delay + retry
 			try {
-				await new Promise(r => setTimeout(r, 1000));
-				await sfUpdate('OrderApi__EPayment__c', ePaymentId, { OrderApi__Total__c: amountPaid });
-			} catch { /* best effort */ }
+				await new Promise(r => setTimeout(r, 1500));
+				await sfUpdate('OrderApi__EPayment__c', ePaymentId, {
+					OrderApi__Total__c: amountPaid,
+					OrderApi__Amount__c: amountPaid
+				});
+			} catch {
+				try {
+					await new Promise(r => setTimeout(r, 1000));
+					await sfUpdate('OrderApi__EPayment__c', ePaymentId, { OrderApi__Total__c: amountPaid });
+				} catch { /* best effort */ }
+			}
 			steps.ePayment = { ok: true, id: ePaymentId };
 		}
 	} catch (err: any) {
@@ -147,7 +157,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		const existing = await sfQuery<any>(
 			`SELECT Id FROM OrderApi__Receipt__c
 			 WHERE OrderApi__Sales_Order__c = '${orderId}'
-			   AND OrderApi__Gateway_Transaction_Id__c = '${paymentIntentId}' LIMIT 1`
+			   AND (OrderApi__Gateway_Transaction_Id__c = '${chargeId}'
+			     OR OrderApi__Gateway_Transaction_Id__c = '${paymentIntentId}') LIMIT 1`
 		);
 
 		if (existing.length > 0) {
@@ -163,7 +174,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 				OrderApi__Is_Posted__c: true,
 				OrderApi__Payment_Type__c: isACH ? 'ACH' : 'Credit Card',
 				OrderApi__Payment_Gateway__c: gatewayId,
-				OrderApi__Gateway_Transaction_Id__c: paymentIntentId,
+				OrderApi__Gateway_Transaction_Id__c: chargeId,
 				OrderApi__Reference_Number__c: paymentIntentId,
 				...(ePaymentId ? { OrderApi__EPayment__c: ePaymentId } : {})
 			});

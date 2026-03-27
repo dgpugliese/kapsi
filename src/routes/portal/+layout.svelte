@@ -25,6 +25,13 @@
 		member?.current_chapter_name ?? member?.chapters?.name ?? ''
 	);
 	const hasChapterAccess = $derived(data.hasChapterAccess ?? false);
+	const impersonating = $derived((data as any).impersonating ?? false);
+	const impersonatingName = $derived((data as any).impersonatingName ?? '');
+
+	async function stopImpersonating() {
+		await fetch('/api/admin/impersonate', { method: 'DELETE' });
+		window.location.href = '/admin/members';
+	}
 
 	const bottomTabs = [
 		{ label: 'Home', href: '/portal', icon: 'home' },
@@ -121,6 +128,14 @@
 </svelte:head>
 
 <div class="portal-shell">
+	<!-- Impersonation banner -->
+	{#if impersonating}
+		<div class="impersonate-banner">
+			<span>Viewing as <strong>{impersonatingName}</strong></span>
+			<button onclick={stopImpersonating} class="impersonate-exit">Exit Impersonation</button>
+		</div>
+	{/if}
+
 	<!-- Mobile header -->
 	<header class="portal-mobile-header">
 		<div class="portal-mobile-header-inner">
@@ -298,6 +313,20 @@
 </div>
 
 <style>
+	/* ===== Impersonation banner ===== */
+	.impersonate-banner {
+		background: #fef3c7; color: #92400e; padding: 10px 20px;
+		display: flex; align-items: center; justify-content: center; gap: 16px;
+		font-size: 0.85rem; font-weight: 500; z-index: 100; position: sticky; top: 0;
+		border-bottom: 2px solid #f59e0b;
+	}
+	.impersonate-exit {
+		background: #92400e; color: white; border: none; border-radius: 6px;
+		padding: 5px 14px; font-size: 0.78rem; font-weight: 600; cursor: pointer;
+		font-family: inherit; transition: background 0.2s;
+	}
+	.impersonate-exit:hover { background: #78350f; }
+
 	/* ===== Shell ===== */
 	.portal-shell { min-height: 100vh; min-height: 100dvh; background: var(--gray-50, #f8f8f7); }
 	.portal-body { display: flex; }

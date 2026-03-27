@@ -48,6 +48,20 @@
 		setTimeout(() => (message = ''), 3000);
 	}
 
+	async function impersonateMember(id: string) {
+		const res = await fetch('/api/admin/impersonate', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ memberId: id })
+		});
+		if (res.ok) {
+			window.open('/portal', '_blank');
+		} else {
+			message = 'Failed to start impersonation.';
+			setTimeout(() => (message = ''), 3000);
+		}
+	}
+
 	function exportCsv() {
 		const headers = ['First Name', 'Last Name', 'Email', 'Phone', 'City', 'State', 'Status', 'Type', 'Role'];
 		const rows = members.map((m: any) => [
@@ -134,8 +148,9 @@
 							<option value="super_admin">Super Admin</option>
 						</select>
 					</td>
-					<td style="padding:10px 14px; border-bottom:1px solid var(--gray-50);">
+					<td style="padding:10px 14px; border-bottom:1px solid var(--gray-50); white-space:nowrap;">
 						<a href="/admin/members/{m.id}" style="font-size:0.78rem; color:var(--crimson); font-weight:600;">Edit</a>
+						<button onclick={() => impersonateMember(m.id)} style="font-size:0.78rem; color:var(--gray-500); font-weight:600; margin-left:10px; background:none; border:none; cursor:pointer; text-decoration:underline;">View</button>
 					</td>
 				</tr>
 			{/each}

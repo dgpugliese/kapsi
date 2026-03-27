@@ -2,7 +2,9 @@ import { redirect } from '@sveltejs/kit';
 import type { LayoutServerLoad } from './$types';
 import { checkChapterAccess } from '$lib/chapter-access';
 
-export const load: LayoutServerLoad = async ({ locals }) => {
+const ADMIN_ROLES = ['national_officer', 'ihq_staff', 'super_admin'];
+
+export const load: LayoutServerLoad = async ({ locals, cookies }) => {
 	const { session, user } = await locals.safeGetSession();
 
 	if (!session) {
@@ -23,14 +25,46 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 		province_id, directory_status, created_at, updated_at,
 		chapters!members_chapter_id_fkey(name, greek_designation), provinces:province_id(name)`;
 
-	// Look up member by auth_user_id (linked auth account) or by email
+	// Check for admin impersonation
+	let impersonating = false;
+	const impersonateMemberId = cookies.get('impersonate_member_id');
+
+	if (impersonateMemberId) {
+		// Verify the real user is an admin
+		const { data: admin } = await locals.supabase
+			.from('members')
+			.select('role')
+			.eq('auth_user_id', user!.id)
+			.single();
+
+		if (admin && ADMIN_ROLES.includes(admin.role)) {
+			const { data: impersonatedMember } = await locals.supabase
+				.from('members')
+				.select(memberColumns)
+				.eq('id', impersonateMemberId)
+				.single();
+
+			if (impersonatedMember) {
+				const access = await checkChapterAccess(locals.supabase, user!.id, impersonatedMember.chapter_id);
+				return {
+					session, user, member: impersonatedMember,
+					hasChapterAccess: access.hasAccess,
+					impersonating: true,
+					impersonatingName: `${impersonatedMember.first_name} ${impersonatedMember.last_name}`
+				};
+			}
+		}
+		// Invalid impersonation — clear cookie
+		cookies.delete('impersonate_member_id', { path: '/' });
+	}
+
+	// Normal flow: look up member by auth_user_id or email
 	let memberRes = await locals.supabase
 		.from('members')
 		.select(memberColumns)
 		.eq('auth_user_id', user!.id)
 		.single();
 
-	// Fallback: find by email if no auth_user_id link
 	if (!memberRes.data && user?.email) {
 		memberRes = await locals.supabase
 			.from('members')
@@ -41,12 +75,11 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 
 	const member = memberRes.data;
 
-	// Check chapter management access using scoped utility
 	let hasChapterAccess = false;
 	if (member) {
 		const access = await checkChapterAccess(locals.supabase, user!.id, member.chapter_id);
 		hasChapterAccess = access.hasAccess;
 	}
 
-	return { session, user, member, hasChapterAccess };
+	return { session, user, member, hasChapterAccess, impersonating: false };
 };

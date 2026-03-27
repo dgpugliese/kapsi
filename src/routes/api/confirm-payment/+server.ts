@@ -1,241 +1,135 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { findContactByEmail, sfCreate, sfUpdate, sfQuery } from '$lib/salesforce';
 import { env } from '$env/dynamic/private';
+import Stripe from 'stripe';
 
 /**
  * POST /api/confirm-payment
- *
- * Called after Stripe payment succeeds. Syncs payment data back to Salesforce:
- *   1. Retrieve PaymentIntent from Stripe (source of truth for amount + card details)
- *   2. Read the SF Sales Order total (includes Fonteva's surcharge)
- *   3. Create ePayment record
- *   4. Create Receipt record
- *   5. Post the order + set Amount Paid (exits draft state)
- *   6. Close the order (must be separate update — Fonteva validation blocks draft→closed)
- *   7. Update Contact membership expiry
- *
- * Each step is idempotent — safe to retry if a previous attempt partially failed.
- * If any SF step fails, the Stripe payment is still safe.
+ * Called after Stripe payment succeeds. Updates order + member dues status.
  */
 export const POST: RequestHandler = async ({ request, locals }) => {
 	const { session, user } = await locals.safeGetSession();
 	if (!session || !user) throw error(401, 'Unauthorized');
 
-	const { orderId, paymentIntentId, duesType, paymentMethod } = await request.json();
-	const isACH = paymentMethod === 'ach';
-	if (!orderId || !paymentIntentId) throw error(400, 'Missing orderId or paymentIntentId');
+	const { paymentIntentId, orderId } = await request.json();
+	if (!paymentIntentId) throw error(400, 'Missing paymentIntentId');
 
-	const contact = await findContactByEmail(user.email!);
-	if (!contact) throw error(404, 'No Salesforce contact found');
-
-	// --- Config ---
-	const today = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }))
-		.toISOString().split('T')[0];
-	const gatewayId = env.SF_GATEWAY_ID || 'a18Su000008QU13IAG';
 	const stripeKey = env.STRIPE_SECRET_KEY;
+	if (!stripeKey) throw error(500, 'Stripe not configured');
 
-	const steps: Record<string, { ok: boolean; id?: string; error?: string }> = {};
-
-	// === Step 1: Get payment details from Stripe (source of truth) ===
-	let stripeAmount = 0;
-	let cardLast4 = '';
-	let cardBrand = '';
-	let cardholderName = `${contact.FirstName} ${contact.LastName}`;
-	let chargeId = paymentIntentId;
+	const stripe = new Stripe(stripeKey);
 
 	try {
-		if (!stripeKey) throw new Error('STRIPE_SECRET_KEY not configured');
-		const piRes = await fetch(
-			`https://api.stripe.com/v1/payment_intents/${paymentIntentId}?expand[]=payment_method`,
-			{ headers: { Authorization: `Bearer ${stripeKey}` } }
-		);
-		if (!piRes.ok) throw new Error(`Stripe API ${piRes.status}`);
-		const pi = await piRes.json();
+		// Verify payment with Stripe
+		const pi = await stripe.paymentIntents.retrieve(paymentIntentId);
 
-		stripeAmount = pi.amount / 100; // cents → dollars
-		const card = pi.payment_method?.card;
-		cardLast4 = card?.last4 ?? '';
-		cardBrand = card?.brand ?? '';
-		if (pi.payment_method?.billing_details?.name) {
-			cardholderName = pi.payment_method.billing_details.name;
+		if (pi.status !== 'succeeded') {
+			throw error(400, `Payment not completed. Status: ${pi.status}`);
 		}
-		chargeId = typeof pi.latest_charge === 'string'
-			? pi.latest_charge
-			: pi.latest_charge?.id ?? paymentIntentId;
-	} catch (err: any) {
-		console.error('Stripe lookup failed:', err.message);
-		throw error(500, 'Could not retrieve payment details from Stripe');
-	}
 
-	// === Step 2: Read SF order total (includes Fonteva surcharge) ===
-	let orderTotal = stripeAmount; // fallback to Stripe amount
-	try {
-		const orderCheck = await sfQuery<any>(
-			`SELECT Id, OrderApi__Sales_Order_Status__c, OrderApi__Total__c
-			 FROM OrderApi__Sales_Order__c WHERE Id = '${orderId}' LIMIT 1`
-		);
-		if (orderCheck.length > 0) {
-			if (orderCheck[0].OrderApi__Sales_Order_Status__c === 'Paid') {
-				return json({ success: true, steps: { alreadyPaid: { ok: true } }, message: 'Already paid' });
-			}
-			if (orderCheck[0].OrderApi__Total__c > 0) {
-				orderTotal = orderCheck[0].OrderApi__Total__c;
-			}
+		const meta = pi.metadata;
+		const memberId = meta.member_id;
+		const duesType = meta.dues_type;
+		const fiscalYear = parseInt(meta.fiscal_year);
+		const baseAmount = parseFloat(meta.base_amount || '0');
+		const surcharge = parseFloat(meta.surcharge || '0');
+
+		// Get charge details
+		let cardBrand = '';
+		let cardLast4 = '';
+		let chargeId = '';
+		if (pi.latest_charge) {
+			const charge = await stripe.charges.retrieve(pi.latest_charge as string);
+			chargeId = charge.id;
+			cardBrand = charge.payment_method_details?.card?.brand ?? '';
+			cardLast4 = charge.payment_method_details?.card?.last4 ?? '';
 		}
-	} catch (err: any) {
-		console.error('Order check failed (continuing):', err.message);
-	}
 
-	// This is the amount we'll write to SF records — matches the SF order total
-	const amountPaid = orderTotal;
+		// Update order status
+		await locals.supabase
+			.from('orders')
+			.update({
+				status: 'paid',
+				stripe_charge_id: chargeId,
+				card_brand: cardBrand,
+				card_last4: cardLast4,
+				paid_at: new Date().toISOString()
+			})
+			.eq('id', orderId || meta.order_id);
 
-	// === Step 3: Create ePayment (idempotent) ===
-	let ePaymentId = '';
-	try {
-		const existing = await sfQuery<any>(
-			`SELECT Id FROM OrderApi__EPayment__c
-			 WHERE OrderApi__Sales_Order__c = '${orderId}'
-			   AND OrderApi__Reference_Token__c = '${paymentIntentId}' LIMIT 1`
-		);
-
-		if (existing.length > 0) {
-			ePaymentId = existing[0].Id;
-			await sfUpdate('OrderApi__EPayment__c', ePaymentId, {
-				OrderApi__Total__c: amountPaid,
-				OrderApi__Amount__c: amountPaid,
-				OrderApi__Succeeded__c: true,
-				OrderApi__Transaction_Type__c: isACH ? 'ach' : 'card',
-				OrderApi__Gateway_Transaction_ID__c: chargeId,
-				OrderApi__Card_Number__c: cardLast4 ? `xxxx-xxxx-xxxx-${cardLast4}` : null,
-				OrderApi__Card_Type__c: cardBrand ? cardBrand.charAt(0).toUpperCase() + cardBrand.slice(1) : null,
-				OrderApi__Full_Name__c: cardholderName
+		// Record payment history
+		await locals.supabase
+			.from('payment_history')
+			.insert({
+				member_id: memberId,
+				order_id: orderId || meta.order_id,
+				amount: baseAmount,
+				surcharge,
+				total: pi.amount / 100,
+				payment_method: cardLast4 ? 'card' : 'ach',
+				card_brand: cardBrand,
+				card_last4: cardLast4,
+				stripe_payment_intent_id: paymentIntentId,
+				stripe_charge_id: chargeId,
+				description: `${duesType === 'undergraduate' ? 'Undergraduate' : 'Alumni'} Annual Dues FY${fiscalYear}`
 			});
-			steps.ePayment = { ok: true, id: ePaymentId };
-		} else {
-			ePaymentId = await sfCreate('OrderApi__EPayment__c', {
-				OrderApi__Payment_Gateway__c: gatewayId,
-				OrderApi__Contact__c: contact.Id,
-				OrderApi__Account__c: contact.AccountId,
-				OrderApi__Sales_Order__c: orderId,
-				OrderApi__Date__c: today,
-				OrderApi__Total__c: amountPaid,
-				OrderApi__Amount__c: amountPaid,
-				OrderApi__Succeeded__c: true,
-				OrderApi__Transaction_Type__c: isACH ? 'ach' : 'card',
-				OrderApi__Gateway_Transaction_ID__c: chargeId,
-				OrderApi__Payment_Method_Token__c: paymentIntentId,
-				OrderApi__Reference_Token__c: paymentIntentId,
-				OrderApi__Card_Number__c: cardLast4 ? `xxxx-xxxx-xxxx-${cardLast4}` : null,
-				OrderApi__Card_Type__c: cardBrand ? cardBrand.charAt(0).toUpperCase() + cardBrand.slice(1) : null,
-				OrderApi__Full_Name__c: cardholderName,
-				OrderApi__Entity__c: 'Contact'
-			});
-			// Fonteva trigger resets Total on insert — force it back with delay + retry
-			try {
-				await new Promise(r => setTimeout(r, 1500));
-				await sfUpdate('OrderApi__EPayment__c', ePaymentId, {
-					OrderApi__Total__c: amountPaid,
-					OrderApi__Amount__c: amountPaid
-				});
-			} catch {
-				try {
-					await new Promise(r => setTimeout(r, 1000));
-					await sfUpdate('OrderApi__EPayment__c', ePaymentId, { OrderApi__Total__c: amountPaid });
-				} catch { /* best effort */ }
+
+		// Update or create member_dues record
+		const { data: fy } = await locals.supabase
+			.from('fiscal_years')
+			.select('id')
+			.eq('year', fiscalYear)
+			.single();
+
+		if (fy) {
+			const { data: existingDues } = await locals.supabase
+				.from('member_dues')
+				.select('id, amount_paid')
+				.eq('member_id', memberId)
+				.eq('fiscal_year_id', fy.id)
+				.maybeSingle();
+
+			if (existingDues) {
+				await locals.supabase
+					.from('member_dues')
+					.update({
+						amount_paid: existingDues.amount_paid + baseAmount,
+						status: 'paid',
+						paid_at: new Date().toISOString()
+					})
+					.eq('id', existingDues.id);
+			} else {
+				await locals.supabase
+					.from('member_dues')
+					.insert({
+						member_id: memberId,
+						fiscal_year_id: fy.id,
+						dues_type: duesType,
+						amount_due: baseAmount,
+						amount_paid: baseAmount,
+						status: 'paid',
+						paid_at: new Date().toISOString()
+					});
 			}
-			steps.ePayment = { ok: true, id: ePaymentId };
 		}
-	} catch (err: any) {
-		console.error('ePayment failed:', err.message);
-		steps.ePayment = { ok: false, error: err.message };
-	}
 
-	// === Step 4: Create Receipt (idempotent) ===
-	let receiptId = '';
-	try {
-		const existing = await sfQuery<any>(
-			`SELECT Id FROM OrderApi__Receipt__c
-			 WHERE OrderApi__Sales_Order__c = '${orderId}'
-			   AND (OrderApi__Gateway_Transaction_Id__c = '${chargeId}'
-			     OR OrderApi__Gateway_Transaction_Id__c = '${paymentIntentId}') LIMIT 1`
-		);
+		// Update member status to active
+		await locals.supabase
+			.from('members')
+			.update({
+				membership_status: 'active',
+				dues_paid_through: `${fiscalYear}-09-30`
+			})
+			.eq('id', memberId);
 
-		if (existing.length > 0) {
-			receiptId = existing[0].Id;
-			steps.receipt = { ok: true, id: receiptId };
-		} else {
-			receiptId = await sfCreate('OrderApi__Receipt__c', {
-				OrderApi__Sales_Order__c: orderId,
-				OrderApi__Contact__c: contact.Id,
-				OrderApi__Account__c: contact.AccountId,
-				OrderApi__Total__c: amountPaid,
-				OrderApi__Date__c: today,
-				OrderApi__Is_Posted__c: true,
-				OrderApi__Payment_Type__c: isACH ? 'ACH' : 'Credit Card',
-				OrderApi__Payment_Gateway__c: gatewayId,
-				OrderApi__Gateway_Transaction_Id__c: chargeId,
-				OrderApi__Reference_Number__c: paymentIntentId,
-				...(ePaymentId ? { OrderApi__EPayment__c: ePaymentId } : {})
-			});
-			steps.receipt = { ok: true, id: receiptId };
-		}
-	} catch (err: any) {
-		console.error('Receipt failed:', err.message);
-		steps.receipt = { ok: false, error: err.message };
-	}
-
-	// === Step 5: Post the order + set Amount Paid (exits draft state) ===
-	try {
-		await sfUpdate('OrderApi__Sales_Order__c', orderId, {
-			OrderApi__Is_Posted__c: true,
-			OrderApi__Posting_Status__c: 'Posted',
-			OrderApi__Posted_Date__c: today,
-			OrderApi__Paid_Date__c: today,
-			OrderApi__Amount_Paid__c: amountPaid
+		return json({
+			success: true,
+			message: 'Payment confirmed',
+			orderNumber: meta.order_number || orderId
 		});
-		steps.postOrder = { ok: true };
 	} catch (err: any) {
-		console.error('Post order failed:', err.message);
-		steps.postOrder = { ok: false, error: err.message };
+		console.error('Confirm payment error:', err);
+		if (err.status) throw err;
+		throw error(500, err.message || 'Failed to confirm payment');
 	}
-
-	// === Step 6: Close the order (separate update — Fonteva blocks draft→closed) ===
-	try {
-		await sfUpdate('OrderApi__Sales_Order__c', orderId, {
-			OrderApi__Status__c: 'Closed'
-		});
-		steps.closeOrder = { ok: true };
-	} catch (err: any) {
-		console.error('Close order failed:', err.message);
-		steps.closeOrder = { ok: false, error: err.message };
-	}
-
-	// === Step 7: Update Contact membership ===
-	try {
-		const newExpiry = new Date();
-		newExpiry.setFullYear(newExpiry.getFullYear() + 1);
-
-		await sfUpdate('Contact', contact.Id, {
-			Date_Membership_Expires__c: newExpiry.toISOString().split('T')[0],
-			FON_Member_Status__c: 'In Good Standing'
-		});
-		steps.updateContact = { ok: true };
-	} catch (err: any) {
-		console.error('Contact update failed:', err.message);
-		steps.updateContact = { ok: false, error: err.message };
-	}
-
-	const allOk = Object.values(steps).every(s => s.ok);
-
-	return json({
-		success: allOk,
-		steps,
-		ePaymentId: ePaymentId || null,
-		receiptId: receiptId || null,
-		amountPaid,
-		message: allOk
-			? 'Payment recorded and membership updated'
-			: 'Some steps failed — see details'
-	});
 };

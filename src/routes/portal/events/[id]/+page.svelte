@@ -334,10 +334,14 @@
 		if (ticket.enable_early_bird && ticket.early_bird_price != null && ticket.early_bird_end_date) {
 			const ebEnd = new Date(ticket.early_bird_end_date);
 			if (new Date() < ebEnd) {
-				return { price: ticket.early_bird_price, isEarlyBird: true };
+				return { price: Number(ticket.early_bird_price) || 0, isEarlyBird: true };
 			}
 		}
-		return { price: ticket.price ?? 0, isEarlyBird: false };
+		return { price: Number(ticket.price) || 0, isEarlyBird: false };
+	}
+
+	function fmt(n: any): string {
+		return (Number(n) || 0).toFixed(2);
 	}
 
 	function getStepNumber(): number {
@@ -630,13 +634,13 @@
 										<div style="text-align:right;">
 											{#if ep.isEarlyBird}
 												<div style="font-family:var(--font-serif); font-size:1.3rem; font-weight:700; color:var(--crimson);">
-													${ep.price.toFixed(2)}
+													${fmt(ep.price)}
 												</div>
-												<div style="font-size:0.7rem; color:var(--gray-400); text-decoration:line-through;">${ticket.price.toFixed(2)}</div>
+												<div style="font-size:0.7rem; color:var(--gray-400); text-decoration:line-through;">${fmt(ticket.price)}</div>
 												<div style="font-size:0.68rem; color:#065F46; font-weight:600;">Early Bird</div>
 											{:else}
 												<div style="font-family:var(--font-serif); font-size:1.3rem; font-weight:700; color:var(--crimson);">
-													{ep.price > 0 ? `$${ep.price.toFixed(2)}` : 'Free'}
+													{ep.price > 0 ? `$${fmt(ep.price)}` : 'Free'}
 												</div>
 											{/if}
 										</div>
@@ -676,13 +680,13 @@
 											<div style="text-align:right;">
 												{#if ep.isEarlyBird}
 													<div style="font-family:var(--font-serif); font-size:1.3rem; font-weight:700; color:var(--crimson);">
-														${ep.price.toFixed(2)}
+														${fmt(ep.price)}
 													</div>
-													<div style="font-size:0.7rem; color:var(--gray-400); text-decoration:line-through;">${ticket.price.toFixed(2)}</div>
+													<div style="font-size:0.7rem; color:var(--gray-400); text-decoration:line-through;">${fmt(ticket.price)}</div>
 													<div style="font-size:0.68rem; color:#065F46; font-weight:600;">Early Bird</div>
 												{:else}
 													<div style="font-family:var(--font-serif); font-size:1.3rem; font-weight:700; color:var(--crimson);">
-														{ep.price > 0 ? `$${ep.price.toFixed(2)}` : 'Free'}
+														{ep.price > 0 ? `$${fmt(ep.price)}` : 'Free'}
 													</div>
 												{/if}
 											</div>
@@ -730,7 +734,7 @@
 											{/if}
 										</div>
 										<div style="font-weight:700; font-size:0.9rem; color:var(--crimson);">
-											{item.subtotal > 0 ? `$${item.subtotal.toFixed(2)}` : 'Free'}
+											{item.subtotal > 0 ? `$${fmt(item.subtotal)}` : 'Free'}
 										</div>
 									</div>
 								{/each}
@@ -738,7 +742,7 @@
 							<div class="order-summary-total">
 								<span style="font-weight:700; font-size:1rem;">Total</span>
 								<span style="font-family:var(--font-serif); font-weight:700; font-size:1.25rem; color:var(--crimson);">
-									{getCartTotal() > 0 ? `$${getCartTotal().toFixed(2)}` : 'Free'}
+									{getCartTotal() > 0 ? `$${fmt(getCartTotal())}` : 'Free'}
 								</span>
 							</div>
 						</div>
@@ -749,12 +753,12 @@
 							<div style="font-weight:600; margin-bottom:12px; font-size:0.95rem;">Payment Details</div>
 							<div style="display:flex; justify-content:space-between; font-size:0.9rem; padding:4px 0;">
 								<span>Subtotal</span>
-								<span>${eventBaseAmount.toFixed(2)}</span>
+								<span>${fmt(eventBaseAmount)}</span>
 							</div>
 							{#if paymentMethod === 'card'}
 								<div style="display:flex; justify-content:space-between; font-size:0.88rem; padding:4px 0; color:var(--gray-600);">
 									<span>Processing Fee (4%)</span>
-									<span>${eventSurcharge.toFixed(2)}</span>
+									<span>${fmt(eventSurcharge)}</span>
 								</div>
 							{:else}
 								<div style="display:flex; justify-content:space-between; font-size:0.88rem; padding:4px 0; color:#065F46;">
@@ -764,7 +768,7 @@
 							{/if}
 							<div style="display:flex; justify-content:space-between; font-size:1.05rem; font-weight:700; padding:8px 0 0; border-top:1px solid var(--gray-100); margin-top:4px; color:var(--crimson);">
 								<span>Total</span>
-								<span>${eventTotalAmount.toFixed(2)}</span>
+								<span>${fmt(eventTotalAmount)}</span>
 							</div>
 						</div>
 						<form onsubmit={handlePayment}>
@@ -772,7 +776,7 @@
 							<ProgressButton
 								loading={processing}
 								disabled={!stripeReady}
-								label={`Pay $${eventTotalAmount.toFixed(2)} & Register`}
+								label={`Pay $${fmt(eventTotalAmount)} & Register`}
 								loadingLabel="Processing Payment..."
 							/>
 						</form>
@@ -797,7 +801,7 @@
 								<div class="payment-method-breakdown">
 									<div class="payment-method-row">
 										<span>Subtotal</span>
-										<span>${eventBaseAmount.toFixed(2)}</span>
+										<span>${fmt(eventBaseAmount)}</span>
 									</div>
 									<div class="payment-method-row" style="color:var(--gray-500); font-style:italic;">
 										<span>4% processing fee applies</span>
@@ -820,7 +824,7 @@
 								<div class="payment-method-breakdown">
 									<div class="payment-method-row">
 										<span>Subtotal</span>
-										<span>${eventBaseAmount.toFixed(2)}</span>
+										<span>${fmt(eventBaseAmount)}</span>
 									</div>
 								</div>
 								<div class="no-fee-badge">No processing fee</div>
@@ -831,7 +835,7 @@
 							<ProgressButton
 								type="button"
 								loading={processing}
-								label={`Continue — $${eventBaseAmount.toFixed(2)}`}
+								label={`Continue — $${fmt(eventBaseAmount)}`}
 								loadingLabel="Creating Payment..."
 								onclick={proceedToPayment}
 							/>
@@ -851,7 +855,7 @@
 							{:else if !selectedRegistration}
 								Select a Registration Ticket
 							{:else if getCartTotal() > 0}
-								Choose Payment Method — ${getCartTotal().toFixed(2)}
+								Choose Payment Method — ${fmt(getCartTotal())}
 							{:else}
 								Register Now — Free
 							{/if}

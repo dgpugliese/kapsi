@@ -1,11 +1,11 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { sfQuery, sfUpdate, sfCreate } from '$lib/salesforce';
+import { sfQuery } from '$lib/salesforce';
 import { getChapterOfficer } from '$lib/chapter-auth';
 
 /**
  * GET /api/chapter/officers
- * Returns current chapter officers (from badges + account fields).
+ * Returns current chapter officers from Salesforce (read-only).
  */
 export const GET: RequestHandler = async ({ locals }) => {
 	const { session, user } = await locals.safeGetSession();
@@ -14,7 +14,7 @@ export const GET: RequestHandler = async ({ locals }) => {
 	const officer = await getChapterOfficer(user.email!);
 	if (!officer) throw error(403, 'No chapter found');
 
-	// Get basic account info first (safe fields only)
+	// Get basic account info (safe fields)
 	let acct: any = null;
 	try {
 		const accounts = await sfQuery<any>(
@@ -23,7 +23,6 @@ export const GET: RequestHandler = async ({ locals }) => {
 		);
 		acct = accounts.length > 0 ? accounts[0] : null;
 	} catch {
-		// Fallback: minimal query
 		const accounts = await sfQuery<any>(
 			`SELECT Id, Name FROM Account WHERE Id = '${officer.accountId}' LIMIT 1`
 		);
@@ -32,7 +31,7 @@ export const GET: RequestHandler = async ({ locals }) => {
 
 	if (!acct) throw error(404, 'Chapter not found');
 
-	// Try to get officer name fields from Account (may not exist in all orgs)
+	// Try to get officer name fields from Account
 	let accountOfficers: Record<string, any> = {};
 	try {
 		const acctDetails = await sfQuery<any>(
@@ -56,11 +55,9 @@ export const GET: RequestHandler = async ({ locals }) => {
 				advisor: { name: d.FON_Advisor_Name_FOR__c, email: d.FON_Advisor_Email_FOR__c, phone: d.FON_Advisor_Phone_FOR__c }
 			};
 		}
-	} catch {
-		// Account officer fields don't exist in this org — that's fine
-	}
+	} catch { /* fields don't exist in this org */ }
 
-	// Get all contacts in this chapter who have officer badges
+	// Get officer badges from SF (read-only)
 	let officerList: any[] = [];
 	try {
 		const officerBadges = await sfQuery<any>(`
@@ -73,7 +70,6 @@ export const GET: RequestHandler = async ({ locals }) => {
 				AND OrderApi__Badge_Type__r.Name LIKE 'Chapter %'
 			ORDER BY OrderApi__Badge_Type__r.Name
 		`);
-
 		officerList = officerBadges.map((b: any) => ({
 			contactId: b.OrderApi__Contact__r?.Id,
 			firstName: b.OrderApi__Contact__r?.FirstName,
@@ -83,7 +79,6 @@ export const GET: RequestHandler = async ({ locals }) => {
 		}));
 	} catch (err: any) {
 		console.error('Failed to query officer badges:', err.message);
-		// Badge query failed — return empty list, account officers still available
 	}
 
 	return json({
@@ -106,101 +101,99 @@ export const GET: RequestHandler = async ({ locals }) => {
 
 /**
  * POST /api/chapter/officers
- * Update a chapter officer position.
- * Body: { role: 'Chapter Polemarch', contactId: string }
+ * Update a chapter officer position in Supabase member_badges.
+ * No Salesforce writes.
+ *
+ * Body: { role: 'Chapter Polemarch', memberId: string }
  */
 export const POST: RequestHandler = async ({ request, locals }) => {
 	const { session, user } = await locals.safeGetSession();
 	if (!session || !user) throw error(401, 'Unauthorized');
 
-	const officer = await getChapterOfficer(user.email!);
-	if (!officer || !officer.isPolemarch) throw error(403, 'Only the Polemarch can update officers');
+	const { data: currentMember } = await locals.supabase
+		.from('members')
+		.select('id, chapter_id, role')
+		.eq('auth_user_id', user.id)
+		.single();
 
-	const { role, contactId } = await request.json();
-	if (!role || !contactId) throw error(400, 'Missing role or contactId');
+	if (!currentMember?.chapter_id) throw error(403, 'No chapter assigned');
 
-	// Verify the contact is in this chapter
-	const contacts = await sfQuery<any>(
-		`SELECT Id, FirstName, LastName, Email, AccountId, FON_Member_Status__c
-		 FROM Contact WHERE Id = '${contactId}' LIMIT 1`
+	// Verify Polemarch
+	const { data: myBadges } = await locals.supabase
+		.from('member_badges')
+		.select('badges(name)')
+		.eq('member_id', currentMember.id)
+		.eq('is_active', true);
+
+	const myBadgeNames = (myBadges ?? []).map((b: any) => b.badges?.name).filter(Boolean);
+	const isPolemarch = myBadgeNames.includes('Chapter Polemarch') ||
+		['super_admin', 'ihq_staff'].includes(currentMember.role);
+
+	if (!isPolemarch) throw error(403, 'Only the Polemarch can update officers');
+
+	const body = await request.json();
+	const { role, memberId, contactId } = body;
+	if (!role) throw error(400, 'Missing role');
+
+	const targetId = memberId || contactId;
+	if (!targetId) throw error(400, 'Missing memberId');
+
+	// Find the target member
+	let targetQuery = locals.supabase.from('members').select('id, chapter_id, membership_status, first_name, last_name');
+	if (targetId.length === 36 && targetId.includes('-')) {
+		targetQuery = targetQuery.eq('id', targetId);
+	} else {
+		targetQuery = targetQuery.eq('sf_contact_id', targetId);
+	}
+	const { data: targetMember } = await targetQuery.single();
+
+	if (!targetMember) throw error(404, 'Member not found');
+	if (targetMember.chapter_id !== currentMember.chapter_id) throw error(400, 'Member must be in your chapter');
+	if (targetMember.membership_status !== 'active') throw error(400, 'Officer must be In Good Standing');
+
+	// Find the badge type
+	const { data: badgeType } = await locals.supabase
+		.from('badges')
+		.select('id')
+		.eq('name', role)
+		.single();
+
+	if (!badgeType) throw error(404, `Badge type "${role}" not found`);
+
+	// Deactivate existing badges for this role in this chapter
+	const { data: existingBadges } = await locals.supabase
+		.from('member_badges')
+		.select('id, member_id, members!inner(chapter_id)')
+		.eq('badge_id', badgeType.id)
+		.eq('is_active', true);
+
+	const chapterBadges = (existingBadges ?? []).filter(
+		(b: any) => b.members?.chapter_id === currentMember.chapter_id
 	);
-	if (contacts.length === 0) throw error(404, 'Contact not found');
-	if (contacts[0].AccountId !== officer.accountId) throw error(400, 'Member must be in your chapter');
-	if (contacts[0].FON_Member_Status__c !== 'In Good Standing') {
-		throw error(400, 'Officer must be In Good Standing');
+
+	for (const badge of chapterBadges) {
+		await locals.supabase
+			.from('member_badges')
+			.update({ is_active: false, updated_at: new Date().toISOString() })
+			.eq('id', badge.id);
 	}
 
-	const contact = contacts[0];
-	const steps: Record<string, { ok: boolean; error?: string }> = {};
-
-	// Step 1: Deactivate existing badges for this role in this chapter
-	try {
-		const existingBadges = await sfQuery<any>(
-			`SELECT Id FROM OrderApi__Badge__c
-			 WHERE OrderApi__Contact__r.AccountId = '${officer.accountId}'
-				AND OrderApi__Badge_Type__r.Name = '${role}'
-				AND OrderApi__Is_Active__c = true`
-		);
-		for (const badge of existingBadges) {
-			await sfUpdate('OrderApi__Badge__c', badge.Id, { OrderApi__Is_Active__c: false });
-		}
-		steps.deactivateOld = { ok: true };
-	} catch (err: any) {
-		steps.deactivateOld = { ok: false, error: err.message };
-	}
-
-	// Step 2: Create new badge for the new officer
-	try {
-		// Find the badge type
-		const badgeTypes = await sfQuery<any>(
-			`SELECT Id FROM OrderApi__Badge_Type__c WHERE Name = '${role}' AND OrderApi__Is_Active__c = true LIMIT 1`
-		);
-		if (badgeTypes.length === 0) throw new Error(`Badge type "${role}" not found`);
-
-		await sfCreate('OrderApi__Badge__c', {
-			OrderApi__Contact__c: contactId,
-			OrderApi__Badge_Type__c: badgeTypes[0].Id,
-			OrderApi__Is_Active__c: true
+	// Create new badge
+	const { error: err } = await locals.supabase
+		.from('member_badges')
+		.insert({
+			member_id: targetMember.id,
+			badge_id: badgeType.id,
+			is_active: true
 		});
-		steps.createBadge = { ok: true };
-	} catch (err: any) {
-		steps.createBadge = { ok: false, error: err.message };
-	}
 
-	// Step 3: Update Account officer fields (best-effort)
-	try {
-		const fieldMap: Record<string, Record<string, string>> = {
-			'Chapter Polemarch': {
-				FON_Chapter_Polemarch_Name__c: `${contact.FirstName} ${contact.LastName}`,
-				Polemarch_Email__c: contact.Email || ''
-			},
-			'Chapter Vice Polemarch': {
-				FON_Vice_Polemarch_Name__c: `${contact.FirstName} ${contact.LastName}`,
-				FON_Vice_Polemarch_Email__c: contact.Email || ''
-			},
-			'Chapter Keeper of Records': {
-				FON_KOR_Name__c: `${contact.FirstName} ${contact.LastName}`,
-				FON_KOR_Email__c: contact.Email || ''
-			},
-			'Chapter Keeper of Exchequer': {
-				FON_KOE_Name__c: `${contact.FirstName} ${contact.LastName}`
-			},
-			'Chapter Strategus': {
-				FON_Chapter_Strategus_Name__c: `${contact.FirstName} ${contact.LastName}`
-			},
-			'Chapter Lieutenant Strategus': {
-				FON_Chapter_Lt_Strategus_Name__c: `${contact.FirstName} ${contact.LastName}`
-			}
-		};
+	if (err) throw error(500, err.message);
 
-		if (fieldMap[role]) {
-			await sfUpdate('Account', officer.accountId, fieldMap[role]);
-			steps.updateAccount = { ok: true };
+	return json({
+		success: true,
+		steps: {
+			deactivateOld: { ok: true },
+			createBadge: { ok: true },
 		}
-	} catch (err: any) {
-		steps.updateAccount = { ok: false, error: err.message };
-	}
-
-	const allOk = Object.values(steps).every(s => s.ok);
-	return json({ success: allOk, steps });
+	});
 };

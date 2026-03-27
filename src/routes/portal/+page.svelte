@@ -344,12 +344,19 @@
 		.actions-row { grid-template-columns: repeat(2, 1fr); }
 		.details-grid { grid-template-columns: repeat(2, 1fr); }
 		.feed-grid { grid-template-columns: 1fr; }
-		.financial-levels { gap: 20px; }
+		.financial-bar { padding: 16px; }
+		.financial-levels { gap: 16px; justify-content: space-between; }
+		.financial-level { gap: 8px; flex: 1; }
+		.check-icon { width: 24px; height: 24px; }
+		.check-icon svg { width: 12px; height: 12px; }
+		.financial-label { font-size: 0.78rem; }
 	}
 	@media (max-width: 480px) {
 		.status-grid { grid-template-columns: 1fr; }
 		.actions-row { grid-template-columns: 1fr; }
 		.details-grid { grid-template-columns: 1fr; }
-		.financial-levels { flex-direction: column; gap: 12px; }
+		.financial-levels { gap: 12px; }
+		.financial-level { gap: 6px; }
+		.financial-label { font-size: 0.72rem; }
 	}
 </style>

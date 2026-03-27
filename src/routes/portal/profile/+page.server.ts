@@ -15,10 +15,10 @@ export const load: PageServerLoad = async ({ locals, parent }) => {
 			.from('member_military')
 			.select('*')
 			.eq('member_id', member.id)
-			.single(),
+			.maybeSingle(),
 		locals.supabase
 			.from('member_badges')
-			.select('badges(name)')
+			.select('badges(name, category)')
 			.eq('member_id', member.id)
 			.eq('is_active', true)
 	]);

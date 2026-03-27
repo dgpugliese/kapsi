@@ -23,6 +23,9 @@ export const PATCH: RequestHandler = async ({ request, locals }) => {
 	// Build Supabase member update
 	const memberFields: Record<string, any> = {};
 
+	// Chapter
+	if (updates.chapter_id !== undefined) memberFields.chapter_id = updates.chapter_id || null;
+
 	// Personal info
 	if (updates.phone !== undefined) memberFields.phone = updates.phone;
 	if (updates.mobilePhone !== undefined) memberFields.mobile_phone = updates.mobilePhone;

@@ -1,157 +1,305 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
+	import { onMount } from 'svelte';
+	import { invalidateAll } from '$app/navigation';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
-	let chapters = $derived(data.chapters);
-	let total = $derived(data.total);
-	let page = $derived(data.page);
-	let perPage = $derived(data.perPage);
-	let totalPages = $derived(Math.ceil(total / perPage));
-	let selectedChapter = $state<any>(null);
+	const member = $derived(data.member);
+	const currentChapter = $derived(data.currentChapter);
+	const initiationChapter = $derived(data.initiationChapter);
 
-	let q = $state(data.filters.q);
-	let stateFilter = $state(data.filters.state);
-	let typeFilter = $state(data.filters.type);
+	// Transfer flow
+	let showTransfer = $state(false);
+	let searchQuery = $state('');
+	let searchResults = $state<any[]>([]);
+	let searching = $state(false);
+	let transferring = $state(false);
+	let message = $state('');
+	let messageType = $state<'success' | 'error'>('success');
+	let searchTimer: ReturnType<typeof setTimeout> | null = null;
 
-	function search() {
-		const params = new URLSearchParams();
-		if (q) params.set('q', q);
-		if (stateFilter) params.set('state', stateFilter);
-		if (typeFilter) params.set('type', typeFilter);
-		goto(`/portal/chapters?${params.toString()}`);
+	let ready = $state(false);
+	onMount(() => { ready = true; });
+
+	async function searchChapters() {
+		if (searchQuery.length < 2) { searchResults = []; return; }
+		searching = true;
+		try {
+			const { supabase } = await import('$lib/supabase');
+			const { data } = await supabase
+				.from('chapters')
+				.select('id, name, greek_designation, chapter_type, city, state')
+				.eq('status', 'active')
+				.ilike('name', `%${searchQuery}%`)
+				.order('name')
+				.limit(10);
+			searchResults = (data ?? []).filter((c: any) => c.id !== member?.chapter_id);
+		} catch {}
+		searching = false;
 	}
 
-	function goToPage(p: number) {
-		const params = new URLSearchParams();
-		if (q) params.set('q', q);
-		if (stateFilter) params.set('state', stateFilter);
-		if (typeFilter) params.set('type', typeFilter);
-		params.set('page', p.toString());
-		goto(`/portal/chapters?${params.toString()}`);
+	function debouncedSearch() {
+		if (searchTimer) clearTimeout(searchTimer);
+		searchTimer = setTimeout(searchChapters, 300);
 	}
 
-	const states = ['AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY','DC'];
+	async function requestTransfer(chapterId: string, chapterName: string) {
+		if (!confirm(`Request transfer to ${chapterName}? Your current chapter officers will be notified.`)) return;
+		transferring = true;
+		message = '';
+		try {
+			const res = await fetch('/api/profile', {
+				method: 'PATCH',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ chapter_id: chapterId })
+			});
+			if (res.ok) {
+				message = `Chapter updated to ${chapterName}`;
+				messageType = 'success';
+				showTransfer = false;
+				searchQuery = '';
+				searchResults = [];
+				await invalidateAll();
+			} else {
+				const err = await res.json().catch(() => ({ message: 'Transfer failed' }));
+				message = err.message || 'Transfer failed';
+				messageType = 'error';
+			}
+		} catch {
+			message = 'Failed to connect';
+			messageType = 'error';
+		}
+		transferring = false;
+	}
 </script>
 
 <svelte:head>
-	<title>Chapter Directory — Brother's Only — Kappa Alpha Psi®</title>
+	<title>My Primary Chapter — Brother's Only — Kappa Alpha Psi®</title>
 </svelte:head>
 
-<div style="max-width:900px;">
-	<h1 style="font-family:var(--font-serif); font-size:1.6rem; color:var(--crimson); margin-bottom:24px;">Chapter Directory</h1>
+<div class="page" class:page--ready={ready}>
+	<h1 class="page-title fade-up" style="--d:0;">My Primary Chapter</h1>
 
-	<!-- Search -->
-	<form onsubmit={(e) => { e.preventDefault(); search(); }} style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; padding:20px; margin-bottom:24px;">
-		<div style="display:grid; grid-template-columns:1fr auto; gap:12px; margin-bottom:12px;">
-			<input type="text" bind:value={q} placeholder="Search by chapter name, city, or university..." class="form-control" />
-			<button type="submit" class="btn btn--primary" style="padding:10px 24px;">Search</button>
-		</div>
-		<div style="display:flex; gap:12px; flex-wrap:wrap;">
-			<select bind:value={stateFilter} onchange={search} class="form-control" style="width:auto; min-width:120px;">
-				<option value="">All States</option>
-				{#each states as st}<option value={st}>{st}</option>{/each}
-			</select>
-			<select bind:value={typeFilter} onchange={search} class="form-control" style="width:auto; min-width:160px;">
-				<option value="">All Types</option>
-				<option value="undergraduate">Undergraduate</option>
-				<option value="alumni">Alumni</option>
-			</select>
-		</div>
-	</form>
-
-	<p style="font-size:0.82rem; color:var(--gray-600); margin-bottom:16px;">{total} chapter{total !== 1 ? 's' : ''} found</p>
-
-	<!-- Chapter Detail Modal -->
-	{#if selectedChapter}
-		<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-		<div style="position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:100; display:flex; align-items:center; justify-content:center; padding:20px;" onclick={() => (selectedChapter = null)}>
-			<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-			<div style="background:var(--white); border-radius:16px; max-width:600px; width:100%; max-height:80vh; overflow-y:auto; padding:32px;" onclick={(e) => e.stopPropagation()}>
-				<div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px;">
-					<div>
-						<h2 style="font-size:1.4rem; margin-bottom:4px;">{selectedChapter.name}</h2>
-						{#if selectedChapter.greek_designation}
-							<p style="font-size:1rem; color:var(--crimson); font-weight:600;">{selectedChapter.greek_designation}</p>
-						{/if}
-					</div>
-					<button onclick={() => (selectedChapter = null)} style="background:none; border:none; cursor:pointer; font-size:1.5rem; color:var(--gray-400); padding:4px;">&times;</button>
-				</div>
-
-				<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
-					{#each [
-						{ label: 'Type', value: selectedChapter.chapter_type },
-						{ label: 'Status', value: selectedChapter.status },
-						{ label: 'City', value: selectedChapter.city },
-						{ label: 'State', value: selectedChapter.state },
-						{ label: 'Institution', value: selectedChapter.institution || '—' },
-						{ label: 'Province', value: selectedChapter.provinces?.name || '—' },
-						{ label: 'Charter Date', value: selectedChapter.charter_date ? new Date(selectedChapter.charter_date).toLocaleDateString() : '—' },
-						{ label: 'Contact Email', value: selectedChapter.contact_email || '—' }
-					] as field}
-						<div style="padding:10px 14px; background:var(--gray-50); border-radius:6px;">
-							<div style="font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:var(--gray-400); margin-bottom:2px;">{field.label}</div>
-							<div style="font-size:0.9rem; color:var(--gray-800); text-transform:capitalize;">{field.value}</div>
-						</div>
-					{/each}
-				</div>
-
-				{#if selectedChapter.meeting_schedule}
-					<div style="margin-top:16px; padding:12px 16px; background:var(--cream); border-radius:8px; border-left:3px solid var(--gold);">
-						<div style="font-size:0.68rem; font-weight:700; text-transform:uppercase; color:var(--gray-400); margin-bottom:4px;">Meeting Schedule</div>
-						<p style="font-size:0.9rem; color:var(--gray-800);">{selectedChapter.meeting_schedule}</p>
-					</div>
-				{/if}
-			</div>
-		</div>
+	{#if message}
+		<div class="msg fade-up" style="--d:0;" class:msg--error={messageType === 'error'}>{message}</div>
 	{/if}
 
-	<!-- Results -->
-	{#if chapters.length === 0}
-		<div style="text-align:center; padding:48px; background:var(--gray-50); border-radius:12px; color:var(--gray-600);">
-			No chapters found matching your search.
-		</div>
-	{:else}
-		<div style="display:flex; flex-direction:column; gap:8px;">
-			{#each chapters as chapter}
-				<button
-					style="display:flex; align-items:center; gap:16px; padding:16px 20px; background:var(--white); border:1px solid var(--gray-100); border-radius:8px; text-align:left; cursor:pointer; width:100%; transition:all 0.25s; font-family:inherit; font-size:inherit; color:inherit;"
-					class="chapter-row"
-					onclick={() => (selectedChapter = chapter)}
-				>
-					<div style="width:48px; height:48px; border-radius:8px; background:{chapter.chapter_type === 'undergraduate' ? 'rgba(30,64,175,0.08)' : 'rgba(201,168,76,0.15)'}; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-						<span style="font-family:var(--font-serif); font-size:0.75rem; font-weight:700; color:{chapter.chapter_type === 'undergraduate' ? '#1E40AF' : 'var(--gold)'};">
-							{chapter.chapter_type === 'undergraduate' ? 'UG' : 'AL'}
-						</span>
-					</div>
-					<div style="flex:1; min-width:0;">
-						<h3 style="font-size:0.95rem; font-weight:700; margin-bottom:2px;">{chapter.name}</h3>
-						<p style="font-size:0.78rem; color:var(--gray-600);">
-							{chapter.city}{chapter.state ? `, ${chapter.state}` : ''}
-							{#if chapter.institution} &middot; {chapter.institution}{/if}
-						</p>
-					</div>
-					{#if chapter.greek_designation}
-						<span style="font-family:var(--font-serif); font-size:1rem; font-weight:700; color:var(--crimson); flex-shrink:0;">{chapter.greek_designation}</span>
-					{/if}
-				</button>
-			{/each}
-		</div>
-
-		{#if totalPages > 1}
-			<div style="display:flex; justify-content:center; gap:8px; margin-top:32px;">
-				{#if page > 1}
-					<button class="btn btn--outline" style="padding:8px 16px; font-size:0.82rem;" onclick={() => goToPage(page - 1)}>Previous</button>
-				{/if}
-				<span style="padding:8px 16px; font-size:0.82rem; color:var(--gray-600);">Page {page} of {totalPages}</span>
-				{#if page < totalPages}
-					<button class="btn btn--outline" style="padding:8px 16px; font-size:0.82rem;" onclick={() => goToPage(page + 1)}>Next</button>
+	{#if currentChapter}
+		<div class="chapter-card fade-up" style="--d:1;">
+			<div class="chapter-card-header">
+				<div>
+					<h2 class="chapter-name">{currentChapter.name}</h2>
+					<p class="chapter-sub">
+						{currentChapter.chapter_type === 'undergraduate' ? 'Undergraduate Chapter' : 'Alumni Chapter'}
+						{#if currentChapter.provinces?.name} · {currentChapter.provinces.name}{/if}
+					</p>
+				</div>
+				{#if currentChapter.greek_designation}
+					<div class="greek-badge">{currentChapter.greek_designation}</div>
 				{/if}
 			</div>
+
+			<div class="chapter-details">
+				{#each [
+					{ label: 'City', value: currentChapter.city },
+					{ label: 'State', value: currentChapter.state },
+					{ label: 'Status', value: currentChapter.status },
+					{ label: 'Charter Date', value: currentChapter.charter_date ? new Date(currentChapter.charter_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : null },
+					{ label: 'School/University', value: currentChapter.school_university || currentChapter.institution },
+					{ label: 'Meeting Day', value: currentChapter.meeting_day },
+					{ label: 'Meeting Location', value: currentChapter.meeting_location },
+					{ label: 'Website', value: currentChapter.website_url },
+					{ label: 'Phone', value: currentChapter.contact_phone },
+					{ label: 'Email', value: currentChapter.contact_email }
+				].filter(f => f.value) as field}
+					<div class="detail-chip">
+						<div class="detail-label">{field.label}</div>
+						<div class="detail-value">{field.value}</div>
+					</div>
+				{/each}
+			</div>
+		</div>
+
+		{#if initiationChapter}
+			<div class="initiation-card fade-up" style="--d:2;">
+				<h3 class="section-label">Chapter of Initiation</h3>
+				<div class="initiation-info">
+					<span class="initiation-name">{initiationChapter.name}</span>
+					{#if initiationChapter.greek_designation}
+						<span class="initiation-greek">({initiationChapter.greek_designation})</span>
+					{/if}
+					{#if initiationChapter.city}
+						<span class="initiation-loc"> · {initiationChapter.city}, {initiationChapter.state}</span>
+					{/if}
+				</div>
+			</div>
+		{:else if member?.initiation_chapter}
+			<div class="initiation-card fade-up" style="--d:2;">
+				<h3 class="section-label">Chapter of Initiation</h3>
+				<div class="initiation-info">
+					<span class="initiation-name">{member.initiation_chapter}</span>
+				</div>
+			</div>
 		{/if}
+
+		<!-- Transfer -->
+		<div class="transfer-section fade-up" style="--d:3;">
+			{#if !showTransfer}
+				<button class="btn btn--outline" onclick={() => (showTransfer = true)}>
+					Change Primary Chapter
+				</button>
+			{:else}
+				<div class="transfer-card">
+					<h3 class="section-label">Change Primary Chapter</h3>
+					<p style="font-size:0.85rem; color:var(--gray-500); margin-bottom:16px;">
+						Search for the chapter you'd like to transfer to.
+					</p>
+					<input
+						type="text"
+						bind:value={searchQuery}
+						oninput={debouncedSearch}
+						placeholder="Search by chapter name, city, or state..."
+						class="form-control"
+						style="margin-bottom:12px;"
+						autofocus
+					/>
+
+					{#if searching}
+						<div style="text-align:center; padding:16px; color:var(--gray-400);">Searching...</div>
+					{:else if searchResults.length > 0}
+						<div class="transfer-results">
+							{#each searchResults as ch}
+								<div class="transfer-row">
+									<div class="transfer-info">
+										<div class="transfer-name">{ch.name}</div>
+										<div class="transfer-meta">
+											{ch.chapter_type === 'undergraduate' ? 'UG' : 'Alumni'}
+											{#if ch.city} · {ch.city}, {ch.state}{/if}
+											{#if ch.greek_designation} · {ch.greek_designation}{/if}
+										</div>
+									</div>
+									<button
+										class="btn btn--primary"
+										style="padding:6px 14px; font-size:0.78rem;"
+										disabled={transferring}
+										onclick={() => requestTransfer(ch.id, ch.name)}
+									>
+										{transferring ? '...' : 'Select'}
+									</button>
+								</div>
+							{/each}
+						</div>
+					{:else if searchQuery.length >= 2}
+						<div style="text-align:center; padding:16px; color:var(--gray-400); font-size:0.88rem;">
+							No chapters found.
+						</div>
+					{/if}
+
+					<button class="btn btn--outline" style="margin-top:12px; font-size:0.82rem;" onclick={() => { showTransfer = false; searchQuery = ''; searchResults = []; }}>
+						Cancel
+					</button>
+				</div>
+			{/if}
+		</div>
+	{:else}
+		<div class="empty-state fade-up" style="--d:1;">
+			<p>You are not currently assigned to a chapter.</p>
+			<p style="margin-top:8px;">Contact your chapter's Keeper of Records or use the button below to select your chapter.</p>
+			<button class="btn btn--primary" style="margin-top:16px;" onclick={() => (showTransfer = true)}>
+				Select My Chapter
+			</button>
+
+			{#if showTransfer}
+				<div style="margin-top:20px; text-align:left;">
+					<input
+						type="text"
+						bind:value={searchQuery}
+						oninput={debouncedSearch}
+						placeholder="Search chapters..."
+						class="form-control"
+						style="margin-bottom:12px;"
+						autofocus
+					/>
+					{#if searchResults.length > 0}
+						<div class="transfer-results">
+							{#each searchResults as ch}
+								<div class="transfer-row">
+									<div class="transfer-info">
+										<div class="transfer-name">{ch.name}</div>
+										<div class="transfer-meta">
+											{ch.chapter_type === 'undergraduate' ? 'UG' : 'Alumni'}
+											{#if ch.city} · {ch.city}, {ch.state}{/if}
+										</div>
+									</div>
+									<button class="btn btn--primary" style="padding:6px 14px; font-size:0.78rem;" onclick={() => requestTransfer(ch.id, ch.name)}>Select</button>
+								</div>
+							{/each}
+						</div>
+					{/if}
+				</div>
+			{/if}
+		</div>
 	{/if}
 </div>
 
 <style>
-	.chapter-row:hover { border-color: transparent; box-shadow: 0 4px 20px rgba(0,0,0,0.10); transform: translateX(4px); }
+	.page { max-width: 700px; }
+	.page .fade-up { opacity: 0; transform: translateY(12px); transition: opacity 0.4s ease, transform 0.4s ease; transition-delay: calc(var(--d) * 60ms); }
+	.page--ready .fade-up { opacity: 1; transform: translateY(0); }
+
+	.page-title { font-family: var(--font-serif); font-size: 1.6rem; color: var(--crimson); margin-bottom: 24px; }
+
+	.msg { padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 0.9rem; background: #ecfdf5; color: #065f46; }
+	.msg--error { background: #fef2f2; color: #991b1b; }
+
+	.chapter-card {
+		background: white; border: 1px solid var(--gray-100); border-radius: 14px;
+		padding: 24px; margin-bottom: 16px;
+	}
+	.chapter-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+	.chapter-name { font-family: var(--font-serif); font-size: 1.3rem; font-weight: 700; color: var(--crimson); }
+	.chapter-sub { font-size: 0.88rem; color: var(--gray-500); margin-top: 4px; }
+	.greek-badge {
+		font-family: var(--font-serif); font-size: 0.85rem; font-weight: 700;
+		color: var(--crimson); background: rgba(139,0,0,0.06);
+		padding: 6px 14px; border-radius: 20px;
+	}
+
+	.chapter-details { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+	.detail-chip { padding: 10px 14px; background: var(--gray-50); border-radius: 8px; }
+	.detail-label { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--gray-400); margin-bottom: 3px; }
+	.detail-value { font-size: 0.88rem; color: var(--black); font-weight: 500; }
+
+	.initiation-card {
+		background: white; border: 1px solid var(--gray-100); border-radius: 12px;
+		padding: 18px 20px; margin-bottom: 16px;
+	}
+	.section-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--crimson); margin-bottom: 8px; }
+	.initiation-info { font-size: 0.92rem; }
+	.initiation-name { font-weight: 600; }
+	.initiation-greek { color: var(--gray-500); }
+	.initiation-loc { color: var(--gray-400); font-size: 0.85rem; }
+
+	.transfer-section { margin-top: 8px; }
+	.transfer-card {
+		background: white; border: 1px solid var(--gray-100); border-radius: 12px; padding: 20px;
+	}
+	.transfer-results { display: flex; flex-direction: column; gap: 6px; max-height: 350px; overflow-y: auto; }
+	.transfer-row {
+		display: flex; justify-content: space-between; align-items: center; gap: 12px;
+		padding: 12px 14px; background: var(--gray-50); border-radius: 8px;
+	}
+	.transfer-info { flex: 1; min-width: 0; }
+	.transfer-name { font-weight: 600; font-size: 0.9rem; }
+	.transfer-meta { font-size: 0.78rem; color: var(--gray-500); margin-top: 2px; }
+
+	.empty-state {
+		text-align: center; padding: 48px 24px; background: var(--gray-50);
+		border-radius: 12px; color: var(--gray-600); font-size: 0.9rem;
+	}
+
+	@media (max-width: 480px) {
+		.chapter-details { grid-template-columns: 1fr; }
+		.chapter-card-header { flex-direction: column; gap: 8px; }
+	}
 </style>

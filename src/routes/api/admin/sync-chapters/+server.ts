@@ -23,18 +23,36 @@ export const POST: RequestHandler = async ({ locals }) => {
 	}
 
 	try {
-		// Pull chapter accounts from SF with extended fields
+		// First, discover available fields on Account
+		const { sfDescribe } = await import('$lib/salesforce');
+		const desc = await sfDescribe('Account');
+		const allFields = desc.fields.map((f: any) => f.name);
+
+		// Find chapter-relevant custom fields
+		const chapterFields = allFields.filter((f: string) =>
+			f.toLowerCase().includes('charter') ||
+			f.toLowerCase().includes('ein') ||
+			f.toLowerCase().includes('foundation') ||
+			f.toLowerCase().includes('meeting') ||
+			f.toLowerCase().includes('school') ||
+			f.toLowerCase().includes('university') ||
+			f.toLowerCase().includes('chapter_email') ||
+			f.toLowerCase().includes('advisor') ||
+			f.toLowerCase().includes('polemarch')
+		);
+
+		// Use only standard + discovered fields
+		const safeFields = [
+			'Id', 'Name',
+			'BillingStreet', 'BillingCity', 'BillingState', 'BillingPostalCode', 'BillingCountry',
+			'Phone', 'Website',
+			...chapterFields
+		].join(', ');
+
 		const accounts = await sfQuery<any>(`
-			SELECT Id, Name, FON_Chapter_Id__c,
-				BillingStreet, BillingCity, BillingState, BillingPostalCode, BillingCountry,
-				Phone, Website,
-				FON_Chapter_Charter_Date__c, FON_EIN_Number__c,
-				FON_Chapter_Email__c, FON_Foundation_Name__c,
-				FON_Meeting_Day__c, FON_Meeting_Location__c, FON_Meeting_Time__c,
-				FON_School_University__c, FON_Advising_Alumni_Chapter__c,
-				FON_Chapter_Polemarch_Name__c
+			SELECT ${safeFields}
 			FROM Account
-			WHERE RecordType.Name IN ('CHAP-A', 'CHAP-UG')
+			WHERE Type IN ('CHAP-A', 'CHAP-UG')
 			LIMIT 2000
 		`);
 
@@ -56,20 +74,32 @@ export const POST: RequestHandler = async ({ locals }) => {
 
 			const updateFields: Record<string, any> = {};
 
+			// Standard fields
 			if (acct.BillingStreet) updateFields.billing_street = acct.BillingStreet;
 			if (acct.BillingCity) updateFields.billing_city = acct.BillingCity;
 			if (acct.BillingState) updateFields.billing_state = acct.BillingState;
 			if (acct.BillingPostalCode) updateFields.billing_zip = acct.BillingPostalCode;
 			if (acct.BillingCountry) updateFields.billing_country = acct.BillingCountry;
 			if (acct.Phone) updateFields.contact_phone = acct.Phone;
-			if (acct.FON_Chapter_Charter_Date__c) updateFields.charter_date = acct.FON_Chapter_Charter_Date__c;
-			if (acct.FON_EIN_Number__c) updateFields.ein_number = acct.FON_EIN_Number__c;
-			if (acct.FON_Chapter_Email__c) updateFields.contact_email = acct.FON_Chapter_Email__c;
-			if (acct.FON_Foundation_Name__c) updateFields.foundation_name = acct.FON_Foundation_Name__c;
-			if (acct.FON_Meeting_Day__c) updateFields.meeting_day = acct.FON_Meeting_Day__c;
-			if (acct.FON_Meeting_Location__c) updateFields.meeting_location = acct.FON_Meeting_Location__c;
-			if (acct.FON_Meeting_Time__c) updateFields.meeting_time = acct.FON_Meeting_Time__c;
-			if (acct.FON_School_University__c) updateFields.school_university = acct.FON_School_University__c;
+			if (acct.Website) updateFields.website_url = acct.Website;
+
+			// Dynamic: try common Fonteva field name patterns
+			const fieldMap: Record<string, string> = {};
+			for (const key of Object.keys(acct)) {
+				const k = key.toLowerCase();
+				if (k.includes('charter') && k.includes('date')) fieldMap.charter_date = key;
+				if (k.includes('ein')) fieldMap.ein_number = key;
+				if (k.includes('chapter') && k.includes('email')) fieldMap.contact_email = key;
+				if (k.includes('foundation') && k.includes('name')) fieldMap.foundation_name = key;
+				if (k.includes('meeting') && k.includes('day')) fieldMap.meeting_day = key;
+				if (k.includes('meeting') && k.includes('location')) fieldMap.meeting_location = key;
+				if (k.includes('meeting') && k.includes('time')) fieldMap.meeting_time = key;
+				if ((k.includes('school') || k.includes('university')) && !k.includes('high')) fieldMap.school_university = key;
+			}
+
+			for (const [dbCol, sfField] of Object.entries(fieldMap)) {
+				if (acct[sfField]) updateFields[dbCol] = acct[sfField];
+			}
 
 			if (Object.keys(updateFields).length > 0) {
 				await locals.supabase
@@ -85,6 +115,8 @@ export const POST: RequestHandler = async ({ locals }) => {
 			total: accounts.length,
 			updated,
 			notFound,
+			discoveredFields: chapterFields,
+			sampleAccount: accounts.length > 0 ? Object.keys(accounts[0]) : [],
 			message: `Synced ${updated} chapters from ${accounts.length} SF accounts`
 		});
 	} catch (err: any) {

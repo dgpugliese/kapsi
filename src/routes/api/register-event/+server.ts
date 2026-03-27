@@ -3,25 +3,22 @@ import type { RequestHandler } from './$types';
 import { findContactByEmail, sfCreate, sfUpdate, sfQuery } from '$lib/salesforce';
 import { env } from '$env/dynamic/private';
 
+const SURCHARGE_ITEM_ID = 'a15VT000003kDOkYAM';
+
 /**
  * POST /api/register-event
- * Registers a member for an event in Fonteva (supports multiple ticket types).
+ * Completes event registration after payment (or inline for free events).
  *
  * Body: {
  *   eventId,
+ *   orderId?,          — from create-event-payment (omit for free events)
+ *   paymentIntentId?,  — from Stripe (omit for free events)
  *   items: [{ ticketTypeId, ticketName, quantity, unitPrice }],
- *   paymentIntentId? (for paid events)
+ *   paymentMethod?: 'card' | 'ach'
  * }
- * Legacy: { eventId, ticketTypeId, paymentIntentId? }
  *
- * Flow:
- * 1. Look up Contact
- * 2. Get ticket type details for all items
- * 3. Create single Sales Order
- * 4. Create Sales Order Line for each item (ticket type × quantity)
- * 5. If paid: create ePayment + Receipt, close SO
- * 6. If free: close SO immediately
- * 7. Create Attendee record for each ticket type
+ * If orderId is provided: SO already exists (paid flow). Post it + create payment records.
+ * If orderId is missing: free event — create SO + lines inline.
  */
 export const POST: RequestHandler = async ({ request, locals }) => {
 	const { session, user } = await locals.safeGetSession();
@@ -29,9 +26,9 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
 	const body = await request.json();
 	const { eventId, paymentIntentId, paymentMethod: pmMethod } = body;
+	let orderId: string = body.orderId || '';
 	const isACH = pmMethod === 'ach';
 
-	// Support both multi-item and legacy single-ticket format
 	const items: { ticketTypeId: string; ticketName?: string; quantity: number; unitPrice?: number }[] =
 		body.items || [{ ticketTypeId: body.ticketTypeId, quantity: 1 }];
 
@@ -47,74 +44,73 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	const steps: Record<string, { ok: boolean; id?: string; ids?: string[]; error?: string }> = {};
 
 	try {
-		// Get ticket type details for all items
+		// Get ticket type details
 		const ticketIds = items.map(i => `'${i.ticketTypeId}'`).join(',');
 		const ticketTypes = await sfQuery<any>(
 			`SELECT Id, Name, EventApi__Price__c, EventApi__Event__c, EventApi__Item__c
 			 FROM EventApi__Ticket_Type__c
 			 WHERE Id IN (${ticketIds})`
 		);
-
 		const ticketMap = new Map(ticketTypes.map((t: any) => [t.Id, t]));
 
-		// Calculate base total from line items
-		let baseTotalAmount = 0;
-		for (const item of items) {
-			const ticket = ticketMap.get(item.ticketTypeId);
-			const price = item.unitPrice ?? ticket?.EventApi__Price__c ?? 0;
-			baseTotalAmount += price * item.quantity;
-		}
-
-		// Use frontend-provided totalAmount (includes surcharge) if available
-		const totalAmount = body.totalAmount ?? baseTotalAmount;
-		const isFree = baseTotalAmount === 0;
-
-		// Step 1: Create Sales Order
-		let orderId = '';
-		try {
-			orderId = await sfCreate('OrderApi__Sales_Order__c', {
-				OrderApi__Contact__c: contact.Id,
-				OrderApi__Account__c: contact.AccountId,
-				OrderApi__Entity__c: 'Contact',
-				OrderApi__Posting_Entity__c: 'Receipt',
-				OrderApi__Is_Posted__c: false
-			});
-			steps.salesOrder = { ok: true, id: orderId };
-		} catch (err: any) {
-			steps.salesOrder = { ok: false, error: err.message };
-			throw new Error('Failed to create sales order: ' + err.message);
-		}
-
-		// Step 2: Create Sales Order Lines (one per ticket type × quantity)
-		const lineIds: string[] = [];
-		for (const item of items) {
-			const ticket = ticketMap.get(item.ticketTypeId);
-			const price = item.unitPrice ?? ticket?.EventApi__Price__c ?? 0;
-			const itemId = ticket?.EventApi__Item__c;
+		// If no orderId, this is a free event — create SO + lines inline
+		if (!orderId) {
+			let baseTotal = 0;
+			for (const item of items) {
+				const ticket = ticketMap.get(item.ticketTypeId);
+				const price = item.unitPrice ?? ticket?.EventApi__Price__c ?? 0;
+				baseTotal += price * item.quantity;
+			}
 
 			try {
-				const lineId = await sfCreate('OrderApi__Sales_Order_Line__c', {
-					OrderApi__Sales_Order__c: orderId,
-					OrderApi__Item__c: itemId || item.ticketTypeId,
-					OrderApi__Quantity__c: item.quantity,
-					OrderApi__Sale_Price__c: price
+				orderId = await sfCreate('OrderApi__Sales_Order__c', {
+					OrderApi__Contact__c: contact.Id,
+					OrderApi__Account__c: contact.AccountId,
+					OrderApi__Entity__c: 'Contact',
+					OrderApi__Posting_Entity__c: 'Receipt',
+					OrderApi__Is_Posted__c: false
 				});
-				lineIds.push(lineId);
+				steps.salesOrder = { ok: true, id: orderId };
 			} catch (err: any) {
-				console.error(`Failed to create line item for ${item.ticketTypeId}:`, err.message);
+				steps.salesOrder = { ok: false, error: err.message };
+				throw new Error('Failed to create sales order: ' + err.message);
 			}
-		}
-		steps.lineItems = { ok: lineIds.length > 0, ids: lineIds };
 
-		// Step 3: Payment processing (paid events only)
-		// amountCharged = what Stripe charged (includes surcharge) — used for Receipt/ePayment
-		// amountPaidSO = base total of line items — used for Sales Order Amount_Paid (must match SO total)
-		let amountCharged = totalAmount;
-		const amountPaidSO = baseTotalAmount; // must match SO line items total to zero the balance
+			// Create SO lines
+			const lineIds: string[] = [];
+			for (const item of items) {
+				const ticket = ticketMap.get(item.ticketTypeId);
+				const price = item.unitPrice ?? ticket?.EventApi__Price__c ?? 0;
+				const itemId = ticket?.EventApi__Item__c;
+				try {
+					const lineId = await sfCreate('OrderApi__Sales_Order_Line__c', {
+						OrderApi__Sales_Order__c: orderId,
+						OrderApi__Item__c: itemId || item.ticketTypeId,
+						OrderApi__Quantity__c: item.quantity,
+						OrderApi__Sale_Price__c: price
+					});
+					lineIds.push(lineId);
+				} catch (err: any) {
+					console.error(`Failed to create line item for ${item.ticketTypeId}:`, err.message);
+				}
+			}
+			steps.lineItems = { ok: lineIds.length > 0, ids: lineIds };
+		}
+
+		// Read the SO to get the actual total (includes surcharge line if present)
+		const soRows = await sfQuery<any>(
+			`SELECT OrderApi__Overall_Total__c FROM OrderApi__Sales_Order__c WHERE Id = '${orderId}'`
+		);
+		const overallTotal = soRows[0]?.OrderApi__Overall_Total__c ?? 0;
+		const isFree = overallTotal === 0 && !paymentIntentId;
+
+		// Payment processing (paid events only)
 		if (!isFree && paymentIntentId) {
+			let amountCharged = overallTotal;
 			let cardLast4 = '', cardBrand = '', cardholderName = `${contact.FirstName} ${contact.LastName}`;
 			let chargeId = paymentIntentId;
 
+			// Get Stripe PI details (source of truth for charged amount + card details)
 			try {
 				if (stripeKey) {
 					const piRes = await fetch(
@@ -123,7 +119,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 					);
 					if (piRes.ok) {
 						const pi = await piRes.json();
-						amountCharged = pi.amount / 100; // Stripe amount (includes surcharge)
+						amountCharged = pi.amount / 100;
 						const card = pi.payment_method?.card;
 						cardLast4 = card?.last4 ?? '';
 						cardBrand = card?.brand ?? '';
@@ -139,7 +135,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 				console.error('Stripe lookup failed (non-blocking):', err.message);
 			}
 
-			// Create ePayment (with Total, Succeeded, Transaction_Type, etc.)
+			// Create ePayment
 			let ePaymentId = '';
 			try {
 				ePaymentId = await sfCreate('OrderApi__EPayment__c', {
@@ -148,7 +144,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 					OrderApi__Account__c: contact.AccountId,
 					OrderApi__Sales_Order__c: orderId,
 					OrderApi__Date__c: today,
-					OrderApi__Total__c: amountCharged,
+					OrderApi__Total__c: overallTotal,
 					OrderApi__Succeeded__c: true,
 					OrderApi__Transaction_Type__c: isACH ? 'ach' : 'card',
 					OrderApi__Gateway_Transaction_ID__c: chargeId,
@@ -159,27 +155,27 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 					OrderApi__Full_Name__c: cardholderName,
 					OrderApi__Entity__c: 'Contact'
 				});
+
 				// Fonteva trigger resets Total on insert — force it back with delay
 				try {
 					await new Promise(r => setTimeout(r, 1000));
 					await sfUpdate('OrderApi__EPayment__c', ePaymentId, {
-						OrderApi__Total__c: amountCharged,
-						OrderApi__Amount__c: amountCharged
+						OrderApi__Total__c: overallTotal,
+						OrderApi__Amount__c: overallTotal
 					});
 				} catch {
-					// Amount__c may not exist — try Total only
 					try {
-						await sfUpdate('OrderApi__EPayment__c', ePaymentId, { OrderApi__Total__c: amountCharged });
+						await sfUpdate('OrderApi__EPayment__c', ePaymentId, { OrderApi__Total__c: overallTotal });
 					} catch { /* best effort */ }
 				}
 				steps.ePayment = { ok: true, id: ePaymentId };
 
-				// Create Receipt (reflects actual amount charged including surcharge)
+				// Create Receipt
 				const receiptId = await sfCreate('OrderApi__Receipt__c', {
 					OrderApi__Sales_Order__c: orderId,
 					OrderApi__Contact__c: contact.Id,
 					OrderApi__Account__c: contact.AccountId,
-					OrderApi__Total__c: amountCharged,
+					OrderApi__Total__c: overallTotal,
 					OrderApi__Date__c: today,
 					OrderApi__Is_Posted__c: true,
 					OrderApi__Payment_Type__c: isACH ? 'ACH' : 'Credit Card',
@@ -195,14 +191,14 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			}
 		}
 
-		// Step 4: Post the order + set Amount Paid (exits draft state)
+		// Post the SO — Amount_Paid must equal Overall_Total to zero the balance
 		try {
 			await sfUpdate('OrderApi__Sales_Order__c', orderId, {
 				OrderApi__Is_Posted__c: true,
 				OrderApi__Posting_Status__c: 'Posted',
 				OrderApi__Posted_Date__c: today,
 				OrderApi__Paid_Date__c: today,
-				OrderApi__Amount_Paid__c: amountPaidSO
+				OrderApi__Amount_Paid__c: overallTotal
 			});
 			steps.postOrder = { ok: true };
 		} catch (err: any) {
@@ -210,7 +206,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			steps.postOrder = { ok: false, error: err.message };
 		}
 
-		// Step 5: Close the order (separate update — Fonteva blocks draft→closed)
+		// Close the SO (separate update — Fonteva blocks draft->closed)
 		try {
 			await sfUpdate('OrderApi__Sales_Order__c', orderId, {
 				OrderApi__Status__c: 'Closed'
@@ -221,7 +217,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			steps.closeOrder = { ok: false, error: err.message };
 		}
 
-		// Step 5: Create Attendee records (one per ticket type)
+		// Create Attendee records (one per ticket type)
 		const attendeeIds: string[] = [];
 		for (const item of items) {
 			try {

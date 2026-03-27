@@ -41,9 +41,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
 		const item = items[0];
 		const baseTotal = duesType === 'undergraduate' ? 100 : 200;
-		const surcharge = method === 'card' ? Math.round(baseTotal * 0.04 * 100) / 100 : 0;
-		const total = baseTotal + surcharge;
-		const totalCents = Math.round(total * 100);
+		const SURCHARGE_ITEM_ID = 'a15VT000003kDOkYAM';
 
 		// Check for existing active subscription (renewal detection)
 		const existingSubs = await sfQuery<any>(
@@ -71,7 +69,11 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 				OrderApi__Account__c: contact.AccountId,
 				OrderApi__Entity__c: 'Contact',
 				OrderApi__Posting_Entity__c: 'Receipt',
-				OrderApi__Is_Posted__c: false
+				OrderApi__Is_Posted__c: false,
+				...(method === 'card' ? {
+					KAPSI_Payment_Type__c: 'card',
+					KAPSI_Surcharge_Item__c: SURCHARGE_ITEM_ID
+				} : {})
 			});
 
 			// Create line item for new orders only
@@ -84,7 +86,26 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			});
 		}
 
-		// Step 2: Always create a fresh Stripe PaymentIntent (old ones auto-expire)
+		// Step 2: Wait for SF surcharge automation, then read actual SO total
+		if (method === 'card' && !reusedOrder) {
+			await new Promise(r => setTimeout(r, 3000));
+		}
+
+		let soTotal = baseTotal;
+		try {
+			const soCheck = await sfQuery<any>(
+				`SELECT OrderApi__Overall_Total__c FROM OrderApi__Sales_Order__c WHERE Id = '${orderId}' LIMIT 1`
+			);
+			if (soCheck.length > 0 && soCheck[0].OrderApi__Overall_Total__c > 0) {
+				soTotal = soCheck[0].OrderApi__Overall_Total__c;
+			}
+		} catch { /* fallback to baseTotal */ }
+
+		const surcharge = soTotal - baseTotal;
+		const total = soTotal;
+		const totalCents = Math.round(total * 100);
+
+		// Step 3: Create Stripe PaymentIntent with SF-calculated total
 		const paymentMethodTypes = method === 'ach' ? ['us_bank_account'] : ['card'];
 		const stripeParams = new URLSearchParams({
 			'amount': totalCents.toString(),

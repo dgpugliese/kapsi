@@ -1,8 +1,76 @@
 import type { PageServerLoad } from './$types';
-import { redirect } from '@sveltejs/kit';
+import { error } from '@sveltejs/kit';
 
-export const load: PageServerLoad = async ({ locals }) => {
-	const { session } = await locals.safeGetSession();
-	if (!session) throw redirect(303, '/login');
-	return {};
+export const load: PageServerLoad = async ({ locals, parent }) => {
+	const { session, member } = await parent();
+	if (!session || !member) return { chapter: null, hasAccess: false };
+
+	// Find the member's chapter
+	if (!member.chapter_id) {
+		return { chapter: null, hasAccess: false, reason: 'no_chapter' };
+	}
+
+	// Load chapter with province
+	const { data: chapter } = await locals.supabase
+		.from('chapters')
+		.select(`*, provinces:province_id(name, abbreviation)`)
+		.eq('id', member.chapter_id)
+		.single();
+
+	if (!chapter) return { chapter: null, hasAccess: false, reason: 'chapter_not_found' };
+
+	// Check if this member has chapter management access
+	// Per guidebook: Polemarch, Vice Polemarch, KOR, KOE, Strategus, MTA Chair, UG Advisor
+	const accessBadges = [
+		'Chapter Polemarch', 'Chapter Vice Polemarch', 'Chapter Keeper of Records',
+		'Chapter Keeper of Exchequer', 'Chapter Strategus', 'Chapter MTA Chairman',
+		'Undergraduate Chapter Advisor'
+	];
+
+	const { data: memberBadges } = await locals.supabase
+		.from('member_badges')
+		.select('badges(name)')
+		.eq('member_id', member.id)
+		.eq('is_active', true);
+
+	const badgeNames = (memberBadges ?? []).map((mb: any) => mb.badges?.name).filter(Boolean);
+	const hasAccess = badgeNames.some(b => accessBadges.includes(b)) || member.role === 'super_admin' || member.role === 'ihq_staff';
+
+	// Load roster, officers, stats in parallel
+	const [rosterRes, officersRes, rosterCountRes] = await Promise.all([
+		locals.supabase
+			.from('chapter_rosters')
+			.select('*, members!inner(id, first_name, last_name, email, membership_number, membership_status, phone, profile_photo_url)')
+			.eq('chapter_id', member.chapter_id)
+			.eq('fiscal_year', new Date().getFullYear())
+			.order('roster_type'),
+		locals.supabase
+			.from('chapter_officers')
+			.select('*, members!inner(id, first_name, last_name, email, membership_number)')
+			.eq('chapter_id', member.chapter_id)
+			.eq('is_active', true)
+			.order('position'),
+		locals.supabase
+			.from('members')
+			.select('id', { count: 'exact', head: true })
+			.eq('chapter_id', member.chapter_id)
+			.eq('membership_status', 'active')
+	]);
+
+	// Count members by status for this chapter
+	const { count: totalMembers } = await locals.supabase
+		.from('members')
+		.select('id', { count: 'exact', head: true })
+		.eq('chapter_id', member.chapter_id);
+
+	return {
+		chapter,
+		hasAccess,
+		badgeNames,
+		roster: rosterRes.data ?? [],
+		officers: officersRes.data ?? [],
+		activeCount: rosterCountRes.count ?? 0,
+		totalMembers: totalMembers ?? 0,
+		fiscalYear: new Date().getFullYear()
+	};
 };

@@ -61,7 +61,7 @@
 	<div class="login-card">
 		<!-- Logo -->
 		<div class="login-logo">
-			<img src="/images/trademarks/coatofarms_large.png" alt="Kappa Alpha Psi" />
+			<img src="/images/crest.png" alt="Kappa Alpha Psi" />
 		</div>
 
 		<h1 class="login-title">Brother's Only</h1>
@@ -157,6 +157,15 @@
 		align-items: center; justify-content: center;
 		padding: 40px 20px;
 		background: linear-gradient(170deg, #1a0000 0%, #3d0000 40%, #5c0000 100%);
+		position: relative; overflow: hidden;
+	}
+	.login-page::before {
+		content: ''; position: absolute; inset: 0;
+		background: url('/images/Founders.webp') center bottom / cover no-repeat;
+		opacity: 0.12;
+		mask-image: linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.2) 50%, transparent 80%);
+		-webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.2) 50%, transparent 80%);
+		pointer-events: none;
 	}
 
 	.login-card {
@@ -164,6 +173,7 @@
 		background: white; border-radius: 20px;
 		padding: 40px 32px; text-align: center;
 		box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+		position: relative; z-index: 1;
 	}
 
 	.login-logo { margin-bottom: 20px; }
@@ -257,6 +267,7 @@
 	.login-legal {
 		margin-top: 24px; font-size: 0.72rem;
 		color: rgba(255,255,255,0.3); text-align: center;
+		position: relative; z-index: 1;
 	}
 
 	@media (max-width: 480px) {

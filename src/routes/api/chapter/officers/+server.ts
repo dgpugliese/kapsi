@@ -14,57 +14,86 @@ export const GET: RequestHandler = async ({ locals }) => {
 	const officer = await getChapterOfficer(user.email!);
 	if (!officer) throw error(403, 'No chapter found');
 
-	// Get chapter account fields (officer names/emails)
-	const accounts = await sfQuery<any>(
-		`SELECT Id, Name, FON_Chapter_Polemarch_Name__c, Polemarch_Email__c,
-			FON_Vice_Polemarch_Name__c, FON_Vice_Polemarch_Email__c,
-			FON_Chapter_Strategus_Name__c, FON_Chapter_Lt_Strategus_Name__c,
-			FON_KOR_Name__c, FON_KOR_Email__c,
-			FON_Keeper_of_Exchequer_Name__c, FON_KOE_Name__c,
-			FON_Advisor_Name_FOR__c, FON_Advisor_Email_FOR__c, FON_Advisor_Phone_FOR__c,
-			FON_Chapter_Status__c, FON_Number_of_Members__c
-		FROM Account WHERE Id = '${officer.accountId}' LIMIT 1`
-	);
+	// Get basic account info first (safe fields only)
+	let acct: any = null;
+	try {
+		const accounts = await sfQuery<any>(
+			`SELECT Id, Name, FON_Chapter_Status__c, FON_Number_of_Members__c
+			FROM Account WHERE Id = '${officer.accountId}' LIMIT 1`
+		);
+		acct = accounts.length > 0 ? accounts[0] : null;
+	} catch {
+		// Fallback: minimal query
+		const accounts = await sfQuery<any>(
+			`SELECT Id, Name FROM Account WHERE Id = '${officer.accountId}' LIMIT 1`
+		);
+		acct = accounts.length > 0 ? accounts[0] : null;
+	}
 
-	if (accounts.length === 0) throw error(404, 'Chapter not found');
-	const acct = accounts[0];
+	if (!acct) throw error(404, 'Chapter not found');
+
+	// Try to get officer name fields from Account (may not exist in all orgs)
+	let accountOfficers: Record<string, any> = {};
+	try {
+		const acctDetails = await sfQuery<any>(
+			`SELECT FON_Chapter_Polemarch_Name__c, Polemarch_Email__c,
+				FON_Vice_Polemarch_Name__c, FON_Vice_Polemarch_Email__c,
+				FON_Chapter_Strategus_Name__c, FON_Chapter_Lt_Strategus_Name__c,
+				FON_KOR_Name__c, FON_KOR_Email__c,
+				FON_Keeper_of_Exchequer_Name__c, FON_KOE_Name__c,
+				FON_Advisor_Name_FOR__c, FON_Advisor_Email_FOR__c, FON_Advisor_Phone_FOR__c
+			FROM Account WHERE Id = '${officer.accountId}' LIMIT 1`
+		);
+		if (acctDetails.length > 0) {
+			const d = acctDetails[0];
+			accountOfficers = {
+				polemarch: { name: d.FON_Chapter_Polemarch_Name__c, email: d.Polemarch_Email__c },
+				vicePolemarch: { name: d.FON_Vice_Polemarch_Name__c, email: d.FON_Vice_Polemarch_Email__c },
+				strategus: { name: d.FON_Chapter_Strategus_Name__c },
+				ltStrategus: { name: d.FON_Chapter_Lt_Strategus_Name__c },
+				kor: { name: d.FON_KOR_Name__c, email: d.FON_KOR_Email__c },
+				koe: { name: d.FON_Keeper_of_Exchequer_Name__c || d.FON_KOE_Name__c },
+				advisor: { name: d.FON_Advisor_Name_FOR__c, email: d.FON_Advisor_Email_FOR__c, phone: d.FON_Advisor_Phone_FOR__c }
+			};
+		}
+	} catch {
+		// Account officer fields don't exist in this org — that's fine
+	}
 
 	// Get all contacts in this chapter who have officer badges
-	const officerBadges = await sfQuery<any>(`
-		SELECT OrderApi__Contact__r.Id, OrderApi__Contact__r.FirstName,
-			OrderApi__Contact__r.LastName, OrderApi__Contact__r.Email,
-			OrderApi__Badge_Type__r.Name
-		FROM OrderApi__Badge__c
-		WHERE OrderApi__Contact__r.AccountId = '${officer.accountId}'
-			AND OrderApi__Is_Active__c = true
-			AND OrderApi__Badge_Type__r.Name LIKE 'Chapter %'
-		ORDER BY OrderApi__Badge_Type__r.Name
-	`);
+	let officerList: any[] = [];
+	try {
+		const officerBadges = await sfQuery<any>(`
+			SELECT OrderApi__Contact__r.Id, OrderApi__Contact__r.FirstName,
+				OrderApi__Contact__r.LastName, OrderApi__Contact__r.Email,
+				OrderApi__Badge_Type__r.Name
+			FROM OrderApi__Badge__c
+			WHERE OrderApi__Contact__r.AccountId = '${officer.accountId}'
+				AND OrderApi__Is_Active__c = true
+				AND OrderApi__Badge_Type__r.Name LIKE 'Chapter %'
+			ORDER BY OrderApi__Badge_Type__r.Name
+		`);
 
-	const officerList = officerBadges.map((b: any) => ({
-		contactId: b.OrderApi__Contact__r?.Id,
-		firstName: b.OrderApi__Contact__r?.FirstName,
-		lastName: b.OrderApi__Contact__r?.LastName,
-		email: b.OrderApi__Contact__r?.Email,
-		role: b.OrderApi__Badge_Type__r?.Name
-	}));
+		officerList = officerBadges.map((b: any) => ({
+			contactId: b.OrderApi__Contact__r?.Id,
+			firstName: b.OrderApi__Contact__r?.FirstName,
+			lastName: b.OrderApi__Contact__r?.LastName,
+			email: b.OrderApi__Contact__r?.Email,
+			role: b.OrderApi__Badge_Type__r?.Name
+		}));
+	} catch (err: any) {
+		console.error('Failed to query officer badges:', err.message);
+		// Badge query failed — return empty list, account officers still available
+	}
 
 	return json({
 		chapter: {
 			id: acct.Id,
 			name: acct.Name,
-			status: acct.FON_Chapter_Status__c,
+			status: acct.FON_Chapter_Status__c ?? null,
 			memberCount: acct.FON_Number_of_Members__c ?? 0
 		},
-		accountOfficers: {
-			polemarch: { name: acct.FON_Chapter_Polemarch_Name__c, email: acct.Polemarch_Email__c },
-			vicePolemarch: { name: acct.FON_Vice_Polemarch_Name__c, email: acct.FON_Vice_Polemarch_Email__c },
-			strategus: { name: acct.FON_Chapter_Strategus_Name__c },
-			ltStrategus: { name: acct.FON_Chapter_Lt_Strategus_Name__c },
-			kor: { name: acct.FON_KOR_Name__c, email: acct.FON_KOR_Email__c },
-			koe: { name: acct.FON_Keeper_of_Exchequer_Name__c || acct.FON_KOE_Name__c },
-			advisor: { name: acct.FON_Advisor_Name_FOR__c, email: acct.FON_Advisor_Email_FOR__c, phone: acct.FON_Advisor_Phone_FOR__c }
-		},
+		accountOfficers,
 		badgeOfficers: officerList,
 		currentUser: {
 			isPolemarch: officer.isPolemarch,
@@ -138,7 +167,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		steps.createBadge = { ok: false, error: err.message };
 	}
 
-	// Step 3: Update Account officer fields
+	// Step 3: Update Account officer fields (best-effort)
 	try {
 		const fieldMap: Record<string, Record<string, string>> = {
 			'Chapter Polemarch': {

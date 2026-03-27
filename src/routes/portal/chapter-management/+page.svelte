@@ -609,18 +609,48 @@
 	.empty-msg { font-size: 0.9rem; color: var(--gray-500); margin-top: 12px; line-height: 1.5; }
 
 	@media (max-width: 768px) {
-		.stats-row { grid-template-columns: repeat(2, 1fr); }
-		.compliance-row { grid-template-columns: 1fr; }
-		.detail-grid { grid-template-columns: 1fr 1fr; }
-		.tabs { flex-wrap: nowrap; -webkit-overflow-scrolling: touch; }
-		.officer-row { flex-direction: column; align-items: flex-start; gap: 6px; }
-		.officer-badge-name { min-width: auto; }
-		.ft-header, .ft-row { font-size: 0.78rem; }
-		.ft-col--name { flex: 1.5; }
+		.cm { padding: 0 4px; }
+		.cm-header { flex-direction: column; gap: 8px; }
+		.page-title { font-size: 1.25rem; }
+		.chapter-badge { align-self: flex-start; }
+		.stats-row { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+		.stat-card { padding: 14px 10px; }
+		.stat-num { font-size: 1.3rem; }
+		.stat-label { font-size: 0.65rem; }
+		.compliance { padding: 16px; }
+		.compliance-row { grid-template-columns: 1fr; gap: 8px; }
+		.compliance-item { padding: 12px 14px; gap: 10px; }
+		.compliance-icon { width: 32px; height: 32px; }
+		.compliance-label { font-size: 0.82rem; }
+		.tabs { -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+		.tabs::-webkit-scrollbar { display: none; }
+		.tab { padding: 8px 14px; font-size: 0.78rem; }
+		.card { padding: 16px; }
+		.section-title { font-size: 0.95rem; }
+		.detail-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+		.roster-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+		.manage-link { align-self: flex-start; }
+		.roster-row { padding: 8px 10px; gap: 10px; }
+		.roster-photo { width: 32px; height: 32px; }
+		.roster-name { font-size: 0.82rem; }
 		.roster-badges { display: none; }
+		.officer-row { flex-direction: column; align-items: flex-start; gap: 6px; padding: 12px; }
+		.officer-badge-name { min-width: auto; font-size: 0.72rem; }
+		.officer-name { font-size: 0.85rem; }
+		.officer-email { display: block; margin-left: 0; margin-top: 2px; }
+		.ft-header, .ft-row { font-size: 0.72rem; padding: 8px 10px; }
+		.ft-col--name { flex: 1.5; font-size: 0.78rem; }
+		.ft-col--check { font-size: 0.72rem; }
+		.financial-table { font-size: 0.78rem; }
 	}
 	@media (max-width: 480px) {
-		.stats-row { grid-template-columns: 1fr 1fr; }
+		.page-title { font-size: 1.15rem; }
+		.stats-row { grid-template-columns: 1fr 1fr; gap: 6px; }
+		.stat-card { padding: 12px 8px; }
+		.stat-num { font-size: 1.1rem; }
 		.detail-grid { grid-template-columns: 1fr; }
+		.chip { padding: 8px 12px; }
+		.chip-label { font-size: 0.6rem; }
+		.chip-value { font-size: 0.82rem; }
 	}
 </style>

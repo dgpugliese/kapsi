@@ -5,23 +5,31 @@ export const load: PageServerLoad = async ({ locals, parent }) => {
 	if (!session || !member) return { sfContact: null, education: [], badges: [] };
 
 	// Fetch education + military + badges in parallel from Supabase
-	const [educationRes, militaryRes, badgesRes] = await Promise.all([
-		locals.supabase
-			.from('member_education')
-			.select('*')
-			.eq('member_id', member.id)
-			.order('year_graduated', { ascending: false, nullsFirst: false }),
-		locals.supabase
-			.from('member_military')
-			.select('*')
-			.eq('member_id', member.id)
-			.maybeSingle(),
-		locals.supabase
-			.from('member_badges')
-			.select('badges(name, category)')
-			.eq('member_id', member.id)
-			.eq('is_active', true)
-	]);
+	let educationRes: any = { data: [] };
+	let militaryRes: any = { data: null };
+	let badgesRes: any = { data: [] };
+
+	try {
+		[educationRes, militaryRes, badgesRes] = await Promise.all([
+			locals.supabase
+				.from('member_education')
+				.select('*')
+				.eq('member_id', member.id)
+				.order('year_graduated', { ascending: false, nullsFirst: false }),
+			locals.supabase
+				.from('member_military')
+				.select('*')
+				.eq('member_id', member.id)
+				.maybeSingle(),
+			locals.supabase
+				.from('member_badges')
+				.select('badges(name, category)')
+				.eq('member_id', member.id)
+				.eq('is_active', true)
+		]);
+	} catch (err) {
+		console.error('Profile data fetch error:', err);
+	}
 
 	const military = militaryRes.data;
 	const badgeNames = (badgesRes.data ?? [])

@@ -1,5 +1,6 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
+import { checkChapterAccess } from '$lib/chapter-access';
 
 /**
  * GET /api/chapter/eic
@@ -17,16 +18,8 @@ export const GET: RequestHandler = async ({ locals }) => {
 
 	if (!member?.chapter_id) throw error(403, 'No chapter assigned');
 
-	// Check officer badges
-	const { data: badges } = await locals.supabase
-		.from('member_badges')
-		.select('badges(name)')
-		.eq('member_id', member.id)
-		.eq('is_active', true);
-
-	const badgeNames = (badges ?? []).map((b: any) => b.badges?.name).filter(Boolean);
-	const isOfficer = badgeNames.some((b: string) => b.startsWith('Chapter ')) ||
-		['super_admin', 'ihq_staff'].includes(member.role);
+	const access = await checkChapterAccess(locals.supabase, user.id, member.chapter_id);
+	const isOfficer = access.isOfficer || access.isGlobalAdmin;
 
 	const { data: submissions } = await locals.supabase
 		.from('eic_submissions')
@@ -88,17 +81,10 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
 	if (!member?.chapter_id) throw error(403, 'No chapter assigned');
 
-	const { data: badges } = await locals.supabase
-		.from('member_badges')
-		.select('badges(name)')
-		.eq('member_id', member.id)
-		.eq('is_active', true);
+	const access = await checkChapterAccess(locals.supabase, user.id, member.chapter_id);
+	if (!access.isOfficer && !access.isGlobalAdmin) throw error(403, 'Chapter officer access required');
 
-	const badgeNames = (badges ?? []).map((b: any) => b.badges?.name).filter(Boolean);
-	const isOfficer = badgeNames.some((b: string) => b.startsWith('Chapter ')) ||
-		['super_admin', 'ihq_staff'].includes(member.role);
-
-	if (!isOfficer) throw error(403, 'Chapter officer access required');
+	const badgeNames = access.badges.map(b => b.name);
 
 	const { action, data, eicId } = await request.json();
 	const memberName = `${member.first_name} ${member.last_name}`;

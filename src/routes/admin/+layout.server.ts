@@ -13,7 +13,7 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 	const { data: member } = await locals.supabase
 		.from('members')
 		.select('role')
-		.eq('id', user!.id)
+		.eq('auth_user_id', user!.id)
 		.single();
 
 	if (!member || !ADMIN_ROLES.includes(member.role)) {

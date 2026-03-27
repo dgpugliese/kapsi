@@ -1,23 +1,33 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { invalidateAll } from '$app/navigation';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
 	const member = $derived(data.member);
 	const chapter = $derived(data.chapter);
 	const hasAccess = $derived(data.hasAccess);
-	const roster = $derived(data.roster ?? []);
-	const officers = $derived(data.officers ?? []);
 	const activeCount = $derived(data.activeCount ?? 0);
 	const totalMembers = $derived(data.totalMembers ?? 0);
 	const fiscalYear = $derived(data.fiscalYear ?? new Date().getFullYear());
 
 	let activeTab = $state('details');
-	let searchQuery = $state('');
-	let searchResults = $state<any[]>([]);
-	let searching = $state(false);
 	let ready = $state(false);
+
+	// SF-backed roster data
+	let rosterLoading = $state(false);
+	let rosterError = $state('');
+	let rosterData = $state<any>(null);
+	let rosterFilter = $state('');
+	let filterTimer: ReturnType<typeof setTimeout> | null = null;
+
+	// SF-backed officer data
+	let officersLoading = $state(false);
+	let officersError = $state('');
+	let officersData = $state<any>(null);
+
+	const rosterMembers = $derived(rosterData?.members ?? []);
+	const officerList = $derived(officersData?.badgeOfficers ?? []);
+	const igsCount = $derived(rosterMembers.filter((m: any) => m.status === 'In Good Standing').length);
 
 	const tabs = [
 		{ id: 'details', label: 'Details' },
@@ -26,55 +36,52 @@
 		{ id: 'financial', label: 'Financial Status' }
 	];
 
-	const activeRoster = $derived(roster.filter((r: any) => r.roster_type === 'active'));
-	const krimsonList = $derived(roster.filter((r: any) => r.roster_type === 'krimson_list'));
+	onMount(() => {
+		ready = true;
+		if (chapter && hasAccess) {
+			loadRoster();
+			loadOfficers();
+		}
+	});
 
-	onMount(() => { ready = true; });
-
-	async function searchMembers() {
-		if (!searchQuery.trim() || searchQuery.length < 2) return;
-		searching = true;
+	async function loadRoster() {
+		rosterLoading = true;
+		rosterError = '';
 		try {
-			const { supabase } = await import('$lib/supabase');
-			const tsQuery = searchQuery.trim().split(/\s+/).map(t => t + ':*').join(' & ');
-			const { data: results } = await supabase
-				.from('members')
-				.select('id, first_name, last_name, email, membership_number, membership_status')
-				.textSearch('search_vector', tsQuery)
-				.eq('membership_status', 'active')
-				.limit(10);
-			searchResults = results ?? [];
+			const params = rosterFilter ? `?search=${encodeURIComponent(rosterFilter)}` : '';
+			const res = await fetch(`/api/chapter/roster${params}`);
+			if (res.ok) {
+				rosterData = await res.json();
+			} else {
+				const err = await res.json().catch(() => ({ message: 'Failed to load roster' }));
+				rosterError = err.message || `Error ${res.status}`;
+			}
 		} catch {
-			searchResults = [];
+			rosterError = 'Failed to connect';
 		}
-		searching = false;
+		rosterLoading = false;
 	}
 
-	async function addToRoster(memberId: string) {
+	async function loadOfficers() {
+		officersLoading = true;
+		officersError = '';
 		try {
-			const { supabase } = await import('$lib/supabase');
-			await supabase.from('chapter_rosters').insert({
-				chapter_id: chapter.id,
-				member_id: memberId,
-				fiscal_year: fiscalYear,
-				roster_type: 'active'
-			});
-			searchResults = [];
-			searchQuery = '';
-			await invalidateAll();
-		} catch (err: any) {
-			console.error('Add to roster failed:', err);
+			const res = await fetch('/api/chapter/officers');
+			if (res.ok) {
+				officersData = await res.json();
+			} else {
+				const err = await res.json().catch(() => ({ message: 'Failed to load officers' }));
+				officersError = err.message || `Error ${res.status}`;
+			}
+		} catch {
+			officersError = 'Failed to connect';
 		}
+		officersLoading = false;
 	}
 
-	async function removeFromRoster(rosterId: string) {
-		try {
-			const { supabase } = await import('$lib/supabase');
-			await supabase.from('chapter_rosters').delete().eq('id', rosterId);
-			await invalidateAll();
-		} catch (err: any) {
-			console.error('Remove from roster failed:', err);
-		}
+	function debouncedFilter() {
+		if (filterTimer) clearTimeout(filterTimer);
+		filterTimer = setTimeout(() => loadRoster(), 300);
 	}
 </script>
 
@@ -112,19 +119,19 @@
 		<!-- Stats -->
 		<div class="stats-row fade-up" style="--d:1;">
 			<div class="stat-card">
-				<div class="stat-num">{totalMembers}</div>
+				<div class="stat-num">{rosterData?.total ?? totalMembers}</div>
 				<div class="stat-label">Total Members</div>
 			</div>
 			<div class="stat-card">
-				<div class="stat-num">{activeCount}</div>
+				<div class="stat-num">{rosterData ? igsCount : activeCount}</div>
 				<div class="stat-label">In Good Standing</div>
 			</div>
 			<div class="stat-card">
-				<div class="stat-num">{officers.length}</div>
+				<div class="stat-num">{officerList.length}</div>
 				<div class="stat-label">Officers</div>
 			</div>
 			<div class="stat-card">
-				<div class="stat-num">{activeRoster.length}</div>
+				<div class="stat-num">{rosterData?.total ?? '—'}</div>
 				<div class="stat-label">On Roster</div>
 			</div>
 		</div>
@@ -189,110 +196,122 @@
 				{/if}
 
 			{:else if activeTab === 'roster'}
-				<!-- ROSTER TAB -->
+				<!-- ROSTER TAB — pulls from Salesforce via /api/chapter/roster -->
 				<div class="card">
 					<div class="roster-header">
 						<h2 class="section-title" style="margin-bottom:0; border:none; padding:0;">
-							Active Members ({activeRoster.length})
+							Chapter Roster ({rosterData?.total ?? '...'})
 						</h2>
-						<div class="roster-status">
-							{#if chapter.roster_confirmed}
-								<span class="confirmed-badge">Confirmed</span>
-							{:else}
-								<span class="unconfirmed-badge">Not Confirmed</span>
-							{/if}
-						</div>
+						<a href="/portal/chapter-management/roster" class="manage-link">
+							Manage Roster &rarr;
+						</a>
 					</div>
 
-					{#if hasAccess}
-						<!-- Search to add member -->
-						<div class="search-bar">
-							<input
-								type="text" placeholder="Search for a member to add..."
-								bind:value={searchQuery}
-								oninput={() => { if (searchQuery.length >= 2) searchMembers(); else searchResults = []; }}
-								class="search-input"
-							/>
-						</div>
-
-						{#if searchResults.length > 0}
-							<div class="search-results">
-								{#each searchResults as r}
-									<div class="search-result">
-										<div>
-											<span class="result-name">{r.first_name} {r.last_name}</span>
-											<span class="result-id">#{r.membership_number}</span>
-										</div>
-										<button class="add-btn" onclick={() => addToRoster(r.id)}>Add</button>
-									</div>
-								{/each}
-							</div>
-						{/if}
-					{/if}
-
-					<!-- Roster list -->
-					<div class="roster-list">
-						{#each activeRoster as r}
-							<div class="roster-row">
-								<div class="roster-member">
-									<span class="roster-name">{r.members.first_name} {r.members.last_name}</span>
-									<span class="roster-detail">#{r.members.membership_number} · {r.members.email ?? ''}</span>
-								</div>
-								{#if hasAccess}
-									<button class="drop-btn" onclick={() => removeFromRoster(r.id)}>Drop</button>
-								{/if}
-							</div>
-						{/each}
-						{#if activeRoster.length === 0}
-							<p class="empty-roster">No members on the roster for FY{fiscalYear}. Use the search above to add members.</p>
-						{/if}
+					<!-- Filter -->
+					<div class="search-bar">
+						<input
+							type="text" placeholder="Filter by name, email, or member #..."
+							bind:value={rosterFilter}
+							oninput={debouncedFilter}
+							class="search-input"
+						/>
 					</div>
-				</div>
 
-				{#if krimsonList.length > 0}
-					<div class="card">
-						<h2 class="section-title">Krimson List ({krimsonList.length})</h2>
-						<p class="krimson-desc">Members who have not paid local and province dues for the current fraternal year.</p>
+					{#if rosterLoading}
+						<div class="loading-msg">Loading roster from Salesforce...</div>
+					{:else if rosterError}
+						<div class="error-msg">{rosterError}</div>
+					{:else if rosterMembers.length === 0}
+						<p class="empty-roster">No members found for this chapter.</p>
+					{:else}
 						<div class="roster-list">
-							{#each krimsonList as r}
+							{#each rosterMembers as m}
 								<div class="roster-row">
-									<div class="roster-member">
-										<span class="roster-name">{r.members.first_name} {r.members.last_name}</span>
-										<span class="roster-detail">#{r.members.membership_number}</span>
+									<div class="roster-photo">
+										{#if m.photoUrl}
+											<img src={m.photoUrl} alt="" />
+										{:else}
+											<span>{(m.firstName?.[0] ?? '') + (m.lastName?.[0] ?? '')}</span>
+										{/if}
 									</div>
-									{#if hasAccess}
-										<button class="drop-btn" onclick={() => removeFromRoster(r.id)}>Drop</button>
-									{/if}
+									<div class="roster-member">
+										<span class="roster-name">{m.firstName} {m.lastName}</span>
+										<span class="roster-detail">
+											{#if m.membershipNumber}#{m.membershipNumber} · {/if}{m.email ?? ''}
+										</span>
+									</div>
+									<div class="roster-badges">
+										<span class="status-badge" class:status-good={m.status === 'In Good Standing'}>
+											{m.status ?? 'Unknown'}
+										</span>
+										{#if m.isLifeMember}
+											<span class="life-badge">Life</span>
+										{/if}
+									</div>
 								</div>
 							{/each}
 						</div>
-					</div>
-				{/if}
+					{/if}
+				</div>
 
 			{:else if activeTab === 'officers'}
-				<!-- OFFICERS TAB -->
+				<!-- OFFICERS TAB — pulls from Salesforce via /api/chapter/officers -->
 				<div class="card">
-					<h2 class="section-title">Chapter Officers</h2>
+					<div class="roster-header">
+						<h2 class="section-title" style="margin-bottom:0; border:none; padding:0;">Chapter Officers</h2>
+						<a href="/portal/chapter-management/officers" class="manage-link">
+							Manage Officers &rarr;
+						</a>
+					</div>
 
-					{#if officers.length > 0}
+					{#if officersLoading}
+						<div class="loading-msg">Loading officers from Salesforce...</div>
+					{:else if officersError}
+						<div class="error-msg">{officersError}</div>
+					{:else if officerList.length > 0}
 						<div class="officers-list">
-							{#each officers as o}
+							{#each officerList as o}
 								<div class="officer-row">
-									<div class="officer-badge-name">{o.position}</div>
+									<div class="officer-badge-name">{o.role?.replace('Chapter ', '') ?? o.role}</div>
 									<div class="officer-member">
-										<span class="officer-name">{o.members.first_name} {o.members.last_name}</span>
-										<span class="officer-id">#{o.members.membership_number}</span>
+										<span class="officer-name">{o.firstName} {o.lastName}</span>
+										<span class="officer-email">{o.email ?? ''}</span>
 									</div>
-									{#if o.signature}
-										<span class="signed-tag">Signed {o.signed_at ? new Date(o.signed_at).toLocaleDateString() : ''}</span>
-									{:else}
-										<span class="unsigned-tag">Pending</span>
-									{/if}
 								</div>
 							{/each}
 						</div>
 					{:else}
-						<p class="empty-roster">No officers assigned. Officers must be assigned from the confirmed roster.</p>
+						<p class="empty-roster">No officers assigned in Salesforce for this chapter.</p>
+					{/if}
+
+					{#if officersData?.accountOfficers}
+						{@const ao = officersData.accountOfficers}
+						{@const acctOfficers = [
+							{ role: 'Polemarch', name: ao.polemarch?.name, email: ao.polemarch?.email },
+							{ role: 'Vice Polemarch', name: ao.vicePolemarch?.name, email: ao.vicePolemarch?.email },
+							{ role: 'Keeper of Records', name: ao.kor?.name, email: ao.kor?.email },
+							{ role: 'Keeper of Exchequer', name: ao.koe?.name },
+							{ role: 'Strategus', name: ao.strategus?.name },
+							{ role: 'Lt. Strategus', name: ao.ltStrategus?.name },
+							{ role: 'Advisor', name: ao.advisor?.name, email: ao.advisor?.email }
+						].filter(o => o.name)}
+						{#if acctOfficers.length > 0 && officerList.length === 0}
+							<div class="card" style="margin-top:16px; border:1px dashed var(--gray-200);">
+								<h3 class="section-title" style="font-size:0.92rem;">Account Officer Fields</h3>
+								<p style="font-size:0.78rem; color:var(--gray-400); margin-bottom:12px;">These names are stored on the Account record. Badge assignments above take precedence.</p>
+								<div class="officers-list">
+									{#each acctOfficers as o}
+										<div class="officer-row">
+											<div class="officer-badge-name">{o.role}</div>
+											<div class="officer-member">
+												<span class="officer-name">{o.name}</span>
+												{#if o.email}<span class="officer-email">{o.email}</span>{/if}
+											</div>
+										</div>
+									{/each}
+								</div>
+							</div>
+						{/if}
 					{/if}
 				</div>
 
@@ -300,22 +319,22 @@
 				<!-- FINANCIAL STATUS TAB -->
 				<div class="card">
 					<h2 class="section-title">Member Financial Status</h2>
-					<p class="financial-desc">Financial status of all rostered members at three levels.</p>
+					<p class="financial-desc">Financial status of chapter members based on Salesforce membership status.</p>
 
-					{#if activeRoster.length > 0}
+					{#if rosterLoading}
+						<div class="loading-msg">Loading...</div>
+					{:else if rosterMembers.length > 0}
 						<div class="financial-table">
 							<div class="ft-header">
 								<span class="ft-col ft-col--name">Full Name</span>
-								<span class="ft-col ft-col--check">National</span>
-								<span class="ft-col ft-col--check">Province</span>
-								<span class="ft-col ft-col--check">Chapter</span>
+								<span class="ft-col ft-col--check">National Dues</span>
+								<span class="ft-col ft-col--check">Status</span>
 								<span class="ft-col ft-col--check">Life</span>
 							</div>
-							{#each activeRoster as r}
-								{@const m = r.members}
-								{@const isIGS = m.membership_status === 'active'}
+							{#each rosterMembers as m}
+								{@const isIGS = m.status === 'In Good Standing'}
 								<div class="ft-row">
-									<span class="ft-col ft-col--name">{m.first_name} {m.last_name}</span>
+									<span class="ft-col ft-col--name">{m.firstName} {m.lastName}</span>
 									<span class="ft-col ft-col--check">
 										{#if isIGS}
 											<span class="check-good">&#x2714;</span>
@@ -323,20 +342,21 @@
 											<span class="check-bad">&#x2718;</span>
 										{/if}
 									</span>
-									<span class="ft-col ft-col--check"><span class="check-good">&#x2714;</span></span>
-									<span class="ft-col ft-col--check"><span class="check-good">&#x2714;</span></span>
 									<span class="ft-col ft-col--check">
-										{#if r.is_province_life_member}
+										<span class={isIGS ? 'check-good' : 'check-bad'}>{m.status ?? 'Unknown'}</span>
+									</span>
+									<span class="ft-col ft-col--check">
+										{#if m.isLifeMember}
 											<span class="check-good">&#x2714;</span>
 										{:else}
-											<span class="check-bad">&#x2718;</span>
+											<span style="color:var(--gray-300);">—</span>
 										{/if}
 									</span>
 								</div>
 							{/each}
 						</div>
 					{:else}
-						<p class="empty-roster">No members on the roster to display financial status.</p>
+						<p class="empty-roster">No members to display financial status.</p>
 					{/if}
 				</div>
 			{/if}
@@ -382,8 +402,12 @@
 
 	/* Roster */
 	.roster-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-	.confirmed-badge { font-size: 0.75rem; font-weight: 700; padding: 4px 12px; border-radius: 20px; background: #ecfdf5; color: #065f46; }
-	.unconfirmed-badge { font-size: 0.75rem; font-weight: 700; padding: 4px 12px; border-radius: 20px; background: #fef2f2; color: #991b1b; }
+	.manage-link {
+		font-size: 0.82rem; font-weight: 600; color: var(--crimson); text-decoration: none;
+		padding: 6px 14px; border: 1px solid rgba(200,16,46,0.2); border-radius: 8px;
+		transition: all 0.2s;
+	}
+	.manage-link:hover { background: rgba(200,16,46,0.04); }
 
 	.search-bar { margin-bottom: 12px; }
 	.search-input {
@@ -392,27 +416,32 @@
 	}
 	.search-input:focus { outline: none; border-color: var(--crimson); background: white; }
 
-	.search-results { margin-bottom: 16px; border: 1px solid var(--gray-200); border-radius: 10px; overflow: hidden; }
-	.search-result { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--gray-100); }
-	.search-result:last-child { border-bottom: none; }
-	.result-name { font-weight: 600; font-size: 0.88rem; }
-	.result-id { font-size: 0.78rem; color: var(--gray-400); margin-left: 8px; }
-	.add-btn {
-		padding: 5px 14px; border-radius: 6px; font-size: 0.78rem; font-weight: 600;
-		background: var(--crimson); color: white; border: none; cursor: pointer;
-	}
-
 	.roster-list { display: flex; flex-direction: column; gap: 4px; }
-	.roster-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: var(--gray-50); border-radius: 8px; }
-	.roster-name { font-weight: 600; font-size: 0.88rem; }
-	.roster-detail { font-size: 0.75rem; color: var(--gray-400); display: block; margin-top: 2px; }
-	.drop-btn {
-		padding: 4px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 600;
-		background: white; color: #991b1b; border: 1px solid #fecaca; cursor: pointer;
+	.roster-row {
+		display: flex; align-items: center; gap: 14px;
+		padding: 10px 14px; background: var(--gray-50); border-radius: 8px;
 	}
-	.drop-btn:hover { background: #fef2f2; }
+	.roster-photo {
+		width: 36px; height: 36px; border-radius: 50%; overflow: hidden; flex-shrink: 0;
+		border: 2px solid var(--crimson); background: linear-gradient(160deg, var(--crimson-dark, #8b0000), var(--crimson, #c8102e));
+		display: flex; align-items: center; justify-content: center;
+	}
+	.roster-photo img { width: 100%; height: 100%; object-fit: cover; }
+	.roster-photo span { font-family: var(--font-serif); font-size: 0.65rem; color: rgba(255,255,255,0.5); }
+	.roster-member { flex: 1; min-width: 0; }
+	.roster-name { font-weight: 600; font-size: 0.88rem; }
+	.roster-detail { font-size: 0.75rem; color: var(--gray-400); display: block; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+	.roster-badges { display: flex; gap: 6px; flex-shrink: 0; }
+	.status-badge {
+		font-size: 0.65rem; font-weight: 700; padding: 3px 8px; border-radius: 10px;
+		background: var(--gray-100); color: var(--gray-500); white-space: nowrap;
+	}
+	.status-good { background: #ecfdf5; color: #065f46; }
+	.life-badge { font-size: 0.65rem; font-weight: 700; padding: 3px 8px; border-radius: 10px; background: rgba(201,168,76,0.1); color: var(--gold, #c9a84c); }
+
 	.empty-roster { text-align: center; color: var(--gray-400); padding: 24px; font-size: 0.88rem; }
-	.krimson-desc { font-size: 0.82rem; color: var(--gray-500); margin-bottom: 16px; }
+	.loading-msg { text-align: center; color: var(--gray-400); padding: 32px; font-size: 0.88rem; }
+	.error-msg { background: #fef2f2; color: #991b1b; padding: 14px 16px; border-radius: 10px; font-size: 0.88rem; margin-bottom: 12px; }
 
 	/* Officers */
 	.officers-list { display: flex; flex-direction: column; gap: 8px; }
@@ -420,9 +449,7 @@
 	.officer-badge-name { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--crimson); min-width: 180px; }
 	.officer-member { flex: 1; }
 	.officer-name { font-weight: 600; font-size: 0.9rem; }
-	.officer-id { font-size: 0.75rem; color: var(--gray-400); margin-left: 8px; }
-	.signed-tag { font-size: 0.72rem; color: #065f46; font-weight: 600; }
-	.unsigned-tag { font-size: 0.72rem; color: #991b1b; font-weight: 600; }
+	.officer-email { font-size: 0.75rem; color: var(--gray-400); margin-left: 8px; }
 
 	/* Financial table */
 	.financial-desc { font-size: 0.82rem; color: var(--gray-500); margin-bottom: 16px; }
@@ -431,7 +458,7 @@
 	.ft-row { display: flex; padding: 10px 14px; border-top: 1px solid var(--gray-100); align-items: center; }
 	.ft-col { flex: 1; }
 	.ft-col--name { flex: 2; font-size: 0.88rem; font-weight: 500; }
-	.ft-col--check { text-align: center; font-size: 1rem; }
+	.ft-col--check { text-align: center; font-size: 0.82rem; }
 	.check-good { color: #065f46; font-weight: 700; }
 	.check-bad { color: #991b1b; font-weight: 700; }
 
@@ -446,6 +473,7 @@
 		.officer-badge-name { min-width: auto; }
 		.ft-header, .ft-row { font-size: 0.78rem; }
 		.ft-col--name { flex: 1.5; }
+		.roster-badges { display: none; }
 	}
 	@media (max-width: 480px) {
 		.stats-row { grid-template-columns: 1fr 1fr; }

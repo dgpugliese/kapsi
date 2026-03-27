@@ -30,6 +30,22 @@ export interface AccessResult {
 
 const GLOBAL_ADMIN_ROLES = ['super_admin', 'ihq_staff', 'national_officer'];
 
+// Only these badges grant chapter management access
+const CHAPTER_OFFICER_BADGES = new Set([
+	'Chapter Polemarch',
+	'Chapter Vice Polemarch',
+	'Chapter Keeper of Records',
+	'Chapter Keeper of Records/Exchequer',
+	'Chapter Keeper of Exchequer',
+	'Chapter Strategus',
+	'Chapter Lieutenant Strategus',
+	'Chapter MTA Chairman',
+	'Chapter Historian',
+	'Chapter Reporter',
+	'Chapter Advisor',
+	'Undergraduate Chapter Advisor'
+]);
+
 const CHAPTER_ROLE_MAP: Record<string, keyof Pick<AccessResult, 'isPolemarch' | 'isVicePolemarch' | 'isKOR' | 'isKOE' | 'isStrategus' | 'isAdvisor'>> = {
 	'Chapter Polemarch': 'isPolemarch',
 	'Chapter Vice Polemarch': 'isVicePolemarch',
@@ -116,9 +132,9 @@ export async function checkChapterAccess(
 	// 4. Resolve which chapters this user can manage
 	const managedChapterIds = new Set<string>();
 
-	// Chapter-scoped badges: access to that specific chapter
+	// Chapter-scoped badges: only OFFICER badges grant management access
 	for (const badge of badges) {
-		if (badge.category === 'chapter_role' && badge.chapterId) {
+		if (badge.category === 'chapter_role' && badge.chapterId && CHAPTER_OFFICER_BADGES.has(badge.name)) {
 			managedChapterIds.add(badge.chapterId);
 		}
 	}
@@ -152,9 +168,9 @@ export async function checkChapterAccess(
 	};
 
 	if (target) {
-		// Check chapter-scoped badges for target
+		// Check chapter-scoped OFFICER badges for target
 		const targetBadges = badges.filter(b =>
-			(b.category === 'chapter_role' && b.chapterId === target) ||
+			(b.category === 'chapter_role' && b.chapterId === target && CHAPTER_OFFICER_BADGES.has(b.name)) ||
 			(b.category === 'province_role' && provinceIds.includes(b.provinceId!))
 		);
 

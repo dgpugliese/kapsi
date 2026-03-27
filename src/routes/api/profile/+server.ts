@@ -2,6 +2,27 @@ import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { findContactByEmail, sfUpdate } from '$lib/salesforce';
 
+const STATE_ABBREV_TO_NAME: Record<string, string> = {
+	AL: 'Alabama', AK: 'Alaska', AZ: 'Arizona', AR: 'Arkansas', CA: 'California',
+	CO: 'Colorado', CT: 'Connecticut', DE: 'Delaware', DC: 'District of Columbia',
+	FL: 'Florida', GA: 'Georgia', HI: 'Hawaii', ID: 'Idaho', IL: 'Illinois',
+	IN: 'Indiana', IA: 'Iowa', KS: 'Kansas', KY: 'Kentucky', LA: 'Louisiana',
+	ME: 'Maine', MD: 'Maryland', MA: 'Massachusetts', MI: 'Michigan', MN: 'Minnesota',
+	MS: 'Mississippi', MO: 'Missouri', MT: 'Montana', NE: 'Nebraska', NV: 'Nevada',
+	NH: 'New Hampshire', NJ: 'New Jersey', NM: 'New Mexico', NY: 'New York',
+	NC: 'North Carolina', ND: 'North Dakota', OH: 'Ohio', OK: 'Oklahoma', OR: 'Oregon',
+	PA: 'Pennsylvania', RI: 'Rhode Island', SC: 'South Carolina', SD: 'South Dakota',
+	TN: 'Tennessee', TX: 'Texas', UT: 'Utah', VT: 'Vermont', VA: 'Virginia',
+	WA: 'Washington', WV: 'West Virginia', WI: 'Wisconsin', WY: 'Wyoming',
+	PR: 'Puerto Rico', VI: 'Virgin Islands', GU: 'Guam', AS: 'American Samoa'
+};
+
+function normalizeState(value: string): string {
+	if (!value) return value;
+	const upper = value.trim().toUpperCase();
+	return STATE_ABBREV_TO_NAME[upper] || value.trim();
+}
+
 /**
  * GET /api/profile
  * Fetch member profile from Salesforce.
@@ -77,7 +98,7 @@ export const PATCH: RequestHandler = async ({ request, locals }) => {
 		if (updates.mobilePhone !== undefined) sfFields.MobilePhone = updates.mobilePhone;
 		if (updates.mailingStreet !== undefined) sfFields.MailingStreet = updates.mailingStreet;
 		if (updates.mailingCity !== undefined) sfFields.MailingCity = updates.mailingCity;
-		if (updates.mailingState !== undefined) sfFields.MailingState = updates.mailingState;
+		if (updates.mailingState !== undefined) sfFields.MailingState = normalizeState(updates.mailingState);
 		if (updates.mailingPostalCode !== undefined) sfFields.MailingPostalCode = updates.mailingPostalCode;
 		if (updates.employer !== undefined) sfFields.FON_Employer_Name__c = updates.employer;
 		if (updates.profession !== undefined) sfFields.FON_Profession__c = updates.profession;

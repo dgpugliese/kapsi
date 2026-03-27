@@ -15,7 +15,7 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 	if (!session || !user) throw error(401, 'Unauthorized');
 
 	const officer = await getChapterOfficer(user.email!);
-	if (!officer) throw error(403, 'No chapter officer role found');
+	if (!officer) throw error(403, 'No chapter membership found. Your email may not match your Salesforce contact.');
 
 	const search = url.searchParams.get('search')?.trim() || '';
 

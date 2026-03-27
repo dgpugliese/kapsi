@@ -173,19 +173,11 @@
 </div>
 
 <!-- Quick Links -->
-<div style="display:flex; gap:12px; margin-bottom:24px; flex-wrap:wrap;">
-	<a href="/admin/chapter-reports" style="display:inline-flex; align-items:center; gap:8px; padding:10px 18px; background:var(--white); border:1px solid var(--gray-100); border-radius:10px; text-decoration:none; color:var(--black); font-size:0.88rem; font-weight:600; transition:all 0.2s;" onmouseenter="this.style.borderColor='var(--crimson)'" onmouseleave="this.style.borderColor='var(--gray-100)'">
-		<span style="color:var(--crimson);">&#9776;</span> Chapter Reports
-	</a>
-	<a href="/admin/chapters" style="display:inline-flex; align-items:center; gap:8px; padding:10px 18px; background:var(--white); border:1px solid var(--gray-100); border-radius:10px; text-decoration:none; color:var(--black); font-size:0.88rem; font-weight:600; transition:all 0.2s;" onmouseenter="this.style.borderColor='var(--crimson)'" onmouseleave="this.style.borderColor='var(--gray-100)'">
-		<span style="color:var(--crimson);">&#9881;</span> Manage Chapters
-	</a>
-	<a href="/admin/members" style="display:inline-flex; align-items:center; gap:8px; padding:10px 18px; background:var(--white); border:1px solid var(--gray-100); border-radius:10px; text-decoration:none; color:var(--black); font-size:0.88rem; font-weight:600; transition:all 0.2s;" onmouseenter="this.style.borderColor='var(--crimson)'" onmouseleave="this.style.borderColor='var(--gray-100)'">
-		<span style="color:var(--crimson);">&#128101;</span> All Members
-	</a>
-	<a href="/admin/reports" style="display:inline-flex; align-items:center; gap:8px; padding:10px 18px; background:var(--white); border:1px solid var(--gray-100); border-radius:10px; text-decoration:none; color:var(--black); font-size:0.88rem; font-weight:600; transition:all 0.2s;" onmouseenter="this.style.borderColor='var(--crimson)'" onmouseleave="this.style.borderColor='var(--gray-100)'">
-		<span style="color:var(--crimson);">&#128200;</span> Financial Reports
-	</a>
+<div class="quick-links">
+	<a href="/admin/chapter-reports" class="quick-link">Chapter Reports</a>
+	<a href="/admin/chapters" class="quick-link">Manage Chapters</a>
+	<a href="/admin/members" class="quick-link">All Members</a>
+	<a href="/admin/reports" class="quick-link">Financial Reports</a>
 </div>
 
 <!-- Recent Members -->
@@ -223,3 +215,14 @@
 		</table>
 	{/if}
 </div>
+
+<style>
+	.quick-links { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+	.quick-link {
+		display: inline-flex; align-items: center; gap: 8px;
+		padding: 10px 18px; background: var(--white); border: 1px solid var(--gray-100);
+		border-radius: 10px; text-decoration: none; color: var(--black);
+		font-size: 0.88rem; font-weight: 600; transition: all 0.2s;
+	}
+	.quick-link:hover { border-color: var(--crimson); color: var(--crimson); }
+</style>

@@ -4,6 +4,10 @@
 	let { data }: { data: PageData } = $props();
 	let events = $derived(data.events);
 	let pastEvents = $derived(data.pastEvents);
+	let myRegistrations = $derived(data.myRegistrations ?? []);
+
+	// Set of event IDs the member is registered for
+	const registeredEventIds = $derived(new Set(myRegistrations.map((r: any) => r.sf_event_id)));
 
 	function formatDate(dateStr: string) {
 		return new Date(dateStr).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
@@ -26,6 +30,31 @@
 </svelte:head>
 
 <div style="max-width:900px;">
+	<!-- My Registrations -->
+	{#if myRegistrations.length > 0}
+		<h1 style="font-family:var(--font-serif); font-size:1.6rem; color:var(--crimson); margin-bottom:16px;">My Registrations</h1>
+		<div class="my-regs" style="margin-bottom:32px;">
+			{#each myRegistrations as reg}
+				{@const evt = reg.sync_events}
+				<a href="/portal/events/{reg.sf_event_id}" class="reg-card">
+					<div class="reg-card-info">
+						<div class="reg-card-title">{evt?.display_name || evt?.name || 'Event'}</div>
+						<div class="reg-card-meta">
+							{#if evt?.start_date}{formatDate(evt.start_date)}{/if}
+							{#if evt?.location} · {evt.location}{/if}
+						</div>
+						<div class="reg-card-ticket">
+							{reg.ticket_type_name || 'Registered'}
+							{#if reg.amount_paid > 0} · ${reg.amount_paid.toFixed(2)}{/if}
+							{#if reg.payment_method === 'free'} · Free{/if}
+						</div>
+					</div>
+					<span class="reg-badge">Registered</span>
+				</a>
+			{/each}
+		</div>
+	{/if}
+
 	<h1 style="font-family:var(--font-serif); font-size:1.6rem; color:var(--crimson); margin-bottom:24px;">Upcoming Events</h1>
 
 	{#if events.length === 0}
@@ -55,6 +84,9 @@
 							<p class="event-card-location">{event.location}</p>
 						{/if}
 						<div class="event-card-meta">
+							{#if registeredEventIds.has(event.sf_event_id)}
+								<span class="event-badge event-badge--registered">Registered</span>
+							{/if}
 							{#if event.is_free}
 								<span class="event-badge event-badge--free">Free</span>
 							{/if}
@@ -129,11 +161,30 @@
 	}
 	.event-badge--free { background: #ECFDF5; color: #065F46; }
 	.event-badge--low { background: #FEF2F2; color: #991B1B; }
+	.event-badge--registered { background: rgba(200,16,46,0.08); color: var(--crimson); }
 	.event-card-attendees { font-size: 0.72rem; color: var(--gray-400); }
 
 	.past-event-row {
 		display: flex; justify-content: space-between; align-items: center;
 		padding: 12px 16px; background: var(--white); border: 1px solid var(--gray-100);
 		border-radius: 8px;
+	}
+
+	/* My Registrations */
+	.my-regs { display: flex; flex-direction: column; gap: 8px; }
+	.reg-card {
+		display: flex; justify-content: space-between; align-items: center; gap: 12px;
+		padding: 16px 20px; background: var(--white); border: 1px solid var(--gray-100);
+		border-radius: 12px; text-decoration: none; color: inherit; border-left: 3px solid var(--crimson);
+		transition: all 0.2s;
+	}
+	.reg-card:hover { border-color: var(--crimson); box-shadow: 0 4px 12px rgba(0,0,0,0.04); }
+	.reg-card-info { flex: 1; min-width: 0; }
+	.reg-card-title { font-family: var(--font-serif); font-size: 1rem; font-weight: 700; margin-bottom: 4px; }
+	.reg-card-meta { font-size: 0.82rem; color: var(--gray-500); }
+	.reg-card-ticket { font-size: 0.78rem; color: var(--gray-400); margin-top: 4px; }
+	.reg-badge {
+		font-size: 0.72rem; font-weight: 700; padding: 4px 12px; border-radius: 12px;
+		background: #ecfdf5; color: #065f46; white-space: nowrap; flex-shrink: 0;
 	}
 </style>

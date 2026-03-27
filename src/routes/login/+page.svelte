@@ -6,8 +6,11 @@
 	let email = $state('');
 	let password = $state('');
 	let loading = $state(false);
-	let ssoLoading = $state(false);
 	let error = $state('');
+	let showForgot = $state(false);
+	let forgotEmail = $state('');
+	let forgotSent = $state(false);
+	let forgotLoading = $state(false);
 
 	const redirectTo = $derived($page.url.searchParams.get('redirect') || '/portal');
 
@@ -22,7 +25,9 @@
 		});
 
 		if (authError) {
-			error = authError.message;
+			error = authError.message === 'Invalid login credentials'
+				? 'Invalid email or password. Please try again.'
+				: authError.message;
 			loading = false;
 			return;
 		}
@@ -30,161 +35,233 @@
 		goto(redirectTo);
 	}
 
-	async function handleSalesforceSSO() {
-		ssoLoading = true;
+	async function handleForgotPassword(e: Event) {
+		e.preventDefault();
+		forgotLoading = true;
 		error = '';
 
-		const { error: ssoError } = await supabase.auth.signInWithOAuth({
-			provider: 'custom:salesforce' as any,
-			options: {
-				redirectTo: window.location.origin + redirectTo
-			}
+		const { error: resetError } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
+			redirectTo: window.location.origin + '/reset-password'
 		});
 
-		if (ssoError) {
-			error = ssoError.message;
-			ssoLoading = false;
+		if (resetError) {
+			error = resetError.message;
+		} else {
+			forgotSent = true;
 		}
+		forgotLoading = false;
 	}
 </script>
 
 <svelte:head>
-	<title>Brother's Only — Kappa Alpha Psi®</title>
+	<title>Sign In — Brother's Only — Kappa Alpha Psi Fraternity, Inc.</title>
 </svelte:head>
 
-<section class="page-hero">
-	<div class="container">
-		<h1>Brother's Only</h1>
-		<div class="hero-divider"><span>&#9670;</span></div>
-		<p>Sign in to your membership portal.</p>
-	</div>
-</section>
+<div class="login-page">
+	<div class="login-card">
+		<!-- Logo -->
+		<div class="login-logo">
+			<img src="/images/trademarks/coatofarms_large.png" alt="Kappa Alpha Psi" />
+		</div>
 
-<section class="section">
-	<div class="container" style="max-width:480px;">
-		<div class="auth-card">
-			<div class="auth-icon">
-				<svg width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-					<path d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
-				</svg>
-			</div>
+		<h1 class="login-title">Brother's Only</h1>
+		<p class="login-subtitle">Sign in to your membership portal</p>
 
-			{#if error}
-				<div class="form-error">{error}</div>
+		{#if error}
+			<div class="login-error">{error}</div>
+		{/if}
+
+		{#if showForgot}
+			<!-- Forgot Password -->
+			{#if forgotSent}
+				<div class="login-success">
+					Password reset link sent to <strong>{forgotEmail}</strong>. Check your email.
+				</div>
+				<button class="login-back" onclick={() => { showForgot = false; forgotSent = false; error = ''; }}>
+					Back to Sign In
+				</button>
+			{:else}
+				<p class="forgot-desc">Enter your email address and we'll send you a link to reset your password.</p>
+				<form onsubmit={handleForgotPassword}>
+					<div class="field">
+						<label for="forgot-email">Email Address</label>
+						<input
+							id="forgot-email"
+							type="email"
+							bind:value={forgotEmail}
+							required
+							autocomplete="email"
+							placeholder="you@example.com"
+							autofocus
+						/>
+					</div>
+					<button type="submit" class="login-btn" disabled={forgotLoading}>
+						{forgotLoading ? 'Sending...' : 'Send Reset Link'}
+					</button>
+				</form>
+				<button class="login-back" onclick={() => { showForgot = false; error = ''; }}>
+					Back to Sign In
+				</button>
 			{/if}
-
-			<!-- Salesforce SSO -->
-			<button
-				onclick={handleSalesforceSSO}
-				disabled={ssoLoading}
-				class="sso-btn"
-			>
-				<img src="/images/crest.png" alt="" class="sso-icon" />
-				{ssoLoading ? 'Redirecting...' : 'Sign in with Kappa Credentials'}
-			</button>
-
-			<div class="divider">
-				<span>or sign in with email</span>
-			</div>
-
+		{:else}
+			<!-- Sign In Form -->
 			<form onsubmit={handleLogin}>
-				<div style="margin-bottom:20px;">
-					<label for="email" class="form-label">Email Address</label>
+				<div class="field">
+					<label for="email">Email Address</label>
 					<input
 						id="email"
 						type="email"
 						bind:value={email}
 						required
 						autocomplete="email"
-						class="form-control"
 						placeholder="you@example.com"
 					/>
 				</div>
 
-				<div style="margin-bottom:24px;">
-					<label for="password" class="form-label">Password</label>
+				<div class="field">
+					<div class="field-header">
+						<label for="password">Password</label>
+						<button type="button" class="forgot-link" onclick={() => { showForgot = true; forgotEmail = email; error = ''; }}>
+							Forgot password?
+						</button>
+					</div>
 					<input
 						id="password"
 						type="password"
 						bind:value={password}
 						required
 						autocomplete="current-password"
-						class="form-control"
 						placeholder="Enter your password"
 					/>
 				</div>
 
-				<button type="submit" disabled={loading} class="btn btn--primary" style="width:100%; justify-content:center;">
+				<button type="submit" class="login-btn" disabled={loading}>
 					{loading ? 'Signing in...' : 'Sign In'}
 				</button>
 			</form>
 
-			<div class="auth-links">
-				<a href="/forgot-password" class="auth-link">Forgot your password?</a>
-				<p style="font-size:0.9rem; color:var(--gray-600); margin-top:12px;">
-					Don't have an account? <a href="/register" class="auth-link" style="font-weight:600;">Register</a>
-				</p>
+			<div class="login-footer">
+				<p>Don't have an account? <a href="/register">Create one</a></p>
 			</div>
-		</div>
+		{/if}
 	</div>
-</section>
+
+	<p class="login-legal">
+		Kappa Alpha Psi Fraternity, Inc. &copy; {new Date().getFullYear()}
+	</p>
+</div>
 
 <style>
-	.auth-card {
-		background: var(--white); border-radius: var(--radius-lg);
-		padding: 40px 32px; box-shadow: var(--shadow-md); text-align: center;
+	.login-page {
+		min-height: 100vh; display: flex; flex-direction: column;
+		align-items: center; justify-content: center;
+		padding: 40px 20px;
+		background: linear-gradient(170deg, #1a0000 0%, #3d0000 40%, #5c0000 100%);
 	}
-	.auth-icon {
-		width: 56px; height: 56px; border-radius: 50%;
-		background: linear-gradient(160deg, var(--crimson-dark), var(--crimson));
-		color: var(--cream); display: flex; align-items: center; justify-content: center;
-		margin: 0 auto 24px;
-	}
-	.form-label {
-		display: block; font-size: 0.82rem; font-weight: 600;
-		color: var(--gray-800); margin-bottom: 6px; text-align: left;
-	}
-	.form-error {
-		background: #FEF2F2; color: #991B1B;
-		padding: 12px 16px; border-radius: var(--radius);
-		font-size: 0.9rem; margin-bottom: 24px; text-align: left;
-	}
-	.auth-links {
-		margin-top: 24px; text-align: center;
-	}
-	.auth-link {
-		font-size: 0.9rem; color: var(--crimson); text-decoration: none;
-		transition: color var(--transition);
-	}
-	.auth-link:hover { color: var(--crimson-dark); }
 
-	/* SSO Button */
-	.sso-btn {
-		width: 100%; display: flex; align-items: center; justify-content: center;
-		gap: 12px; padding: 14px 24px; border-radius: var(--radius);
-		background: linear-gradient(160deg, var(--crimson-dark), var(--crimson));
-		color: var(--white); font-size: 0.95rem; font-weight: 600;
-		border: none; cursor: pointer; transition: all 0.25s ease;
-		box-shadow: 0 4px 12px rgba(139, 0, 0, 0.25);
+	.login-card {
+		width: 100%; max-width: 400px;
+		background: white; border-radius: 20px;
+		padding: 40px 32px; text-align: center;
+		box-shadow: 0 20px 60px rgba(0,0,0,0.4);
 	}
-	.sso-btn:hover {
+
+	.login-logo { margin-bottom: 20px; }
+	.login-logo img { width: 72px; height: auto; opacity: 0.9; }
+
+	.login-title {
+		font-family: var(--font-serif, 'Cormorant Garamond', Georgia, serif);
+		font-size: 1.6rem; font-weight: 700; color: var(--crimson, #8b0000);
+		margin-bottom: 4px;
+	}
+	.login-subtitle {
+		font-size: 0.88rem; color: var(--gray-500, #6b7280);
+		margin-bottom: 28px;
+	}
+
+	.login-error {
+		background: #fef2f2; color: #991b1b;
+		padding: 12px 16px; border-radius: 10px;
+		font-size: 0.85rem; margin-bottom: 20px; text-align: left;
+	}
+	.login-success {
+		background: #ecfdf5; color: #065f46;
+		padding: 12px 16px; border-radius: 10px;
+		font-size: 0.85rem; margin-bottom: 20px; text-align: left;
+	}
+
+	.field { margin-bottom: 18px; text-align: left; }
+	.field label {
+		display: block; font-size: 0.78rem; font-weight: 600;
+		color: var(--gray-700, #374151); margin-bottom: 6px;
+	}
+	.field input {
+		width: 100%; padding: 12px 14px;
+		border: 1.5px solid var(--gray-200, #e5e7eb);
+		border-radius: 10px; font-size: 0.92rem; font-family: inherit;
+		background: var(--gray-50, #f9fafb); transition: all 0.2s;
+	}
+	.field input:focus {
+		outline: none; border-color: var(--crimson, #8b0000);
+		background: white; box-shadow: 0 0 0 3px rgba(139,0,0,0.06);
+	}
+	.field input::placeholder { color: var(--gray-400, #9ca3af); }
+
+	.field-header {
+		display: flex; justify-content: space-between; align-items: center;
+	}
+	.forgot-link {
+		font-size: 0.75rem; color: var(--crimson, #8b0000);
+		background: none; border: none; cursor: pointer;
+		font-family: inherit; font-weight: 500;
+	}
+	.forgot-link:hover { text-decoration: underline; }
+
+	.forgot-desc {
+		font-size: 0.85rem; color: var(--gray-500); margin-bottom: 20px;
+		line-height: 1.5; text-align: left;
+	}
+
+	.login-btn {
+		width: 100%; padding: 13px;
+		background: linear-gradient(160deg, var(--crimson-dark, #5c0000), var(--crimson, #8b0000));
+		color: white; border: none; border-radius: 10px;
+		font-size: 0.95rem; font-weight: 600; font-family: inherit;
+		cursor: pointer; transition: all 0.2s;
+		box-shadow: 0 4px 12px rgba(139,0,0,0.25);
+	}
+	.login-btn:hover {
 		transform: translateY(-1px);
-		box-shadow: 0 6px 20px rgba(139, 0, 0, 0.35);
+		box-shadow: 0 6px 20px rgba(139,0,0,0.35);
 	}
-	.sso-btn:disabled { opacity: 0.7; cursor: not-allowed; transform: none; }
-	.sso-icon { width: 24px; height: 24px; object-fit: contain; }
+	.login-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 
-	/* Divider */
-	.divider {
-		display: flex; align-items: center; gap: 16px;
-		margin: 24px 0; color: var(--gray-400); font-size: 0.8rem;
-		text-transform: uppercase; letter-spacing: 0.5px;
+	.login-back {
+		display: block; width: 100%; margin-top: 16px; padding: 10px;
+		background: none; border: 1px solid var(--gray-200); border-radius: 10px;
+		color: var(--gray-600); font-size: 0.88rem; font-family: inherit;
+		cursor: pointer; transition: all 0.2s;
 	}
-	.divider::before, .divider::after {
-		content: ''; flex: 1; height: 1px; background: var(--gray-200);
+	.login-back:hover { border-color: var(--crimson); color: var(--crimson); }
+
+	.login-footer {
+		margin-top: 24px; padding-top: 20px;
+		border-top: 1px solid var(--gray-100, #f3f4f6);
+	}
+	.login-footer p { font-size: 0.85rem; color: var(--gray-500); }
+	.login-footer a {
+		color: var(--crimson, #8b0000); text-decoration: none; font-weight: 600;
+	}
+	.login-footer a:hover { text-decoration: underline; }
+
+	.login-legal {
+		margin-top: 24px; font-size: 0.72rem;
+		color: rgba(255,255,255,0.3); text-align: center;
 	}
 
 	@media (max-width: 480px) {
-		.auth-card { padding: 28px 20px; }
+		.login-page { padding: 24px 16px; }
+		.login-card { padding: 32px 24px; border-radius: 16px; }
+		.login-title { font-size: 1.4rem; }
 	}
 </style>

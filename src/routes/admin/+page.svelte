@@ -178,6 +178,7 @@
 	<a href="/admin/chapters" class="quick-link">Manage Chapters</a>
 	<a href="/admin/members" class="quick-link">All Members</a>
 	<a href="/admin/reports" class="quick-link">Financial Reports</a>
+	<a href="/admin/store" class="quick-link">Store Management</a>
 </div>
 
 <!-- Recent Members -->

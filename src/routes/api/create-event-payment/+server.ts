@@ -1,15 +1,11 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { findContactByEmail, sfCreate, sfQuery } from '$lib/salesforce';
 import { env } from '$env/dynamic/private';
-
-// Fonteva surcharge item — set via SF_SURCHARGE_ITEM_ID env var
 
 /**
  * POST /api/create-event-payment
- * Creates a Sales Order in Fonteva (with surcharge trigger for card payments),
- * waits for SF to add the surcharge line, then creates a Stripe PaymentIntent
- * using the SO total as the source of truth.
+ * Creates a Stripe PaymentIntent for event registration.
+ * No Salesforce writes — payment records stay in Stripe + Supabase.
  *
  * Body: { eventId, items: [{ ticketTypeId, ticketName, quantity, unitPrice }], paymentMethod: 'card'|'ach' }
  */
@@ -27,84 +23,38 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	const stripeSecretKey = env.STRIPE_SECRET_KEY;
 	if (!stripeSecretKey) throw error(500, 'Stripe not configured');
 
-	const contact = await findContactByEmail(user.email!);
-	if (!contact) throw error(404, 'No Salesforce contact found');
+	// Look up member
+	const { data: member } = await locals.supabase
+		.from('members')
+		.select('id, first_name, last_name, email')
+		.eq('auth_user_id', user.id)
+		.single();
 
-	const today = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }))
-		.toISOString().split('T')[0];
+	if (!member) throw error(404, 'Member not found');
 
 	try {
-		// Step 1: Get ticket type details from SF (need Item IDs for SO lines)
-		const ticketIds = items.map(i => `'${i.ticketTypeId}'`).join(',');
-		const ticketTypes = await sfQuery<any>(
-			`SELECT Id, Name, EventApi__Price__c, EventApi__Event__c, EventApi__Item__c
-			 FROM EventApi__Ticket_Type__c
-			 WHERE Id IN (${ticketIds})`
-		);
-		const ticketMap = new Map(ticketTypes.map((t: any) => [t.Id, t]));
-
-		// Step 2: Create Sales Order with surcharge trigger fields for card payments
-		const soFields: Record<string, any> = {
-			OrderApi__Contact__c: contact.Id,
-			OrderApi__Account__c: contact.AccountId,
-			OrderApi__Entity__c: 'Contact',
-			OrderApi__Posting_Entity__c: 'Receipt',
-			OrderApi__Is_Posted__c: false
-		};
-
-		const surchargeItemId = env.SF_SURCHARGE_ITEM_ID;
-		if (method === 'card' && surchargeItemId) {
-			soFields.KAPSI_Payment_Type__c = 'card';
-			soFields.KAPSI_Surcharge_Item__c = surchargeItemId;
-		}
-
-		const orderId = await sfCreate('OrderApi__Sales_Order__c', soFields);
-
-		// Step 3: Create SO Line Items (one per ticket type x quantity)
+		// Calculate total from items
 		let baseAmount = 0;
 		for (const item of items) {
-			const ticket = ticketMap.get(item.ticketTypeId);
-			const price = item.unitPrice ?? ticket?.EventApi__Price__c ?? 0;
-			const itemId = ticket?.EventApi__Item__c;
-
-			await sfCreate('OrderApi__Sales_Order_Line__c', {
-				OrderApi__Sales_Order__c: orderId,
-				OrderApi__Item__c: itemId || item.ticketTypeId,
-				OrderApi__Quantity__c: item.quantity,
-				OrderApi__Sale_Price__c: price
-			});
-			baseAmount += price * item.quantity;
+			baseAmount += (item.unitPrice ?? 0) * item.quantity;
 		}
 
-		// Step 4: Wait for the Queueable trigger to add surcharge line (card only)
-		if (method === 'card') {
-			await new Promise(r => setTimeout(r, 3000));
-		}
+		if (baseAmount <= 0) throw error(400, 'Invalid total amount');
 
-		// Step 5: Re-read SO to get the actual total (includes surcharge if card)
-		const soRows = await sfQuery<any>(
-			`SELECT OrderApi__Overall_Total__c FROM OrderApi__Sales_Order__c WHERE Id = '${orderId}'`
-		);
-		const totalAmount = soRows[0]?.OrderApi__Overall_Total__c ?? baseAmount;
-		const surcharge = Math.round((totalAmount - baseAmount) * 100) / 100;
-
-		// Step 6: Create Stripe PaymentIntent with SF-calculated total
-		const totalCents = Math.round(totalAmount * 100);
+		const totalCents = Math.round(baseAmount * 100);
 		const description = items
 			.map((i: any) => `${i.ticketName}${i.quantity > 1 ? ` x${i.quantity}` : ''}`)
-			.join(', ') + ` - ${contact.FirstName} ${contact.LastName}`;
+			.join(', ') + ` - ${member.first_name} ${member.last_name}`;
 
 		const paymentMethodTypes = method === 'ach' ? ['us_bank_account'] : ['card'];
 		const stripeParams = new URLSearchParams({
 			'amount': totalCents.toString(),
 			'currency': 'usd',
 			'metadata[sf_event_id]': eventId,
-			'metadata[sf_contact_id]': contact.Id,
-			'metadata[sf_order_id]': orderId,
+			'metadata[member_id]': member.id,
 			'metadata[item_count]': items.length.toString(),
 			'metadata[payment_method]': method,
 			'metadata[base_amount]': baseAmount.toString(),
-			'metadata[surcharge]': surcharge.toString(),
 			'description': description
 		});
 		paymentMethodTypes.forEach((t, i) => {
@@ -131,10 +81,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			success: true,
 			clientSecret: paymentIntent.client_secret,
 			paymentIntentId: paymentIntent.id,
-			orderId,
 			baseAmount,
-			surcharge,
-			totalAmount,
+			totalAmount: baseAmount,
 			paymentMethod: method
 		});
 	} catch (err: any) {

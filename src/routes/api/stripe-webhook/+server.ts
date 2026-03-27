@@ -1,15 +1,12 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { sfCreate, sfUpdate, sfQuery } from '$lib/salesforce';
 import { env } from '$env/dynamic/private';
+import { createClient } from '@supabase/supabase-js';
 
 /**
  * POST /api/stripe-webhook
- * Handles Stripe webhook events as a safety net.
- * If the frontend confirm-payment call fails (browser crash, network error),
- * this webhook ensures SF records get created.
- *
- * All operations are idempotent — safe to run even if confirm-payment already succeeded.
+ * Handles Stripe webhook events — updates Supabase registration records.
+ * No Salesforce writes.
  */
 export const POST: RequestHandler = async ({ request }) => {
 	const body = await request.text();
@@ -23,7 +20,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		throw error(500, 'Webhook not configured');
 	}
 
-	// Verify webhook signature (manual HMAC since we're not using the Stripe SDK)
+	// Verify webhook signature
 	let event: any;
 	try {
 		event = await verifyAndParseWebhook(body, signature, webhookSecret);
@@ -32,14 +29,23 @@ export const POST: RequestHandler = async ({ request }) => {
 		throw error(400, 'Invalid webhook signature');
 	}
 
+	// Use service role client for webhook (no user session)
+	const supabaseUrl = env.PUBLIC_SUPABASE_URL;
+	const supabaseServiceKey = env.SUPABASE_SERVICE_ROLE_KEY;
+	if (!supabaseUrl || !supabaseServiceKey) {
+		console.error('Supabase service role not configured for webhook');
+		return json({ received: true });
+	}
+	const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
 	try {
 		switch (event.type) {
 			case 'payment_intent.succeeded':
-				await handlePaymentSucceeded(event.data.object);
+				await handlePaymentSucceeded(supabase, event.data.object);
 				break;
 
 			case 'payment_intent.payment_failed':
-				console.log('Payment failed:', event.data.object.id);
+				await handlePaymentFailed(supabase, event.data.object);
 				break;
 
 			case 'payment_intent.canceled':
@@ -48,148 +54,45 @@ export const POST: RequestHandler = async ({ request }) => {
 		}
 	} catch (err: any) {
 		console.error(`Webhook handler error for ${event.type}:`, err.message);
-		// Return 200 anyway to prevent Stripe retries for handler errors
-		// The idempotent design means a retry would be safe, but we log and move on
 	}
 
 	return json({ received: true });
 };
 
 /**
- * Handle payment_intent.succeeded — create SF records if they don't already exist.
+ * Handle payment_intent.succeeded — mark registrations as succeeded.
  */
-async function handlePaymentSucceeded(paymentIntent: any) {
-	const { sf_order_id: orderId, sf_contact_id: contactId, dues_type: duesType } = paymentIntent.metadata;
+async function handlePaymentSucceeded(supabase: any, paymentIntent: any) {
+	const { error: err } = await supabase
+		.from('event_registrations')
+		.update({ payment_status: 'succeeded' })
+		.eq('stripe_payment_intent_id', paymentIntent.id);
 
-	if (!orderId || !contactId) {
-		console.log('Webhook: missing metadata, skipping', paymentIntent.id);
-		return;
-	}
-
-	// Check if order is already closed (confirm-payment already handled it)
-	const orderCheck = await sfQuery<any>(
-		`SELECT Id, OrderApi__Status__c FROM OrderApi__Sales_Order__c WHERE Id = '${orderId}' LIMIT 1`
-	);
-
-	if (orderCheck.length > 0 && orderCheck[0].OrderApi__Status__c === 'Closed') {
-		console.log(`Webhook: order ${orderId} already closed, skipping`);
-		return;
-	}
-
-	const amount = paymentIntent.amount / 100;
-	const today = new Date().toISOString().split('T')[0];
-	const gatewayId = env.SF_GATEWAY_ID || 'a18Su000008QU13IAG';
-
-	// Get contact details for the ePayment
-	const contacts = await sfQuery<any>(
-		`SELECT Id, AccountId, FirstName, LastName FROM Contact WHERE Id = '${contactId}' LIMIT 1`
-	);
-	if (contacts.length === 0) {
-		console.error(`Webhook: contact ${contactId} not found`);
-		return;
-	}
-	const contact = contacts[0];
-
-	// Card details and charge ID from PaymentIntent
-	const card = paymentIntent.payment_method?.card ?? paymentIntent.charges?.data?.[0]?.payment_method_details?.card;
-	const cardLast4 = card?.last4 ?? '';
-	const cardBrand = card?.brand ?? '';
-	const chargeId = typeof paymentIntent.latest_charge === 'string'
-		? paymentIntent.latest_charge
-		: paymentIntent.latest_charge?.id ?? paymentIntent.charges?.data?.[0]?.id ?? paymentIntent.id;
-
-	// Create ePayment (idempotent)
-	let ePaymentId = '';
-	const existingEp = await sfQuery<any>(
-		`SELECT Id FROM OrderApi__EPayment__c
-		 WHERE OrderApi__Sales_Order__c = '${orderId}' AND OrderApi__Reference_Token__c = '${paymentIntent.id}'
-		 LIMIT 1`
-	);
-	if (existingEp.length > 0) {
-		ePaymentId = existingEp[0].Id;
+	if (err) {
+		console.error('Webhook: failed to update registration:', err.message);
 	} else {
-		ePaymentId = await sfCreate('OrderApi__EPayment__c', {
-			OrderApi__Payment_Gateway__c: gatewayId,
-			OrderApi__Contact__c: contactId,
-			OrderApi__Account__c: contact.AccountId,
-			OrderApi__Sales_Order__c: orderId,
-			OrderApi__Date__c: today,
-			OrderApi__Total__c: amount,
-			OrderApi__Amount__c: amount,
-			OrderApi__Succeeded__c: true,
-			OrderApi__Transaction_Type__c: 'card',
-			OrderApi__Gateway_Transaction_ID__c: chargeId,
-			OrderApi__Payment_Method_Token__c: paymentIntent.id,
-			OrderApi__Reference_Token__c: paymentIntent.id,
-			OrderApi__Card_Number__c: cardLast4 ? `xxxx-xxxx-xxxx-${cardLast4}` : null,
-			OrderApi__Card_Type__c: cardBrand ? cardBrand.charAt(0).toUpperCase() + cardBrand.slice(1) : null,
-			OrderApi__Entity__c: 'Contact'
-		});
-		// Fonteva trigger resets Total on insert — force it back
-		try {
-			await new Promise(r => setTimeout(r, 1500));
-			await sfUpdate('OrderApi__EPayment__c', ePaymentId, {
-				OrderApi__Total__c: amount,
-				OrderApi__Amount__c: amount
-			});
-		} catch { /* best effort */ }
+		console.log(`Webhook: marked registrations as succeeded for PI ${paymentIntent.id}`);
 	}
+}
 
-	// Create Receipt (idempotent)
-	const existingReceipt = await sfQuery<any>(
-		`SELECT Id FROM OrderApi__Receipt__c
-		 WHERE OrderApi__Sales_Order__c = '${orderId}'
-		   AND (OrderApi__Gateway_Transaction_Id__c = '${chargeId}'
-		     OR OrderApi__Gateway_Transaction_Id__c = '${paymentIntent.id}')
-		 LIMIT 1`
-	);
-	if (existingReceipt.length === 0) {
-		await sfCreate('OrderApi__Receipt__c', {
-			OrderApi__Sales_Order__c: orderId,
-			OrderApi__Contact__c: contactId,
-			OrderApi__Account__c: contact.AccountId,
-			OrderApi__Total__c: amount,
-			OrderApi__Date__c: today,
-			OrderApi__Is_Posted__c: true,
-			OrderApi__Payment_Type__c: 'Credit Card',
-			OrderApi__Payment_Gateway__c: gatewayId,
-			OrderApi__Gateway_Transaction_Id__c: chargeId,
-			OrderApi__Reference_Number__c: paymentIntent.id,
-			...(ePaymentId ? { OrderApi__EPayment__c: ePaymentId } : {})
-		});
+/**
+ * Handle payment_intent.payment_failed — mark registrations as failed.
+ */
+async function handlePaymentFailed(supabase: any, paymentIntent: any) {
+	const { error: err } = await supabase
+		.from('event_registrations')
+		.update({ payment_status: 'failed' })
+		.eq('stripe_payment_intent_id', paymentIntent.id);
+
+	if (err) {
+		console.error('Webhook: failed to update registration:', err.message);
+	} else {
+		console.log(`Webhook: marked registrations as failed for PI ${paymentIntent.id}`);
 	}
-
-	// Close order
-	try {
-		await sfUpdate('OrderApi__Sales_Order__c', orderId, {
-			OrderApi__Status__c: 'Closed',
-			OrderApi__Posting_Status__c: 'Posted',
-			OrderApi__Is_Posted__c: true,
-			OrderApi__Paid_Date__c: today,
-			OrderApi__Amount_Paid__c: amount
-		});
-	} catch (err: any) {
-		console.error('Webhook: failed to close order:', err.message);
-	}
-
-	// Update contact membership
-	try {
-		const newExpiry = new Date();
-		newExpiry.setFullYear(newExpiry.getFullYear() + 1);
-		await sfUpdate('Contact', contactId, {
-			Date_Membership_Expires__c: newExpiry.toISOString().split('T')[0],
-			FON_Member_Status__c: 'In Good Standing'
-		});
-	} catch (err: any) {
-		console.error('Webhook: failed to update contact:', err.message);
-	}
-
-	console.log(`Webhook: completed SF records for order ${orderId}, PI ${paymentIntent.id}`);
 }
 
 /**
  * Verify Stripe webhook signature using HMAC-SHA256.
- * Stripe signature header format: t=timestamp,v1=signature
  */
 async function verifyAndParseWebhook(body: string, signatureHeader: string, secret: string): Promise<any> {
 	const parts = signatureHeader.split(',').reduce((acc: Record<string, string>, part) => {
@@ -203,7 +106,6 @@ async function verifyAndParseWebhook(body: string, signatureHeader: string, secr
 
 	if (!timestamp || !signature) throw new Error('Invalid signature format');
 
-	// Check timestamp freshness (5 minute tolerance)
 	const age = Math.abs(Date.now() / 1000 - parseInt(timestamp));
 	if (age > 300) throw new Error('Webhook timestamp too old');
 

@@ -38,7 +38,7 @@ function transformContact(c: Record<string, unknown>) {
     employer: c.FON_Employer_Name__c,
     profession: c.FON_Profession__c,
     professional_title: c.FON_Professional_Title__c,
-    university: c.FON_University_College__c,
+    university: c.FON_University_College__r?.Name || null,
     photo_url: c.FON_Public_Image_Url__c || c.FON_Image_URL__c,
     badges: c.OrderApi__Badges__c,
     show_email: c.FON_Show_Email__c !== false,
@@ -56,7 +56,7 @@ const CONTACT_FIELDS = `
   FON_Chapter_Initiation_Name__c, FON_Initiation_Date1__c,
   Year_of_Initiation__c, Province_Name__c, Province_of_Initiation__c,
   FON_Is_Life_Member__c, FON_Employer_Name__c, FON_Profession__c,
-  FON_Professional_Title__c, FON_University_College__c,
+  FON_Professional_Title__c, FON_University_College__r.Name,
   FON_Image_URL__c, FON_Public_Image_Url__c,
   OrderApi__Badges__c,
   FON_Show_Email__c, FON_Show_Phone__c, FON_Show_Address__c

@@ -1,39 +1,30 @@
 import type { PageServerLoad } from './$types';
-import { findContactByEmail } from '$lib/salesforce';
 
-export const load: PageServerLoad = async ({ parent }) => {
-	const { session, user } = await parent();
-	if (!session) return { sfContact: null };
+export const load: PageServerLoad = async ({ locals, parent }) => {
+	const { session, member } = await parent();
+	if (!session || !member) return { sfContact: null };
 
-	let sfContact: any = null;
+	const chapterName = (member as any).chapters?.name ?? null;
+	const provinceName = (member as any).provinces?.name ?? null;
 
-	try {
-		if (user?.email) {
-			const contact = await findContactByEmail(user.email);
-			if (contact) {
-				sfContact = {
-					firstName: contact.FirstName,
-					lastName: contact.LastName,
-					email: contact.Email,
-					membershipNumber: contact.FON_Membership_Number__c,
-					memberStatus: contact.FON_Member_Status__c,
-					memberType: contact.FON_Member_Type__c,
-					chapterOfInitiation: contact.FON_Chapter_Initiation_Name__c,
-					currentChapter: contact.FON_Chapter_Name__c,
-					initiationDate: contact.FON_Initiation_Date1__c,
-					yearOfInitiation: contact.Year_of_Initiation__c,
-					isLifeMember: contact.FON_Is_Life_Member__c,
-					province: contact.Province_Name__c,
-					provinceOfInitiation: contact.Province_of_Initiation__c,
-					imageUrl: contact.FON_Image_URL__c,
-					membershipExpires: contact.Date_Membership_Expires__c,
-					badges: contact.OrderApi__Badges__c
-				};
-			}
-		}
-	} catch (err) {
-		console.error('Card SF load error:', err);
-	}
+	const sfContact = {
+		firstName: member.first_name,
+		lastName: member.last_name,
+		email: member.email,
+		membershipNumber: member.membership_number,
+		memberStatus: member.membership_status === 'active' ? 'In Good Standing' : member.membership_status,
+		memberType: member.membership_type === 'life' ? 'Life Member' : member.membership_type === 'undergraduate' ? 'Undergraduate' : 'Alumni',
+		chapterOfInitiation: member.initiation_province,
+		currentChapter: chapterName,
+		initiationDate: member.initiation_date,
+		yearOfInitiation: member.initiation_year?.toString(),
+		isLifeMember: member.is_life_member,
+		province: provinceName,
+		provinceOfInitiation: member.initiation_province,
+		imageUrl: member.profile_photo_url,
+		membershipExpires: member.dues_paid_through,
+		badges: null
+	};
 
 	return { sfContact };
 };

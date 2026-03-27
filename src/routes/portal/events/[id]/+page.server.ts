@@ -1,10 +1,10 @@
 import type { PageServerLoad } from './$types';
 import { error } from '@sveltejs/kit';
-import { sfQuery, findContactByEmail } from '$lib/salesforce';
+import { sfQuery } from '$lib/salesforce';
 
 export const load: PageServerLoad = async ({ locals, params, parent }) => {
 	const eventId = params.id;
-	const { session, user } = await parent();
+	const { session, member } = await parent();
 
 	// Load event from cache
 	const { data: event } = await locals.supabase
@@ -15,20 +15,29 @@ export const load: PageServerLoad = async ({ locals, params, parent }) => {
 
 	if (!event) throw error(404, 'Event not found');
 
-	// Get SF contact for badges and member type
-	let sfContact: Record<string, any> | null = null;
-	if (user?.email) {
-		try {
-			sfContact = await findContactByEmail(user.email);
-		} catch {
-			// Continue without SF contact — will show all tickets
+	// Get badges from Supabase
+	let memberBadges: string[] = [];
+	let memberType = '';
+
+	if (member) {
+		const { data: badges } = await locals.supabase
+			.from('member_badges')
+			.select('badges(name)')
+			.eq('member_id', member.id)
+			.eq('is_active', true);
+
+		memberBadges = (badges ?? [])
+			.map((mb: any) => mb.badges?.name)
+			.filter(Boolean);
+
+		// Map DB type to SF display type
+		switch (member.membership_type) {
+			case 'life': memberType = 'Life Member'; break;
+			case 'undergraduate': memberType = 'Undergraduate'; break;
+			case 'alumni': memberType = 'Alumni'; break;
+			default: memberType = member.membership_type ?? '';
 		}
 	}
-
-	const memberBadges = sfContact?.OrderApi__Badges__c
-		? (sfContact.OrderApi__Badges__c as string).split(',').map((b: string) => b.trim())
-		: [];
-	const memberType = sfContact?.FON_Member_Type__c ?? '';
 
 	// Try to load tickets from SF directly (has access permission flag)
 	let tickets: any[] = [];

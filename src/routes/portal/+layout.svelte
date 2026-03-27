@@ -76,8 +76,8 @@
 		<div class="portal-mobile-header-inner">
 			<div class="portal-mobile-identity">
 				<div class="portal-mobile-avatar">
-					{#if data.member?.profile_photo_url || data.sfImageUrl}
-						<img src={data.member?.profile_photo_url || data.sfImageUrl} alt="" />
+					{#if data.member?.profile_photo_url}
+						<img src={data.member?.profile_photo_url} alt="" />
 					{:else}
 						<span>{data.member?.first_name?.[0] ?? ''}{data.member?.last_name?.[0] ?? ''}</span>
 					{/if}
@@ -101,8 +101,8 @@
 			<!-- Profile summary -->
 			<div class="sidebar-profile">
 				<div class="sidebar-avatar">
-					{#if data.member?.profile_photo_url || data.sfImageUrl}
-						<img src={data.member?.profile_photo_url || data.sfImageUrl} alt="" />
+					{#if data.member?.profile_photo_url}
+						<img src={data.member?.profile_photo_url} alt="" />
 					{:else}
 						<span>{data.member?.first_name?.[0] ?? ''}{data.member?.last_name?.[0] ?? ''}</span>
 					{/if}

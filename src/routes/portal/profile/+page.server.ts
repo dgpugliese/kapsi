@@ -1,114 +1,138 @@
 import type { PageServerLoad } from './$types';
-import { findContactByEmail, sfUpdate, sfQuery } from '$lib/salesforce';
 
 export const load: PageServerLoad = async ({ locals, parent }) => {
-	const { session, user } = await parent();
-	if (!session) return { sfContact: null };
+	const { session, user, member } = await parent();
+	if (!session || !member) return { sfContact: null, education: [] };
 
-	let sfContact: any = null;
+	// Fetch education + military + badges in parallel from Supabase
+	const [educationRes, militaryRes, badgesRes] = await Promise.all([
+		locals.supabase
+			.from('member_education')
+			.select('*')
+			.eq('member_id', member.id)
+			.order('year_graduated', { ascending: false, nullsFirst: false }),
+		locals.supabase
+			.from('member_military')
+			.select('*')
+			.eq('member_id', member.id)
+			.single(),
+		locals.supabase
+			.from('member_badges')
+			.select('badges(name)')
+			.eq('member_id', member.id)
+			.eq('is_active', true)
+	]);
 
-	try {
-		if (user?.email) {
-			const contact = await findContactByEmail(user.email);
-			if (contact) {
-				sfContact = {
-					id: contact.Id,
-					firstName: contact.FirstName,
-					lastName: contact.LastName,
-					email: contact.Email,
-					phone: contact.Phone,
-					mobilePhone: contact.MobilePhone,
-					mailingStreet: contact.MailingStreet,
-					mailingCity: contact.MailingCity,
-					mailingState: contact.MailingState,
-					mailingPostalCode: contact.MailingPostalCode,
-					mailingCountry: contact.MailingCountry,
-					birthdate: contact.Birthdate,
-					membershipNumber: contact.FON_Membership_Number__c,
-					memberStatus: contact.FON_Member_Status__c,
-					memberType: contact.FON_Member_Type__c,
-					chapterOfInitiation: contact.FON_Chapter_Initiation_Name__c,
-					currentChapter: contact.FON_Chapter_Name__c,
-					initiationDate: contact.FON_Initiation_Date1__c,
-					yearOfInitiation: contact.Year_of_Initiation__c,
-					isLifeMember: contact.FON_Is_Life_Member__c,
-					directoryStatus: contact.FON_Directory_Status__c,
-					employer: contact.FON_Employer_Name__c,
-					profession: contact.FON_Profession__c,
-					professionalTitle: contact.FON_Professional_Title__c,
-					university: contact.FON_University_College__c,
-					showAddress: contact.FON_Show_Address__c,
-					showEmail: contact.FON_Show_Email__c,
-					showPhone: contact.FON_Show_Phone__c,
-					facebook: contact.FON_Facebook__c,
-					instagram: contact.FON_Instagram__c,
-					linkedin: contact.FON_LinkedIn__c,
-					twitter: contact.FON_Twitter__c,
-					imageUrl: contact.FON_Image_URL__c,
-					province: contact.Province_Name__c,
-					provinceOfInitiation: contact.Province_of_Initiation__c,
-					badges: contact.OrderApi__Badges__c,
-					chapterId: contact.Chapter_Id__c,
-					// High School
-					highSchool: contact.FON_High_School__c,
-					highSchoolCity: contact.High_School_City__c,
-					highSchoolState: contact.High_School_State__c,
-					highSchoolYearGraduated: contact.FON_HS_Year_Graduated__c,
-					// Professional (extended)
-					professionRetired: contact.FON_Profession_Retired__c,
-					professionFullTimeStudent: contact.FON_Profession_Full_Time_Student__c,
-					professionsList: contact.FON_Professions_List__c,
-					professionRole: contact.FON_Profession_Role__c,
-					achievementAcademy: contact.Achievement_Academy_AA_Co_Hort__c,
-					// Military
-					militaryCategory: contact.Military_Category__c,
-					branchOfMilitary: contact.FON_Branch_of_Military__c,
-					highestRankHeld: contact.Highest_Rank_Held__c,
-					sourceOfCommission: contact.Source_of_Comission__c,
-					retiredFromMilitary: contact.FON_Retired_From_Military__c,
-					disabledVeteran: contact.FON_Disabled_Veteran__c,
-					// Other
-					morePersonalInfo: contact.FON_More_Personal_Info__c,
-					// Awards
-					nationalAwards: contact.National_Award_Winner__c
-				};
-				console.log('[Profile] National_Award_Winner__c =', contact.National_Award_Winner__c);
-			}
-		}
-	} catch (err) {
-		console.error('Profile SF load error:', err);
-	}
+	const military = militaryRes.data;
+	const badgeNames = (badgesRes.data ?? [])
+		.map((mb: any) => mb.badges?.name)
+		.filter(Boolean)
+		.join(',');
 
-	// Fetch education records if we have a contact
-	let education: any[] = [];
-	if (sfContact?.id) {
-		try {
-			education = await sfQuery(
-				`SELECT Id, School_University_College__c, FON_University_College_Name__c,
-					Degree__c, Field_Of_Study__c, Year_Graduated__c, Currently_Enrolled__c,
-					City__c, State__c, FON_Discipline__c,
-					Education_Field_of_Study__r.Name, Education_Major__r.Name,
-					New_Education_Field_of_Study__c, New_Education_Major__c
-				FROM Contact_Professional_Studies__c
-				WHERE Contact__c = '${sfContact.id}'
-				ORDER BY Year_Graduated__c DESC NULLS LAST`
-			);
-			education = education.map((e: any) => ({
-				id: e.Id,
-				school: e.FON_University_College_Name__c || e.School_University_College__c,
-				degree: e.Degree__c,
-				fieldOfStudy: e.Education_Field_of_Study__r?.Name || e.Field_Of_Study__c || e.New_Education_Field_of_Study__c,
-				major: e.Education_Major__r?.Name || e.New_Education_Major__c,
-				discipline: e.FON_Discipline__c,
-				yearGraduated: e.Year_Graduated__c,
-				currentlyEnrolled: e.Currently_Enrolled__c,
-				city: e.City__c,
-				state: e.State__c
-			}));
-		} catch (err) {
-			console.error('Education fetch error:', err);
-		}
-	}
+	const chapterName = (member as any).chapters?.name ?? null;
+	const provinceName = (member as any).provinces?.name ?? null;
+
+	// Build sfContact shape (same shape the frontend expects)
+	const sfContact = {
+		id: member.sf_contact_id || member.id,
+		firstName: member.first_name,
+		lastName: member.last_name,
+		email: member.email,
+		phone: member.phone,
+		mobilePhone: member.mobile_phone,
+		mailingStreet: member.address_line1,
+		mailingCity: member.city,
+		mailingState: member.state,
+		mailingPostalCode: member.zip,
+		mailingCountry: member.country,
+		birthdate: member.date_of_birth,
+		membershipNumber: member.membership_number,
+		memberStatus: formatStatus(member.membership_status),
+		memberType: formatType(member.membership_type),
+		chapterOfInitiation: member.initiation_province,
+		currentChapter: chapterName,
+		initiationDate: member.initiation_date,
+		yearOfInitiation: member.initiation_year?.toString(),
+		isLifeMember: member.is_life_member,
+		directoryStatus: member.is_life_member ? 'Life Member' : formatType(member.membership_type),
+		employer: member.employer,
+		profession: member.profession,
+		professionalTitle: member.professional_title,
+		university: null, // now in member_education
+		showAddress: member.show_address,
+		showEmail: member.show_email,
+		showPhone: member.show_phone,
+		facebook: member.facebook_url,
+		instagram: member.instagram_url,
+		linkedin: member.linkedin_url,
+		twitter: member.twitter_url,
+		imageUrl: member.profile_photo_url,
+		province: provinceName,
+		provinceOfInitiation: member.initiation_province,
+		badges: badgeNames || null,
+		chapterId: member.chapter_id,
+		// High School
+		highSchool: member.high_school,
+		highSchoolCity: member.high_school_city,
+		highSchoolState: member.high_school_state,
+		highSchoolYearGraduated: member.high_school_year_graduated,
+		// Professional (extended)
+		professionRetired: member.is_retired,
+		professionFullTimeStudent: member.is_full_time_student,
+		professionsList: member.industry,
+		professionRole: member.professional_role,
+		achievementAcademy: member.achievement_academy_cohort,
+		// Military
+		militaryCategory: military?.military_category ?? null,
+		branchOfMilitary: military?.branch ?? null,
+		highestRankHeld: military?.highest_rank ?? null,
+		sourceOfCommission: military?.commission_source ?? null,
+		retiredFromMilitary: military?.is_retired ?? null,
+		disabledVeteran: military?.is_disabled_veteran ?? null,
+		// Other
+		morePersonalInfo: member.personal_info,
+		// Awards
+		nationalAwards: null // TODO: pull from member_awards
+	};
+
+	// Map education records to the shape frontend expects
+	const education = (educationRes.data ?? []).map((e: any) => ({
+		id: e.id,
+		school: e.school_name,
+		degree: e.degree,
+		fieldOfStudy: e.field_of_study,
+		major: e.major,
+		discipline: null,
+		yearGraduated: e.year_graduated,
+		currentlyEnrolled: e.currently_enrolled,
+		city: e.city,
+		state: e.state
+	}));
 
 	return { sfContact, education };
 };
+
+function formatStatus(status: string | null): string {
+	switch (status) {
+		case 'active': return 'In Good Standing';
+		case 'not_in_good_standing': return 'Not In Good Standing';
+		case 'chapter_invisible': return 'Chapter Invisible';
+		case 'suspended': return 'Suspended';
+		case 'expelled': return 'Expelled';
+		case 'denounced': return 'Denounced';
+		case 'pending_review': return 'Pending Review';
+		case 'deceased': return 'Deceased';
+		default: return 'Inactive';
+	}
+}
+
+function formatType(type: string | null): string {
+	switch (type) {
+		case 'alumni': return 'Alumni';
+		case 'life': return 'Life Member';
+		case 'undergraduate': return 'Undergraduate';
+		case 'subscribing_life': return 'Subscribing Life';
+		case 'member': return 'Member';
+		default: return 'Alumni';
+	}
+}

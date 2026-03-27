@@ -173,6 +173,11 @@ export async function checkChapterAccess(
 			}
 		}
 
+		// Vice Polemarch has same permissions as Polemarch
+		if (result.isVicePolemarch) {
+			result.isPolemarch = true;
+		}
+
 		result.isOfficer = result.isPolemarch || result.isVicePolemarch ||
 			result.isKOR || result.isKOE || result.isStrategus || result.isAdvisor;
 	}

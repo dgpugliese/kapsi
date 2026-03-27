@@ -135,7 +135,7 @@
 			const res = await fetch('/api/submit-registration-form', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ answers })
+				body: JSON.stringify({ answers, eventId: event.sf_event_id })
 			});
 			const result = await res.json();
 			if (result.success) {
@@ -241,9 +241,9 @@
 			const data = await res.json();
 			clientSecret = data.clientSecret;
 			currentPaymentIntentId = data.paymentIntentId;
-			currentOrderId = data.orderId;
+			currentOrderId = '';
 			eventBaseAmount = data.baseAmount;
-			eventSurcharge = data.surcharge;
+			eventSurcharge = 0;
 			eventTotalAmount = data.totalAmount;
 
 			elements = stripe.elements({
@@ -299,7 +299,6 @@
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
 					eventId: event.sf_event_id,
-					orderId: currentOrderId,
 					paymentIntentId: paymentIntent.id,
 					items,
 					paymentMethod

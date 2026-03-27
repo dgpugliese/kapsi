@@ -798,15 +798,23 @@
 
 	/* Grand Chapter Awards */
 	.awards-grid {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 20px;
-		justify-content: center;
+		display: grid;
+		grid-template-columns: repeat(5, 1fr);
+		gap: 16px;
+		justify-items: center;
 	}
 
 	.award-img {
-		width: 160px;
+		width: 100%;
+		max-width: 180px;
 		height: auto;
 		object-fit: contain;
+	}
+
+	@media (max-width: 640px) {
+		.awards-grid {
+			grid-template-columns: repeat(3, 1fr);
+			gap: 12px;
+		}
 	}
 </style>

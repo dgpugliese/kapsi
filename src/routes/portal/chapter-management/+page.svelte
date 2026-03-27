@@ -23,9 +23,16 @@
 	let officersError = $state('');
 	let officersData = $state<any>(null);
 
+	// Report status
+	let reportStatus = $state<any>(null);
+	let eicCount = $state(0);
+
 	const rosterMembers = $derived(rosterData?.members ?? []);
 	const officerList = $derived(officersData?.badgeOfficers ?? []);
 	const igsCount = $derived(rosterMembers.filter((m: any) => m.status === 'In Good Standing').length);
+
+	const rosterReportStatus = $derived(reportStatus?.rosterReport?.status ?? 'draft');
+	const officerReportStatus = $derived(reportStatus?.officerReport?.status ?? 'draft');
 
 	const tabs = [
 		{ id: 'details', label: 'Details' },
@@ -40,8 +47,27 @@
 		if (chapter) {
 			loadRoster();
 			loadOfficers();
+			loadReportStatus();
+			loadEicCount();
 		}
 	});
+
+	async function loadReportStatus() {
+		try {
+			const res = await fetch(`/api/chapter/reports?fiscal_year=${new Date().getFullYear()}`);
+			if (res.ok) reportStatus = await res.json();
+		} catch {}
+	}
+
+	async function loadEicCount() {
+		try {
+			const res = await fetch('/api/chapter/eic');
+			if (res.ok) {
+				const d = await res.json();
+				eicCount = d.total ?? 0;
+			}
+		} catch {}
+	}
 
 	async function loadRoster() {
 		rosterLoading = true;
@@ -135,8 +161,82 @@
 			</div>
 		</div>
 
+		<!-- Compliance Status -->
+		<div class="compliance fade-up" style="--d:2;">
+			<h2 class="compliance-title">Chapter Compliance</h2>
+			<div class="compliance-row">
+				<button class="compliance-item" onclick={() => activeTab = 'roster'}>
+					<div class="compliance-icon" class:compliance-icon--done={rosterReportStatus === 'submitted' || rosterReportStatus === 'approved'} class:compliance-icon--progress={rosterReportStatus === 'confirmed'}>
+						{#if rosterReportStatus === 'approved'}
+							<svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
+						{:else if rosterReportStatus === 'submitted'}
+							<svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
+						{:else if rosterReportStatus === 'confirmed'}
+							<svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+						{:else}
+							<svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+						{/if}
+					</div>
+					<div class="compliance-info">
+						<div class="compliance-label">Roster Report</div>
+						<div class="compliance-status">
+							{#if rosterReportStatus === 'approved'}Approved
+							{:else if rosterReportStatus === 'submitted'}Submitted
+							{:else if rosterReportStatus === 'confirmed'}Confirmed — Awaiting Signatures
+							{:else if rosterReportStatus === 'returned'}Returned — Action Required
+							{:else}Not Started
+							{/if}
+						</div>
+					</div>
+				</button>
+
+				<button class="compliance-item" onclick={() => activeTab = 'officers'}>
+					<div class="compliance-icon" class:compliance-icon--done={officerReportStatus === 'submitted' || officerReportStatus === 'approved'} class:compliance-icon--progress={officerReportStatus === 'confirmed'}>
+						{#if officerReportStatus === 'approved'}
+							<svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
+						{:else if officerReportStatus === 'submitted'}
+							<svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
+						{:else if officerReportStatus === 'confirmed'}
+							<svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+						{:else}
+							<svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+						{/if}
+					</div>
+					<div class="compliance-info">
+						<div class="compliance-label">Officer Report</div>
+						<div class="compliance-status">
+							{#if officerReportStatus === 'approved'}Approved
+							{:else if officerReportStatus === 'submitted'}Submitted
+							{:else if officerReportStatus === 'confirmed'}Confirmed — Awaiting Signatures
+							{:else if officerReportStatus === 'returned'}Returned — Action Required
+							{:else}Not Started
+							{/if}
+						</div>
+					</div>
+				</button>
+
+				<button class="compliance-item" onclick={() => activeTab = 'eic'}>
+					<div class="compliance-icon" class:compliance-icon--done={eicCount > 0}>
+						{#if eicCount > 0}
+							<svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
+						{:else}
+							<svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+						{/if}
+					</div>
+					<div class="compliance-info">
+						<div class="compliance-label">Event Insurance</div>
+						<div class="compliance-status">
+							{#if eicCount > 0}{eicCount} submission{eicCount !== 1 ? 's' : ''} on file
+							{:else}No submissions
+							{/if}
+						</div>
+					</div>
+				</button>
+			</div>
+		</div>
+
 		<!-- Tabs -->
-		<div class="tabs fade-up" style="--d:2;">
+		<div class="tabs fade-up" style="--d:3;">
 			{#each tabs as tab}
 				<button
 					class="tab" class:tab--active={activeTab === tab.id}
@@ -146,7 +246,7 @@
 		</div>
 
 		<!-- Tab Content -->
-		<div class="tab-content fade-up" style="--d:3;">
+		<div class="tab-content fade-up" style="--d:4;">
 
 			{#if activeTab === 'details'}
 				<!-- DETAILS TAB -->
@@ -390,6 +490,28 @@
 	.cm--ready .fade-up { opacity: 1; transform: translateY(0); }
 
 	.cm { max-width: 900px; }
+
+	/* Compliance Status */
+	.compliance { background: white; border: 1px solid var(--gray-100); border-radius: 12px; padding: 20px 24px; margin-bottom: 20px; }
+	.compliance-title { font-family: var(--font-serif); font-size: 0.92rem; font-weight: 700; margin-bottom: 14px; color: var(--black); }
+	.compliance-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+	.compliance-item {
+		display: flex; align-items: center; gap: 12px; padding: 14px 16px;
+		background: var(--gray-50); border-radius: 10px; border: 1px solid var(--gray-100);
+		cursor: pointer; font-family: inherit; font-size: inherit; color: inherit;
+		text-align: left; transition: all 0.2s; width: 100%;
+	}
+	.compliance-item:hover { border-color: var(--crimson); background: white; }
+	.compliance-icon {
+		width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+		display: flex; align-items: center; justify-content: center;
+		background: #fef2f2; color: #991b1b;
+	}
+	.compliance-icon--done { background: #ecfdf5; color: #065f46; }
+	.compliance-icon--progress { background: rgba(201,168,76,0.15); color: var(--gold, #c9a84c); }
+	.compliance-info { flex: 1; min-width: 0; }
+	.compliance-label { font-weight: 700; font-size: 0.85rem; margin-bottom: 2px; }
+	.compliance-status { font-size: 0.75rem; color: var(--gray-500); }
 	.page-title { font-family: var(--font-serif); font-size: 1.5rem; color: var(--crimson, #c8102e); }
 	.page-sub { font-size: 0.88rem; color: var(--gray-500); margin-top: 4px; }
 
@@ -488,6 +610,7 @@
 
 	@media (max-width: 768px) {
 		.stats-row { grid-template-columns: repeat(2, 1fr); }
+		.compliance-row { grid-template-columns: 1fr; }
 		.detail-grid { grid-template-columns: 1fr 1fr; }
 		.tabs { flex-wrap: nowrap; -webkit-overflow-scrolling: touch; }
 		.officer-row { flex-direction: column; align-items: flex-start; gap: 6px; }

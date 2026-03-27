@@ -11,7 +11,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 
 	let dbQuery = locals.supabase
 		.from('members')
-		.select('id, first_name, last_name, email, phone, mobile_phone, city, state, zip, membership_number, membership_status, membership_type, is_life_member, employer, profession, professional_title, profile_photo_url, show_email, show_phone, show_address, initiation_year, initiation_chapter, current_chapter_name, university, chapters(name, greek_designation)', { count: 'exact' })
+		.select('id, first_name, last_name, email, phone, mobile_phone, city, state, zip, membership_number, membership_status, membership_type, is_life_member, employer, profession, professional_title, profile_photo_url, show_email, show_phone, show_address, initiation_year, initiation_chapter, current_chapter_name, university, chapters!members_chapter_id_fkey(name, greek_designation)', { count: 'exact' })
 		.eq('show_in_directory', true);
 
 	// Full-text search using GIN-indexed tsvector

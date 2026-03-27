@@ -20,7 +20,7 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 		facebook_url, instagram_url, twitter_url, linkedin_url,
 		high_school, high_school_city, high_school_state, high_school_year_graduated,
 		province_id, directory_status, created_at, updated_at,
-		chapters(name, greek_designation), provinces:province_id(name)`;
+		chapters!members_chapter_id_fkey(name, greek_designation), provinces:province_id(name)`;
 
 	// Look up member by auth_user_id (linked auth account) or by email
 	let memberRes = await locals.supabase

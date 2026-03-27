@@ -87,7 +87,7 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 		return year?.toString() ?? null;
 	}
 
-	// Helper: filter out SF IDs masquerading as university names
+	// Filter out SF IDs that haven't been resolved yet
 	function cleanUniversity(val: string | null): string | null {
 		if (!val) return null;
 		if (/^[a-zA-Z0-9]{15,18}$/.test(val) && !val.includes(' ')) return null;

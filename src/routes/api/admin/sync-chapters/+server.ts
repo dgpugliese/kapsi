@@ -49,12 +49,30 @@ export const POST: RequestHandler = async ({ locals }) => {
 			...chapterFields
 		].join(', ');
 
-		const accounts = await sfQuery<any>(`
-			SELECT ${safeFields}
-			FROM Account
-			WHERE Type IN ('CHAP-A', 'CHAP-UG')
-			LIMIT 2000
-		`);
+		// Get all chapter sf_account_ids we have
+		const { data: chapterIds } = await locals.supabase
+			.from('chapters')
+			.select('sf_account_id')
+			.not('sf_account_id', 'is', null);
+
+		const sfIds = (chapterIds ?? []).map(c => c.sf_account_id).filter(Boolean);
+
+		if (sfIds.length === 0) {
+			return json({ success: false, message: 'No chapters with sf_account_id found' });
+		}
+
+		// Query SF in batches of 200 (SOQL IN clause limit)
+		let accounts: any[] = [];
+		for (let i = 0; i < sfIds.length; i += 200) {
+			const batch = sfIds.slice(i, i + 200);
+			const idList = batch.map(id => `'${id}'`).join(',');
+			const batchResults = await sfQuery<any>(`
+				SELECT ${safeFields}
+				FROM Account
+				WHERE Id IN (${idList})
+			`);
+			accounts = accounts.concat(batchResults);
+		}
 
 		let updated = 0;
 		let notFound = 0;

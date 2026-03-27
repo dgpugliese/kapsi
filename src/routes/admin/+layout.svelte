@@ -23,8 +23,8 @@
 					<svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
 				</button>
 				<div>
-					<strong style="font-family:var(--font-serif); font-size:1.05rem;">Admin Panel</strong>
-					<span style="font-size:0.7rem; opacity:0.6; text-transform:uppercase; letter-spacing:1px; display:block;">Kappa Alpha Psi®</span>
+					<strong style="font-family:var(--font-serif); font-size:1.05rem;">INTERNATIONAL HEADQUARTERS</strong>
+					<span style="font-size:0.7rem; opacity:0.6; text-transform:uppercase; letter-spacing:1px; display:block;">KAPPA ALPHA PSI FRATERNITY, INC.</span>
 				</div>
 			</div>
 			<div style="display:flex; align-items:center; gap:16px;">

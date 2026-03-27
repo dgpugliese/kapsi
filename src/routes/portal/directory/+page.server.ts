@@ -11,14 +11,14 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 
 	let dbQuery = locals.supabase
 		.from('members')
-		.select('id, first_name, last_name, email, phone, mobile_phone, city, state, zip, membership_number, membership_status, membership_type, is_life_member, employer, profession, professional_title, profile_photo_url, show_email, show_phone, show_address, initiation_year, chapters(name, greek_designation)', { count: 'exact' })
+		.select('id, first_name, last_name, email, phone, mobile_phone, city, state, zip, membership_number, membership_status, membership_type, is_life_member, employer, profession, professional_title, profile_photo_url, show_email, show_phone, show_address, initiation_year, initiation_chapter, current_chapter_name, university, chapters(name, greek_designation)', { count: 'exact' })
 		.eq('show_in_directory', true);
 
-	// Full-text search
+	// Full-text search using GIN-indexed tsvector
 	if (query) {
-		dbQuery = dbQuery.or(
-			`first_name.ilike.%${query}%,last_name.ilike.%${query}%,city.ilike.%${query}%,profession.ilike.%${query}%,employer.ilike.%${query}%,membership_number.ilike.%${query}%`
-		);
+		// Convert search terms to tsquery format for fast full-text search
+		const tsQuery = query.trim().split(/\s+/).map(t => t + ':*').join(' & ');
+		dbQuery = dbQuery.textSearch('search_vector', tsQuery);
 	}
 
 	if (stateFilter) dbQuery = dbQuery.eq('state', stateFilter);
@@ -77,8 +77,9 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		membership_number: m.membership_number,
 		member_status: formatStatus(m.membership_status),
 		member_type: formatType(m.membership_type),
-		chapter_name: m.chapters?.name ?? null,
-		chapter_of_initiation: null,
+		chapter_name: m.current_chapter_name ?? m.chapters?.name ?? null,
+		chapter_of_initiation: m.initiation_chapter ?? null,
+		university: m.university ?? null,
 		employer: m.employer,
 		profession: m.profession,
 		professional_title: m.professional_title,

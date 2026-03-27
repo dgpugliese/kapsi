@@ -36,41 +36,25 @@ export const load: PageServerLoad = async ({ locals, parent }) => {
 	const badgeNames = (memberBadges ?? []).map((mb: any) => mb.badges?.name).filter(Boolean);
 	const hasAccess = badgeNames.some(b => accessBadges.includes(b)) || member.role === 'super_admin' || member.role === 'ihq_staff';
 
-	// Load roster, officers, stats in parallel
-	const [rosterRes, officersRes, rosterCountRes] = await Promise.all([
-		locals.supabase
-			.from('chapter_rosters')
-			.select('*, members!inner(id, first_name, last_name, email, membership_number, membership_status, phone, profile_photo_url)')
-			.eq('chapter_id', member.chapter_id)
-			.eq('fiscal_year', new Date().getFullYear())
-			.order('roster_type'),
-		locals.supabase
-			.from('chapter_officers')
-			.select('*, members!inner(id, first_name, last_name, email, membership_number)')
-			.eq('chapter_id', member.chapter_id)
-			.eq('is_active', true)
-			.order('position'),
+	// Count members assigned to this chapter in Supabase (for basic stats)
+	const [activeRes, totalRes] = await Promise.all([
 		locals.supabase
 			.from('members')
 			.select('id', { count: 'exact', head: true })
 			.eq('chapter_id', member.chapter_id)
-			.eq('membership_status', 'active')
+			.eq('membership_status', 'active'),
+		locals.supabase
+			.from('members')
+			.select('id', { count: 'exact', head: true })
+			.eq('chapter_id', member.chapter_id)
 	]);
-
-	// Count members by status for this chapter
-	const { count: totalMembers } = await locals.supabase
-		.from('members')
-		.select('id', { count: 'exact', head: true })
-		.eq('chapter_id', member.chapter_id);
 
 	return {
 		chapter,
 		hasAccess,
 		badgeNames,
-		roster: rosterRes.data ?? [],
-		officers: officersRes.data ?? [],
-		activeCount: rosterCountRes.count ?? 0,
-		totalMembers: totalMembers ?? 0,
+		activeCount: activeRes.count ?? 0,
+		totalMembers: totalRes.count ?? 0,
 		fiscalYear: new Date().getFullYear()
 	};
 };

@@ -27,11 +27,12 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	// Look up member
 	const { data: member } = await locals.supabase
 		.from('members')
-		.select('id, first_name, last_name, email')
+		.select('id, first_name, last_name, email, membership_status')
 		.eq('auth_user_id', user.id)
 		.single();
 
 	if (!member) throw error(404, 'Member not found');
+	if (member.membership_status !== 'active') throw error(403, 'Your membership must be in good standing to register for events');
 
 	const isFree = !paymentIntentId;
 

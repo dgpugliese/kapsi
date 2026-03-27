@@ -40,5 +40,29 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 
 	const member = memberRes.data;
 
-	return { session, user, member };
+	// Check if member has chapter management access
+	let hasChapterAccess = false;
+	if (member) {
+		const accessBadges = [
+			'Chapter Polemarch', 'Chapter Vice Polemarch', 'Chapter Keeper of Records',
+			'Chapter Keeper of Exchequer', 'Chapter Strategus', 'Chapter MTA Chairman',
+			'Undergraduate Chapter Advisor'
+		];
+		const accessRoles = ['super_admin', 'ihq_staff', 'national_officer'];
+
+		if (accessRoles.includes(member.role)) {
+			hasChapterAccess = true;
+		} else if (member.chapter_id) {
+			const { data: badges } = await locals.supabase
+				.from('member_badges')
+				.select('badges(name)')
+				.eq('member_id', member.id)
+				.eq('is_active', true);
+
+			const names = (badges ?? []).map((b: any) => b.badges?.name).filter(Boolean);
+			hasChapterAccess = names.some(n => accessBadges.includes(n));
+		}
+	}
+
+	return { session, user, member, hasChapterAccess };
 };

@@ -33,7 +33,11 @@
 
 	const isPolemarch = $derived(data?.currentUser?.isPolemarch ?? false);
 	const isKOR = $derived(data?.currentUser?.isKOR ?? false);
-	const canConfirm = $derived(isPolemarch || isKOR);
+	const isOfficer = $derived(data?.currentUser?.isOfficer ?? false);
+	const canConfirm = $derived(isOfficer); // Any chapter officer can confirm
+
+	const SIGNATURE_ROLES = ['Chapter Polemarch', 'Chapter Vice Polemarch', 'Chapter Keeper of Records', 'Chapter Keeper of Exchequer'];
+	const allSigned = $derived(SIGNATURE_ROLES.every(r => signatures.some((s: any) => s.officer_role === r)));
 	const officerReportStatus = $derived(reportStatus?.officerReport?.status ?? 'draft');
 	const signatures = $derived(reportStatus?.officerReport?.chapter_report_signatures ?? []);
 
@@ -369,23 +373,29 @@
 						</button>
 					</div>
 				{:else if officerReportStatus === 'confirmed'}
-					<!-- Signatures -->
+					<!-- Signatures — 4 required -->
 					<div class="action-card">
 						<div class="action-info">
-							<h3 class="action-title">Officer Signatures</h3>
-							<p class="action-desc">Each officer should sign to confirm their acceptance of the role.</p>
+							<h3 class="action-title">Officer Attestation</h3>
+							<p class="action-desc">All four officers must sign to attest to the accuracy of this report. Cannot be submitted until all signatures are collected.</p>
 						</div>
 					</div>
 					<div class="sig-list">
-						{#each OFFICER_ROLES.slice(0, 6) as role}
+						{#each SIGNATURE_ROLES as role}
+							{@const signed = signatures.find((s: any) => s.officer_role === role)}
 							<div class="sig-row">
 								<span class="sig-role">{role.replace('Chapter ', '')}</span>
-								{#if hasSigned(role)}
-									<span class="sig-signed">Signed</span>
+								{#if signed}
+									<span class="sig-signed">
+										Signed
+										{#if signed.signed_at}
+											<span style="font-size:0.68rem; color:var(--gray-400); margin-left:6px;">{new Date(signed.signed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+										{/if}
+									</span>
 								{:else if data.currentUser.badges?.includes(role)}
 									<button class="btn btn--outline" style="padding:4px 12px; font-size:0.78rem;" onclick={() => signOfficerReport(role)}>Sign</button>
 								{:else}
-									<span class="sig-pending">Pending</span>
+									<span class="sig-pending">Awaiting</span>
 								{/if}
 							</div>
 						{/each}
@@ -394,9 +404,15 @@
 					<div class="action-card" style="margin-top:12px;">
 						<div class="action-info">
 							<h3 class="action-title">Submit Officer Report</h3>
-							<p class="action-desc">Once officers have signed, submit for Province/IHQ review.</p>
+							<p class="action-desc">
+								{#if allSigned}
+									All signatures collected. Ready to submit.
+								{:else}
+									Waiting for all 4 officer signatures before submission.
+								{/if}
+							</p>
 						</div>
-						<button class="btn btn--primary" disabled={submitting} onclick={submitOfficerReport}>
+						<button class="btn btn--primary" disabled={submitting || !allSigned} onclick={submitOfficerReport}>
 							{submitting ? 'Submitting...' : 'Submit Report'}
 						</button>
 					</div>

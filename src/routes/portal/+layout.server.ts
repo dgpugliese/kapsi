@@ -95,10 +95,75 @@ export const load: LayoutServerLoad = async ({ locals, cookies, url }) => {
 	}
 
 	let hasChapterAccess = false;
+	let pendingItems: { type: string; label: string; href: string }[] = [];
+
 	if (member && isGoodStanding) {
 		const access = await checkChapterAccess(locals.supabase, user!.id, member.chapter_id);
 		hasChapterAccess = access.hasAccess;
+
+		// Load pending items for chapter officers
+		if (hasChapterAccess && member.chapter_id) {
+			const fy = new Date().getFullYear();
+			const officerBadges = access.badges?.map((b: any) => b.name) ?? [];
+			const isChapterOfficer = officerBadges.some((b: string) =>
+				['Polemarch', 'Vice Polemarch', 'Keeper of Records', 'Keeper of Exchequer'].some(r => b.includes(r))
+			);
+
+			if (isChapterOfficer) {
+				// Check roster report status
+				const { data: rosterReport } = await locals.supabase
+					.from('chapter_reports')
+					.select('id, status, confirmed_at')
+					.eq('chapter_id', member.chapter_id)
+					.eq('fiscal_year', fy)
+					.eq('report_type', 'roster')
+					.maybeSingle();
+
+				if (!rosterReport || rosterReport.status === 'draft' || rosterReport.status === 'returned') {
+					pendingItems.push({ type: 'Roster', label: 'Roster report needs confirmation', href: '/portal/chapter-management/roster' });
+				}
+
+				// Check officer report — need signatures from 4 officers
+				const { data: officerReport } = await locals.supabase
+					.from('chapter_reports')
+					.select('id, status, chapter_report_signatures(officer_role, signed_at)')
+					.eq('chapter_id', member.chapter_id)
+					.eq('fiscal_year', fy)
+					.eq('report_type', 'officer')
+					.maybeSingle();
+
+				if (officerReport && (officerReport.status === 'confirmed' || officerReport.status === 'draft')) {
+					const signed = (officerReport.chapter_report_signatures ?? []).map((s: any) => s.officer_role);
+					const myRoles = officerBadges.filter((b: string) =>
+						['Polemarch', 'Vice Polemarch', 'Keeper of Records', 'Keeper of Exchequer'].some(r => b.includes(r))
+					);
+					const needsMySignature = myRoles.some((badge: string) => {
+						const role = badge.includes('Polemarch') && !badge.includes('Vice') ? 'Chapter Polemarch'
+							: badge.includes('Vice') ? 'Chapter Vice Polemarch'
+							: badge.includes('Records') ? 'Chapter Keeper of Records'
+							: 'Chapter Keeper of Exchequer';
+						return !signed.includes(role);
+					});
+					if (needsMySignature) {
+						pendingItems.push({ type: 'Officer Report', label: 'Your signature is required', href: '/portal/chapter-management/officers' });
+					}
+				} else if (!officerReport) {
+					pendingItems.push({ type: 'Officer Report', label: 'Officer report not started', href: '/portal/chapter-management/officers' });
+				}
+
+				// Check pending EIC signatures
+				const { data: pendingEics } = await locals.supabase
+					.from('eic_submissions')
+					.select('id, event_name, status')
+					.eq('chapter_id', member.chapter_id)
+					.eq('status', 'pending_signatures');
+
+				for (const eic of pendingEics ?? []) {
+					pendingItems.push({ type: 'EIC', label: `Sign EIC: ${eic.event_name || 'Event'}`, href: '/portal/chapter-management/eic' });
+				}
+			}
+		}
 	}
 
-	return { session, user, member, hasChapterAccess, isGoodStanding, impersonating: false };
+	return { session, user, member, hasChapterAccess, isGoodStanding, impersonating: false, pendingItems };
 };

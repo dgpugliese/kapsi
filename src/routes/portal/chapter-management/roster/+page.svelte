@@ -29,7 +29,7 @@
 	const isOfficer = $derived(roster?.officer?.isOfficer ?? false);
 	const isPolemarch = $derived(roster?.officer?.isPolemarch ?? false);
 	const isKOR = $derived(roster?.officer?.isKOR ?? false);
-	const canConfirm = $derived(isPolemarch || isKOR);
+	const canConfirm = $derived(isOfficer); // Any chapter officer can confirm
 	const rosterReportStatus = $derived(reportStatus?.rosterReport?.status ?? 'draft');
 	const signatures = $derived(reportStatus?.rosterReport?.chapter_report_signatures ?? []);
 
@@ -351,48 +351,23 @@
 				{#if rosterReportStatus === 'draft' || rosterReportStatus === 'returned'}
 					<div class="action-card">
 						<div class="action-info">
-							<h3 class="action-title">Confirm Roster</h3>
+							<h3 class="action-title">Confirm & Submit Roster</h3>
 							<p class="action-desc">
-								As {isPolemarch ? 'Polemarch' : 'Keeper of Records'}, confirm that this roster of {roster.total} members is accurate for FY{fiscalYear}.
+								Confirm that this roster of {roster.total} members is accurate for FY{fiscalYear} and submit for review.
 								{#if rosterReportStatus === 'returned'}
 									<br/><span style="color:#991b1b; font-weight:600;">This report was returned. Please review and re-confirm.</span>
 								{/if}
 							</p>
 						</div>
 						<button class="btn btn--primary" disabled={confirming} onclick={confirmRoster}>
-							{confirming ? 'Confirming...' : 'Confirm Roster'}
+							{confirming ? 'Confirming...' : 'Confirm & Submit'}
 						</button>
 					</div>
 				{:else if rosterReportStatus === 'confirmed'}
-					<!-- Signatures -->
 					<div class="action-card">
 						<div class="action-info">
-							<h3 class="action-title">Officer Signatures</h3>
-							<p class="action-desc">Officers should sign to attest to the accuracy of this roster.</p>
-						</div>
-					</div>
-					<div class="sig-list">
-						{#each ['Chapter Polemarch', 'Chapter Vice Polemarch', 'Chapter Keeper of Records', 'Chapter Keeper of Exchequer', 'Chapter Strategus'] as role}
-							<div class="sig-row">
-								<span class="sig-role">{role.replace('Chapter ', '')}</span>
-								{#if hasSigned(role)}
-									<span class="sig-signed">Signed</span>
-								{:else if roster.officer.badges?.includes(role)}
-									<button class="btn btn--outline" style="padding:4px 12px; font-size:0.78rem;" onclick={() => signRoster(role)}>
-										Sign
-									</button>
-								{:else}
-									<span class="sig-pending">Pending</span>
-								{/if}
-							</div>
-						{/each}
-					</div>
-
-					<!-- Submit button -->
-					<div class="action-card" style="margin-top:12px;">
-						<div class="action-info">
 							<h3 class="action-title">Submit Roster Report</h3>
-							<p class="action-desc">Once all officers have signed, submit the roster for Province/IHQ review.</p>
+							<p class="action-desc">Roster has been confirmed. Submit for Province/IHQ review.</p>
 						</div>
 						<button class="btn btn--primary" disabled={submitting} onclick={submitRoster}>
 							{submitting ? 'Submitting...' : 'Submit Report'}

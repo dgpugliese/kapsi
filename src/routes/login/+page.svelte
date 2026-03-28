@@ -32,6 +32,21 @@
 			return;
 		}
 
+		// Staff accounts go straight to admin
+		const { data: { user } } = await supabase.auth.getUser();
+		if (user) {
+			const { data: member } = await supabase
+				.from('members')
+				.select('is_staff')
+				.eq('auth_user_id', user.id)
+				.single();
+
+			if (member?.is_staff) {
+				goto('/admin');
+				return;
+			}
+		}
+
 		goto(redirectTo);
 	}
 

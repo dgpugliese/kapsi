@@ -119,7 +119,12 @@
 		<tbody>
 			{#each members as m}
 				<tr>
-					<td style="padding:10px 14px; border-bottom:1px solid var(--gray-50); font-weight:600; white-space:nowrap;">{m.first_name} {m.last_name}</td>
+					<td style="padding:10px 14px; border-bottom:1px solid var(--gray-50); font-weight:600; white-space:nowrap;">
+						{m.first_name} {m.last_name}
+						{#if m.is_staff}
+							<span style="font-size:0.6rem; font-weight:700; background:#dbeafe; color:#1e40af; padding:2px 6px; border-radius:10px; margin-left:6px; vertical-align:middle;">STAFF</span>
+						{/if}
+					</td>
 					<td style="padding:10px 14px; border-bottom:1px solid var(--gray-50); color:var(--gray-600);">{m.email}</td>
 					<td style="padding:10px 14px; border-bottom:1px solid var(--gray-50); color:var(--gray-600); font-size:0.82rem;">{m.chapters?.name ?? '—'}</td>
 					<td style="padding:10px 14px; border-bottom:1px solid var(--gray-50);">

@@ -4,7 +4,8 @@ export const load: PageServerLoad = async ({ locals }) => {
 	// Member counts by status
 	const { data: allMembers } = await locals.supabase
 		.from('members')
-		.select('membership_status, membership_type');
+		.select('membership_status, membership_type')
+		.eq('is_staff', false);
 
 	const statusCounts: Record<string, number> = {};
 	const typeCounts: Record<string, number> = {};

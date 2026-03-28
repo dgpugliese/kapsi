@@ -29,10 +29,7 @@
 					<span style="font-size:0.7rem; opacity:0.6; text-transform:uppercase; letter-spacing:1px; display:block;">KAPPA ALPHA PSI FRATERNITY, INC.</span>
 				</div>
 			</div>
-			<div style="display:flex; align-items:center; gap:16px;">
-				<a href="/portal" style="font-size:0.82rem; color:rgba(255,255,255,0.7); text-decoration:none;">Brother's Only</a>
-				<a href="/" style="font-size:0.82rem; color:rgba(255,255,255,0.7); text-decoration:none;">Public Site</a>
-			</div>
+			<div></div>
 		</div>
 	</div>
 

@@ -124,20 +124,53 @@
 {/if}
 
 <!-- KPI row -->
-<div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:16px; margin-bottom:24px;">
-	<div style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; padding:16px;">
-		<p style="font-size:0.65rem; font-weight:700; text-transform:uppercase; color:var(--gray-400);">Total Members</p>
-		<p style="font-size:1.4rem; font-weight:700;">{data.memberCount}</p>
+<div style="display:grid; grid-template-columns:repeat(5, 1fr); gap:12px; margin-bottom:24px;">
+	<div class="kpi"><p class="kpi-l">Total Members</p><p class="kpi-v">{data.memberCount}</p></div>
+	<div class="kpi"><p class="kpi-l">Active / IGS</p><p class="kpi-v" style="color:#065f46;">{data.activeCount}</p></div>
+	<div class="kpi"><p class="kpi-l">NIGS</p><p class="kpi-v" style="color:#92400e;">{(data as any).chapterStatusCounts?.not_in_good_standing ?? 0}</p></div>
+	<div class="kpi"><p class="kpi-l">Suspended</p><p class="kpi-v" style="color:#991b1b;">{(data as any).chapterStatusCounts?.suspended ?? 0}</p></div>
+	<div class="kpi"><p class="kpi-l">Ch. Invisible</p><p class="kpi-v" style="color:#6b7280;">{(data as any).chapterStatusCounts?.chapter_invisible ?? 0}</p></div>
+</div>
+
+<!-- Key info cards -->
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:24px;">
+	<div style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; padding:20px;">
+		<h3 style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--gray-400); margin-bottom:12px;">Chapter Identity</h3>
+		<div class="dg" style="grid-template-columns:1fr 1fr;">
+			<div class="d"><span class="dl">Greek Designation</span><span class="dv">{fmt(chapter.greek_designation)}</span></div>
+			<div class="d"><span class="dl">Type</span><span class="dv" style="text-transform:capitalize;">{fmt(chapter.chapter_type)}</span></div>
+			<div class="d"><span class="dl">Charter Date</span><span class="dv">{fmtDate(chapter.charter_date)}</span></div>
+			<div class="d"><span class="dl">Province</span><span class="dv">{chapter.provinces?.name || '—'}</span></div>
+			<div class="d"><span class="dl">Institution / University</span><span class="dv">{fmt(chapter.institution || chapter.school_university)}</span></div>
+			<div class="d"><span class="dl">Location</span><span class="dv">{[chapter.city, chapter.state].filter(Boolean).join(', ') || '—'}</span></div>
+		</div>
 	</div>
-	<div style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; padding:16px;">
-		<p style="font-size:0.65rem; font-weight:700; text-transform:uppercase; color:var(--gray-400);">Active / IGS</p>
-		<p style="font-size:1.4rem; font-weight:700; color:#065f46;">{data.activeCount}</p>
-	</div>
-	<div style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; padding:16px;">
-		<p style="font-size:0.65rem; font-weight:700; text-transform:uppercase; color:var(--gray-400);">Charter Date</p>
-		<p style="font-size:1.4rem; font-weight:700;">{fmtDate(chapter.charter_date)}</p>
+	<div style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; padding:20px;">
+		<h3 style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--gray-400); margin-bottom:12px;">Administrative</h3>
+		<div class="dg" style="grid-template-columns:1fr 1fr;">
+			<div class="d"><span class="dl">EIN Number</span><span class="dv">{fmt(chapter.ein_number)}</span></div>
+			<div class="d"><span class="dl">Foundation</span><span class="dv">{fmt(chapter.foundation_name)}</span></div>
+			<div class="d"><span class="dl">Ritual Serial Numbers</span><span class="dv">{fmt(chapter.ritual_serial_numbers)}</span></div>
+			<div class="d"><span class="dl">Contact Email</span><span class="dv">{fmt(chapter.contact_email)}</span></div>
+			<div class="d"><span class="dl">Phone</span><span class="dv">{fmt(chapter.contact_phone)}</span></div>
+			<div class="d"><span class="dl">Website</span><span class="dv">{fmt(chapter.website_url)}</span></div>
+		</div>
 	</div>
 </div>
+
+<!-- Meeting info -->
+{#if chapter.meeting_day || chapter.meeting_time || chapter.meeting_location}
+<div style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; padding:20px; margin-bottom:24px;">
+	<h3 style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--gray-400); margin-bottom:12px;">Meeting Information</h3>
+	<div class="dg" style="grid-template-columns:1fr 1fr 1fr 1fr;">
+		<div class="d"><span class="dl">Day</span><span class="dv">{fmt(chapter.meeting_day)}</span></div>
+		<div class="d"><span class="dl">Time</span><span class="dv">{fmt(chapter.meeting_time)}</span></div>
+		<div class="d"><span class="dl">Week</span><span class="dv">{fmt(chapter.meeting_week)}</span></div>
+		<div class="d"><span class="dl">Schedule</span><span class="dv">{fmt(chapter.meeting_schedule)}</span></div>
+		<div class="d" style="grid-column:1/-1;"><span class="dl">Location</span><span class="dv">{fmt(chapter.meeting_location)}</span></div>
+	</div>
+</div>
+{/if}
 
 <div style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; padding:28px; margin-bottom:24px;">
 {#if editing}
@@ -208,58 +241,9 @@
 		</div>
 	</form>
 {:else}
-	<!-- View mode -->
-	<h2 style="font-family:var(--font-serif); font-size:1.1rem; margin-bottom:16px;">Chapter Details</h2>
-	<div class="dg">
-		<div class="d"><span class="dl">Name</span><span class="dv">{fmt(chapter.name)}</span></div>
-		<div class="d"><span class="dl">Greek</span><span class="dv">{fmt(chapter.greek_designation)}</span></div>
-		<div class="d"><span class="dl">Type</span><span class="dv" style="text-transform:capitalize;">{fmt(chapter.chapter_type)}</span></div>
-		<div class="d"><span class="dl">Status</span><span class="dv" style="text-transform:capitalize;">{fmt(chapter.status)}</span></div>
-		<div class="d"><span class="dl">Institution</span><span class="dv">{fmt(chapter.institution)}</span></div>
-		<div class="d"><span class="dl">University</span><span class="dv">{fmt(chapter.school_university)}</span></div>
-		<div class="d"><span class="dl">Province</span><span class="dv">{chapter.provinces?.name || '—'}</span></div>
-		<div class="d"><span class="dl">Charter Date</span><span class="dv">{fmtDate(chapter.charter_date)}</span></div>
-	</div>
-
-	<h3 class="sub">Location</h3>
-	<div class="dg">
-		<div class="d"><span class="dl">Address</span><span class="dv">{fmt(chapter.address)}</span></div>
-		<div class="d"><span class="dl">City</span><span class="dv">{fmt(chapter.city)}</span></div>
-		<div class="d"><span class="dl">State</span><span class="dv">{fmt(chapter.state)}</span></div>
-		<div class="d"><span class="dl">Country</span><span class="dv">{fmt(chapter.country)}</span></div>
-	</div>
-
-	{#if chapter.billing_street || chapter.billing_city}
-		<h3 class="sub">Billing Address</h3>
-		<div class="dg">
-			<div class="d"><span class="dl">Street</span><span class="dv">{fmt(chapter.billing_street)}</span></div>
-			<div class="d"><span class="dl">City</span><span class="dv">{fmt(chapter.billing_city)}</span></div>
-			<div class="d"><span class="dl">State</span><span class="dv">{fmt(chapter.billing_state)}</span></div>
-			<div class="d"><span class="dl">ZIP</span><span class="dv">{fmt(chapter.billing_zip)}</span></div>
-		</div>
-	{/if}
-
-	<h3 class="sub">Contact</h3>
-	<div class="dg">
-		<div class="d"><span class="dl">Email</span><span class="dv">{fmt(chapter.contact_email)}</span></div>
-		<div class="d"><span class="dl">Phone</span><span class="dv">{fmt(chapter.contact_phone)}</span></div>
-		<div class="d"><span class="dl">Website</span><span class="dv">{fmt(chapter.website_url)}</span></div>
-	</div>
-
-	<h3 class="sub">Meetings</h3>
-	<div class="dg">
-		<div class="d"><span class="dl">Schedule</span><span class="dv">{fmt(chapter.meeting_schedule)}</span></div>
-		<div class="d"><span class="dl">Day</span><span class="dv">{fmt(chapter.meeting_day)}</span></div>
-		<div class="d"><span class="dl">Time</span><span class="dv">{fmt(chapter.meeting_time)}</span></div>
-		<div class="d"><span class="dl">Location</span><span class="dv">{fmt(chapter.meeting_location)}</span></div>
-	</div>
-
-	<h3 class="sub">Administrative</h3>
-	<div class="dg">
-		<div class="d"><span class="dl">EIN</span><span class="dv">{fmt(chapter.ein_number)}</span></div>
-		<div class="d"><span class="dl">Foundation</span><span class="dv">{fmt(chapter.foundation_name)}</span></div>
-		<div class="d"><span class="dl">Ritual Serials</span><span class="dv">{fmt(chapter.ritual_serial_numbers)}</span></div>
-	</div>
+	<p style="font-size:0.88rem; color:var(--gray-500); padding:20px 0; text-align:center;">
+		All chapter information is displayed above. Click <strong>Edit Chapter</strong> to make changes.
+	</p>
 {/if}
 </div>
 
@@ -297,6 +281,9 @@
 </div>
 
 <style>
+	.kpi { background: var(--white); border: 1px solid var(--gray-100); border-radius: 12px; padding: 16px; }
+	.kpi-l { font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--gray-400); margin-bottom: 4px; }
+	.kpi-v { font-size: 1.4rem; font-weight: 700; }
 	.fg { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 14px; margin-bottom: 16px; }
 	.fl { display: block; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--gray-500); margin-bottom: 4px; }
 	.fi { width: 100%; padding: 8px 12px; border: 1.5px solid var(--gray-200); border-radius: 8px; font-size: 0.88rem; font-family: inherit; background: var(--gray-50); }

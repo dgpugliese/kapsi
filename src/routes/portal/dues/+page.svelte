@@ -5,12 +5,15 @@
 
 	let { data }: { data: PageData } = $props();
 	const member = $derived(data.member);
-	const fiscalYear = $derived(data.fiscalYear);
-	const memberDues = $derived(data.memberDues);
-	const paymentHistory = $derived(data.paymentHistory ?? []);
-	const duesAmount = $derived(data.duesAmount ?? 0);
-	const isExempt = $derived(data.isExempt ?? false);
+	const di = $derived(data.duesInfo);
+	const fiscalYear = $derived(di?.fiscalYear);
+	const memberDues = $derived(di?.memberDues);
+	const paymentHistory = $derived(di?.paymentHistory ?? []);
+	const duesAmount = $derived(di?.duesAmount ?? 0);
+	const isExempt = $derived(di?.isExempt ?? false);
 	const surchargeRate = $derived(data.surchargeRate ?? 0.04);
+	const slmPayments = $derived(di?.slmPayments ?? []);
+	const slmStatus = $derived(di?.slmStatus ?? 'none');
 
 	// Payment flow
 	let paymentStep = $state<'overview' | 'method' | 'pay' | 'done'>('overview');
@@ -26,8 +29,8 @@
 
 	const surcharge = $derived(paymentMethod === 'card' ? Math.round(duesAmount * surchargeRate * 100) / 100 : 0);
 	const totalAmount = $derived(duesAmount + surcharge);
-	const duesType = $derived(member?.membership_type === 'undergraduate' ? 'undergraduate' : 'alumni');
-	const isPaid = $derived(memberDues?.status === 'paid' || memberDues?.status === 'exempt');
+	const duesType = $derived(di?.duesType ?? (member?.membership_type === 'undergraduate' ? 'undergraduate' : 'alumni'));
+	const isPaid = $derived(di?.isPaid ?? false);
 	const fyDisplay = $derived(fiscalYear ? `FY ${fiscalYear.year - 1}-${fiscalYear.year}` : '');
 
 	const STRIPE_PK = import.meta.env.PUBLIC_STRIPE_PUBLISHABLE_KEY || 'pk_test_51TFapxRy9JTt9eUJRhjAdSsKgFcSNvp61V8XOPHq2Qs2toelvXxhVXOi9KCMH6zIRWyItk4y9zHJaDGXJ1rTdHUs00hVnP7u2v';

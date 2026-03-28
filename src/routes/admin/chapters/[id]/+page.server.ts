@@ -26,6 +26,19 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		.eq('is_staff', false)
 		.eq('membership_status', 'active');
 
+	// Status breakdown for this chapter
+	const { data: statusBreakdown } = await locals.supabase
+		.from('members')
+		.select('membership_status')
+		.eq('chapter_id', id)
+		.eq('is_staff', false);
+
+	const chapterStatusCounts: Record<string, number> = {};
+	(statusBreakdown ?? []).forEach((m: any) => {
+		const s = m.membership_status || 'unknown';
+		chapterStatusCounts[s] = (chapterStatusCounts[s] ?? 0) + 1;
+	});
+
 	// Audit log for this chapter
 	const { data: auditLog } = await locals.supabase
 		.from('audit_log')
@@ -44,6 +57,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		chapter,
 		memberCount: memberCount ?? 0,
 		activeCount: activeCount ?? 0,
+		chapterStatusCounts,
 		auditLog: auditLog ?? [],
 		provinces: provinces ?? []
 	};

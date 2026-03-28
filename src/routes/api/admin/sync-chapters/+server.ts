@@ -148,12 +148,22 @@ export const POST: RequestHandler = async ({ locals }) => {
 			}
 		}
 
+		// Also query one specific account to see all custom fields for debugging
+		let sampleFields: string[] = [];
+		try {
+			const sample = await sfQuery<any>(`SELECT FIELDS(CUSTOM) FROM Account WHERE Id = '0018W00001gMIezQAG' LIMIT 1`);
+			if (sample.length > 0) {
+				sampleFields = Object.keys(sample[0]).filter(k => k !== 'attributes');
+			}
+		} catch { /* ignore */ }
+
 		return json({
 			success: true,
 			total: accounts.length,
 			updated,
 			notFound,
 			discoveredFields: Object.fromEntries(Object.entries(fieldMap).filter(([,v]) => v)),
+			sampleCustomFields: sampleFields,
 			message: `Synced ${updated} chapters from ${accounts.length} SF accounts`
 		});
 	} catch (err: any) {

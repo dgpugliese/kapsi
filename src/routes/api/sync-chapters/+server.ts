@@ -13,7 +13,7 @@ export const POST: RequestHandler = async ({ locals, url }) => {
 	const { data: member } = await locals.supabase
 		.from('members')
 		.select('role')
-		.eq('id', user.id)
+		.eq('auth_user_id', user.id)
 		.single();
 
 	if (!member || !['national_officer', 'ihq_staff', 'super_admin'].includes(member.role)) {

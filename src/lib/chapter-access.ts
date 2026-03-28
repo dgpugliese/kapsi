@@ -28,7 +28,10 @@ export interface AccessResult {
 	badges: { name: string; chapterId: string | null; provinceId: string | null }[];
 }
 
-const GLOBAL_ADMIN_ROLES = ['super_admin', 'ihq_staff', 'national_officer'];
+// Admin access: is_super_admin flag OR ihq_staff role
+function isAdmin(member: any): boolean {
+	return member?.is_super_admin === true || member?.role === 'ihq_staff';
+}
 
 // Only these badges grant chapter management access
 const CHAPTER_OFFICER_BADGES = new Set([
@@ -73,7 +76,7 @@ export async function checkChapterAccess(
 	// 1. Load member
 	const { data: member } = await supabase
 		.from('members')
-		.select('id, chapter_id, province_id, role')
+		.select('id, chapter_id, province_id, role, is_super_admin')
 		.eq('auth_user_id', authUserId)
 		.single();
 
@@ -99,7 +102,7 @@ export async function checkChapterAccess(
 	const target = targetChapterId || member.chapter_id;
 
 	// 2. Global admins get full access
-	if (GLOBAL_ADMIN_ROLES.includes(member.role)) {
+	if (isAdmin(member)) {
 		return {
 			...empty,
 			hasAccess: true,

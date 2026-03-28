@@ -3,8 +3,6 @@ import type { RequestHandler } from './$types';
 import { env } from '$env/dynamic/private';
 import { createClient } from '@supabase/supabase-js';
 
-const ADMIN_ROLES = ['national_officer', 'ihq_staff', 'super_admin'];
-
 export const POST: RequestHandler = async ({ request, locals }) => {
 	const { session, user } = await locals.safeGetSession();
 	if (!session || !user) throw error(401, 'Not authenticated');
@@ -12,11 +10,11 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	// Verify caller is admin
 	const { data: admin } = await locals.supabase
 		.from('members')
-		.select('role')
+		.select('role, is_super_admin')
 		.eq('auth_user_id', user.id)
 		.single();
 
-	if (!admin || !ADMIN_ROLES.includes(admin.role)) {
+	if (!admin || !(admin.is_super_admin === true || admin.role === 'ihq_staff')) {
 		throw error(403, 'Admin access required');
 	}
 

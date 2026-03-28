@@ -2,7 +2,9 @@ import { redirect } from '@sveltejs/kit';
 import type { LayoutServerLoad } from './$types';
 import { checkChapterAccess } from '$lib/chapter-access';
 
-const ADMIN_ROLES = ['national_officer', 'ihq_staff', 'super_admin'];
+function isAdminUser(member: any): boolean {
+	return member?.is_super_admin === true || member?.role === 'ihq_staff';
+}
 
 export const load: LayoutServerLoad = async ({ locals, cookies, url }) => {
 	const { session, user } = await locals.safeGetSession();
@@ -33,11 +35,11 @@ export const load: LayoutServerLoad = async ({ locals, cookies, url }) => {
 		// Verify the real user is an admin
 		const { data: admin } = await locals.supabase
 			.from('members')
-			.select('role')
+			.select('role, is_super_admin')
 			.eq('auth_user_id', user!.id)
 			.single();
 
-		if (admin && ADMIN_ROLES.includes(admin.role)) {
+		if (admin && isAdminUser(admin)) {
 			const { data: impersonatedMember } = await locals.supabase
 				.from('members')
 				.select(memberColumns)

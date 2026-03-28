@@ -5,7 +5,7 @@ export const load: PageServerLoad = async ({ locals, parent, url }) => {
 	const { session, member } = await parent();
 	if (!session || !member) return { reports: [], chapters: [] };
 
-	if (!['super_admin', 'ihq_staff', 'national_officer'].includes(member.role)) {
+	if (!member.is_super_admin && member.role !== 'ihq_staff') {
 		throw error(403, 'Admin access required');
 	}
 

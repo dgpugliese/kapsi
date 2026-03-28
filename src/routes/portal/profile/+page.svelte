@@ -270,15 +270,7 @@
 </svelte:head>
 
 <div style="max-width:800px;">
-	<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:32px; flex-wrap:wrap; gap:12px;">
-		<h1 style="font-family:var(--font-serif); font-size:1.6rem; color:var(--crimson);">My Info</h1>
-		{#if !editing && sf}
-			<div style="display:flex; gap:12px;">
-				<button class="btn btn--primary" onclick={startEditing}>Edit Profile</button>
-				<button class="btn btn--outline" onclick={() => { showPasswordReset = true; }}>Change Password</button>
-			</div>
-		{/if}
-	</div>
+	<h1 style="font-family:var(--font-serif); font-size:1.6rem; color:var(--crimson); margin-bottom:24px;">My Info</h1>
 
 	{#if message}
 		<div style="background:#ECFDF5; color:#065F46; padding:12px 16px; border-radius:8px; font-size:0.9rem; margin-bottom:24px;">{message}</div>
@@ -553,25 +545,31 @@
 	{:else}
 		<!-- ======================== VIEW MODE ======================== -->
 
-		<!-- Photo + Name -->
-		<div class="card" style="display:flex; align-items:center; gap:20px; padding:24px;">
-			<div style="width:80px; height:80px; border-radius:50%; overflow:hidden; background:linear-gradient(160deg, var(--crimson-dark), var(--crimson)); display:flex; align-items:center; justify-content:center; flex-shrink:0; border:3px solid var(--crimson);">
-				{#if member?.profile_photo_url || sf?.imageUrl}
-					<img src={member?.profile_photo_url || sf?.imageUrl} alt="Profile" style="width:100%; height:100%; object-fit:cover;" />
-				{:else}
-					<span style="font-family:var(--font-serif); font-size:1.4rem; color:rgba(255,255,255,0.5);">
-						{sf?.firstName?.[0] ?? ''}{sf?.lastName?.[0] ?? ''}
-					</span>
-				{/if}
+		<!-- Photo + Name + Actions -->
+		<div class="card profile-card">
+			<div class="profile-card-left">
+				<div class="profile-avatar">
+					{#if member?.profile_photo_url || sf?.imageUrl}
+						<img src={member?.profile_photo_url || sf?.imageUrl} alt="Profile" />
+					{:else}
+						<span>{sf?.firstName?.[0] ?? ''}{sf?.lastName?.[0] ?? ''}</span>
+					{/if}
+				</div>
+				<div class="profile-info">
+					<h2 class="profile-name">{sf?.firstName ?? member?.first_name} {sf?.lastName ?? member?.last_name}</h2>
+					<p class="profile-email">{sf?.email ?? member?.email}</p>
+					<label class="profile-photo-link">
+						{uploading ? 'Uploading...' : 'Change Photo'}
+						<input type="file" accept="image/*" style="display:none;" onchange={uploadPhoto} disabled={uploading} />
+					</label>
+				</div>
 			</div>
-			<div>
-				<h2 style="font-family:var(--font-serif); font-size:1.15rem; font-weight:700; margin-bottom:2px;">{sf?.firstName ?? member?.first_name} {sf?.lastName ?? member?.last_name}</h2>
-				<p style="font-size:0.82rem; color:var(--gray-600);">{sf?.email ?? member?.email}</p>
-				<label style="display:inline-block; margin-top:8px; cursor:pointer; font-size:0.82rem; color:var(--crimson); font-weight:600;">
-					{uploading ? 'Uploading...' : 'Change Photo'}
-					<input type="file" accept="image/*" style="display:none;" onchange={uploadPhoto} disabled={uploading} />
-				</label>
-			</div>
+			{#if !editing}
+				<div class="profile-card-actions">
+					<button class="btn btn--primary" style="padding:8px 18px; font-size:0.82rem;" onclick={startEditing}>Edit Profile</button>
+					<button class="btn btn--outline" style="padding:8px 18px; font-size:0.82rem;" onclick={() => { showPasswordReset = true; }}>Change Password</button>
+				</div>
+			{/if}
 		</div>
 
 		<!-- Membership Information -->
@@ -811,6 +809,22 @@
 		display: block; font-size: 0.82rem; font-weight: 600;
 		color: var(--gray-800); margin-bottom: 6px;
 	}
+	/* Profile card */
+	.profile-card { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 24px; }
+	.profile-card-left { display: flex; align-items: center; gap: 20px; flex: 1; min-width: 0; }
+	.profile-avatar {
+		width: 80px; height: 80px; border-radius: 50%; overflow: hidden; flex-shrink: 0;
+		background: linear-gradient(160deg, var(--crimson-dark, #5c0000), var(--crimson, #8b0000));
+		display: flex; align-items: center; justify-content: center; border: 3px solid var(--crimson);
+	}
+	.profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
+	.profile-avatar span { font-family: var(--font-serif); font-size: 1.4rem; color: rgba(255,255,255,0.5); }
+	.profile-info { min-width: 0; }
+	.profile-name { font-family: var(--font-serif); font-size: 1.15rem; font-weight: 700; margin-bottom: 2px; }
+	.profile-email { font-size: 0.82rem; color: var(--gray-600); }
+	.profile-photo-link { display: inline-block; margin-top: 8px; cursor: pointer; font-size: 0.82rem; color: var(--crimson); font-weight: 600; }
+	.profile-card-actions { display: flex; gap: 10px; flex-shrink: 0; }
+
 	.card {
 		background: var(--white);
 		border: 1px solid var(--gray-100);
@@ -863,6 +877,9 @@
 	}
 
 	@media (max-width: 768px) {
+		.profile-card { flex-direction: column; align-items: stretch; gap: 16px; }
+		.profile-card-actions { justify-content: stretch; }
+		.profile-card-actions .btn { flex: 1; justify-content: center; }
 		.chip-grid {
 			grid-template-columns: 1fr 1fr;
 		}

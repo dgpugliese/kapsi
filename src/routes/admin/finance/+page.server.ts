@@ -67,22 +67,12 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 	// Store products for sell page
 	let products: any[] = [];
 	if (tab === 'sell') {
-		const { data } = await locals.supabase
-			.from('items')
-			.select('*')
-			.eq('is_active', true)
-			.order('name');
-		products = data ?? [];
-
-		// Also get store_products if items table is empty
-		if (products.length === 0) {
-			const { data: sp } = await locals.supabase
-				.from('store_products')
-				.select('*')
-				.eq('is_active', true)
-				.order('name');
-			products = sp ?? [];
-		}
+		// Load store_products (primary catalog) and items table
+		const [spRes, itemsRes] = await Promise.all([
+			locals.supabase.from('store_products').select('*').eq('is_active', true).order('name'),
+			locals.supabase.from('items').select('*').eq('is_active', true).order('name')
+		]);
+		products = [...(spRes.data ?? []), ...(itemsRes.data ?? [])];
 	}
 
 	// Dues config for sell page

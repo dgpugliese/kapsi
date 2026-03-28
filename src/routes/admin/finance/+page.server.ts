@@ -66,13 +66,28 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 
 	// Store products for sell page
 	let products: any[] = [];
+	let itemClasses: string[] = [];
 	if (tab === 'sell') {
-		// Load store_products (primary catalog) and items table
-		const [spRes, itemsRes] = await Promise.all([
-			locals.supabase.from('store_products').select('*').eq('is_active', true).order('name'),
-			locals.supabase.from('items').select('*').eq('is_active', true).order('name')
-		]);
-		products = [...(spRes.data ?? []), ...(itemsRes.data ?? [])];
+		const { data } = await locals.supabase
+			.from('items')
+			.select('*, item_categories:category_id(name)')
+			.eq('is_active', true)
+			.order('item_class')
+			.order('name');
+		products = data ?? [];
+
+		// If items table empty, fall back to store_products
+		if (products.length === 0) {
+			const { data: sp } = await locals.supabase
+				.from('store_products')
+				.select('*')
+				.eq('is_active', true)
+				.order('name');
+			products = (sp ?? []).map(p => ({ ...p, item_class: p.category || 'Store' }));
+		}
+
+		// Distinct item classes for filter
+		itemClasses = [...new Set(products.map((p: any) => p.item_class).filter(Boolean))].sort();
 	}
 
 	// Dues config for sell page
@@ -107,6 +122,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		perPage,
 		kpi: { totalRevenue, paidOrders, pendingOrders, refundedOrders },
 		products,
+		itemClasses,
 		duesConfig,
 		storeProducts,
 		filters: { q: search, status: statusFilter, method: methodFilter }

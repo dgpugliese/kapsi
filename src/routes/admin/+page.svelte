@@ -175,8 +175,7 @@
 	<div class="card">
 		<div class="card-header">
 			<h2>Membership Status</h2>
-			<a href="/admin/reports" style="font-size:0.78rem; color:var(--crimson); font-weight:600; text-decoration:none;">Full Report &rarr;</a>
-		</div>
+					</div>
 		<div style="display:flex; flex-direction:column; gap:10px;">
 			{#each topStatuses as [status, count]}
 				<div>
@@ -196,8 +195,7 @@
 	<div class="card">
 		<div class="card-header">
 			<h2>Membership Type</h2>
-			<a href="/admin/reports" style="font-size:0.78rem; color:var(--crimson); font-weight:600; text-decoration:none;">Full Report &rarr;</a>
-		</div>
+					</div>
 		<div style="display:flex; flex-direction:column; gap:10px;">
 			{#each topTypes as [type, count]}
 				<div>

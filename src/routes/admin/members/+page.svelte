@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { supabase } from '$lib/supabase';
 	import { invalidateAll } from '$app/navigation';
+	import { supabase } from '$lib/supabase';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -10,19 +10,18 @@
 	let page = $derived(data.page);
 	let perPage = $derived(data.perPage);
 	let totalPages = $derived(Math.ceil(total / perPage));
+	let hasSearch = $derived(data.hasSearch);
 
 	let q = $state(data.filters.q);
 	let statusFilter = $state(data.filters.status);
-
-	// Edit modal
-	let editingMember = $state<any>(null);
-	let saving = $state(false);
+	let typeFilter = $state((data.filters as any).type || '');
 	let message = $state('');
 
 	function search() {
 		const params = new URLSearchParams();
 		if (q) params.set('q', q);
 		if (statusFilter) params.set('status', statusFilter);
+		if (typeFilter) params.set('type', typeFilter);
 		goto(`/admin/members?${params.toString()}`);
 	}
 
@@ -30,22 +29,9 @@
 		const params = new URLSearchParams();
 		if (q) params.set('q', q);
 		if (statusFilter) params.set('status', statusFilter);
+		if (typeFilter) params.set('type', typeFilter);
 		params.set('page', p.toString());
 		goto(`/admin/members?${params.toString()}`);
-	}
-
-	async function updateMemberStatus(id: string, status: string) {
-		await supabase.from('members').update({ membership_status: status }).eq('id', id);
-		await invalidateAll();
-		message = 'Member status updated.';
-		setTimeout(() => (message = ''), 3000);
-	}
-
-	async function updateMemberRole(id: string, role: string) {
-		await supabase.from('members').update({ role }).eq('id', id);
-		await invalidateAll();
-		message = 'Member role updated.';
-		setTimeout(() => (message = ''), 3000);
 	}
 
 	async function impersonateMember(id: string) {
@@ -80,12 +66,14 @@
 </script>
 
 <svelte:head>
-	<title>Member Management — Admin — Kappa Alpha Psi®</title>
+	<title>Member Management — Admin</title>
 </svelte:head>
 
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; flex-wrap:wrap; gap:12px;">
 	<h1 style="font-family:var(--font-serif); font-size:1.6rem; color:var(--crimson);">Member Management</h1>
-	<button class="btn btn--outline" style="padding:8px 20px; font-size:0.82rem;" onclick={exportCsv}>Export CSV</button>
+	{#if hasSearch && members.length > 0}
+		<button class="btn btn--outline" style="padding:8px 20px; font-size:0.82rem;" onclick={exportCsv}>Export CSV</button>
+	{/if}
 </div>
 
 {#if message}
@@ -93,85 +81,87 @@
 {/if}
 
 <!-- Search -->
-<form onsubmit={(e) => { e.preventDefault(); search(); }} style="display:flex; gap:12px; margin-bottom:24px; flex-wrap:wrap;">
-	<input type="text" bind:value={q} placeholder="Search by name or email..." class="form-control" style="flex:1; min-width:200px;" />
-	<select bind:value={statusFilter} onchange={search} class="form-control" style="width:auto;">
+<form onsubmit={(e) => { e.preventDefault(); search(); }} style="display:flex; gap:10px; margin-bottom:24px; flex-wrap:wrap;">
+	<input type="text" bind:value={q} placeholder="Search by name, email, or membership #..." class="form-control" style="flex:1; min-width:240px;" autofocus />
+	<select bind:value={statusFilter} class="form-control" style="width:auto;">
 		<option value="">All Status</option>
 		<option value="active">Active</option>
+		<option value="not_in_good_standing">Not In Good Standing</option>
+		<option value="chapter_invisible">Chapter Invisible</option>
 		<option value="inactive">Inactive</option>
 		<option value="suspended">Suspended</option>
+		<option value="expelled">Expelled</option>
+		<option value="deceased">Deceased</option>
+	</select>
+	<select bind:value={typeFilter} class="form-control" style="width:auto;">
+		<option value="">All Types</option>
+		<option value="alumni">Alumni</option>
+		<option value="undergraduate">Undergraduate</option>
+		<option value="life">Life</option>
+		<option value="subscribing_life">Subscribing Life</option>
 	</select>
 	<button type="submit" class="btn btn--primary" style="padding:10px 20px;">Search</button>
 </form>
 
-<p style="font-size:0.82rem; color:var(--gray-600); margin-bottom:12px;">{total} member{total !== 1 ? 's' : ''}</p>
-
-<!-- Table -->
-<div style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; overflow-x:auto;">
-	<table style="width:100%; border-collapse:collapse; font-size:0.85rem; min-width:700px;">
-		<thead>
-			<tr>
-				{#each ['Name', 'Email', 'Chapter', 'Status', 'Role', 'Actions'] as header}
-					<th style="text-align:left; padding:10px 14px; font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--white); background:var(--crimson-dark);">{header}</th>
-				{/each}
-			</tr>
-		</thead>
-		<tbody>
-			{#each members as m}
-				<tr>
-					<td style="padding:10px 14px; border-bottom:1px solid var(--gray-50); font-weight:600; white-space:nowrap;">
-						{m.first_name} {m.last_name}
-						{#if m.is_staff}
-							<span style="font-size:0.6rem; font-weight:700; background:#dbeafe; color:#1e40af; padding:2px 6px; border-radius:10px; margin-left:6px; vertical-align:middle;">STAFF</span>
-						{/if}
-					</td>
-					<td style="padding:10px 14px; border-bottom:1px solid var(--gray-50); color:var(--gray-600);">{m.email}</td>
-					<td style="padding:10px 14px; border-bottom:1px solid var(--gray-50); color:var(--gray-600); font-size:0.82rem;">{m.chapters?.name ?? '—'}</td>
-					<td style="padding:10px 14px; border-bottom:1px solid var(--gray-50);">
-						<select
-							value={m.membership_status}
-							onchange={(e) => updateMemberStatus(m.id, (e.target as HTMLSelectElement).value)}
-							style="padding:4px 8px; border:1px solid var(--gray-200); border-radius:4px; font-size:0.78rem; background:var(--white); cursor:pointer;"
-						>
-							<option value="active">Active</option>
-							<option value="inactive">Inactive</option>
-							<option value="suspended">Suspended</option>
-							<option value="deceased">Deceased</option>
-						</select>
-					</td>
-					<td style="padding:10px 14px; border-bottom:1px solid var(--gray-50);">
-						<select
-							value={m.role}
-							onchange={(e) => updateMemberRole(m.id, (e.target as HTMLSelectElement).value)}
-							style="padding:4px 8px; border:1px solid var(--gray-200); border-radius:4px; font-size:0.78rem; background:var(--white); cursor:pointer;"
-						>
-							<option value="member">Member</option>
-							<option value="chapter_officer">Chapter Officer</option>
-							<option value="province_officer">Province Officer</option>
-							<option value="national_officer">National Officer</option>
-							<option value="ihq_staff">IHQ Staff</option>
-							<option value="super_admin">Super Admin</option>
-						</select>
-					</td>
-					<td style="padding:10px 14px; border-bottom:1px solid var(--gray-50); white-space:nowrap;">
-						<a href="/admin/members/{m.id}" style="font-size:0.78rem; color:var(--crimson); font-weight:600;">Edit</a>
-						<button onclick={() => impersonateMember(m.id)} style="font-size:0.78rem; color:var(--gray-500); font-weight:600; margin-left:10px; background:none; border:none; cursor:pointer; text-decoration:underline;">View</button>
-					</td>
-				</tr>
-			{/each}
-		</tbody>
-	</table>
-</div>
-
-<!-- Pagination -->
-{#if totalPages > 1}
-	<div style="display:flex; justify-content:center; gap:8px; margin-top:24px;">
-		{#if page > 1}
-			<button class="btn btn--outline" style="padding:6px 14px; font-size:0.82rem;" onclick={() => goToPage(page - 1)}>Prev</button>
-		{/if}
-		<span style="padding:6px 14px; font-size:0.82rem; color:var(--gray-600);">Page {page} of {totalPages}</span>
-		{#if page < totalPages}
-			<button class="btn btn--outline" style="padding:6px 14px; font-size:0.82rem;" onclick={() => goToPage(page + 1)}>Next</button>
-		{/if}
+{#if !hasSearch}
+	<!-- Empty state -->
+	<div style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; padding:60px 24px; text-align:center;">
+		<svg width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="var(--gray-300)" stroke-width="1.5" style="margin:0 auto 16px;"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
+		<p style="font-size:1rem; font-weight:600; color:var(--gray-600); margin-bottom:4px;">Search for members</p>
+		<p style="font-size:0.85rem; color:var(--gray-400);">Enter a name, email, or membership number to get started.</p>
 	</div>
+{:else}
+	<p style="font-size:0.82rem; color:var(--gray-600); margin-bottom:12px;">{total} member{total !== 1 ? 's' : ''}</p>
+
+	<!-- Table -->
+	<div style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; overflow-x:auto;">
+		<table style="width:100%; border-collapse:collapse; font-size:0.85rem; min-width:700px;">
+			<thead>
+				<tr>
+					{#each ['Name', 'Email', 'Chapter', 'Status', 'Type', 'Actions'] as header}
+						<th style="text-align:left; padding:10px 14px; font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--white); background:var(--crimson-dark);">{header}</th>
+					{/each}
+				</tr>
+			</thead>
+			<tbody>
+				{#each members as m}
+					<tr>
+						<td style="padding:10px 14px; border-bottom:1px solid var(--gray-50); font-weight:600; white-space:nowrap;">
+							<a href="/admin/members/{m.id}" style="color:var(--crimson); text-decoration:none;">{m.first_name} {m.last_name}</a>
+							{#if m.is_staff}
+								<span style="font-size:0.6rem; font-weight:700; background:#dbeafe; color:#1e40af; padding:2px 6px; border-radius:10px; margin-left:6px; vertical-align:middle;">STAFF</span>
+							{/if}
+						</td>
+						<td style="padding:10px 14px; border-bottom:1px solid var(--gray-50); color:var(--gray-600);">{m.email || '—'}</td>
+						<td style="padding:10px 14px; border-bottom:1px solid var(--gray-50); color:var(--gray-600); font-size:0.82rem;">{m.chapters?.name ?? '—'}</td>
+						<td style="padding:10px 14px; border-bottom:1px solid var(--gray-50);">
+							<span style="font-size:0.7rem; font-weight:600; padding:2px 8px; border-radius:10px; text-transform:capitalize; white-space:nowrap; background:{m.membership_status === 'active' ? '#ecfdf5' : '#f3f4f6'}; color:{m.membership_status === 'active' ? '#065f46' : '#6b7280'};">
+								{(m.membership_status || '—').replace(/_/g, ' ')}
+							</span>
+						</td>
+						<td style="padding:10px 14px; border-bottom:1px solid var(--gray-50); text-transform:capitalize; font-size:0.82rem;">{(m.membership_type || '—').replace(/_/g, ' ')}</td>
+						<td style="padding:10px 14px; border-bottom:1px solid var(--gray-50); white-space:nowrap;">
+							<a href="/admin/members/{m.id}" style="font-size:0.78rem; color:var(--crimson); font-weight:600;">Edit</a>
+							<button onclick={() => impersonateMember(m.id)} style="font-size:0.78rem; color:var(--gray-500); font-weight:600; margin-left:10px; background:none; border:none; cursor:pointer; text-decoration:underline;">View</button>
+						</td>
+					</tr>
+				{:else}
+					<tr><td colspan="6" style="padding:32px; text-align:center; color:var(--gray-400);">No members found.</td></tr>
+				{/each}
+			</tbody>
+		</table>
+	</div>
+
+	<!-- Pagination -->
+	{#if totalPages > 1}
+		<div style="display:flex; justify-content:center; gap:8px; margin-top:24px;">
+			{#if page > 1}
+				<button class="btn btn--outline" style="padding:6px 14px; font-size:0.82rem;" onclick={() => goToPage(page - 1)}>Prev</button>
+			{/if}
+			<span style="padding:6px 14px; font-size:0.82rem; color:var(--gray-600);">Page {page} of {totalPages}</span>
+			{#if page < totalPages}
+				<button class="btn btn--outline" style="padding:6px 14px; font-size:0.82rem;" onclick={() => goToPage(page + 1)}>Next</button>
+			{/if}
+		</div>
+	{/if}
 {/if}

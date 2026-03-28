@@ -1,185 +1,114 @@
 <script lang="ts">
-	import { supabase } from '$lib/supabase';
-	import { invalidateAll } from '$app/navigation';
+	import { goto } from '$app/navigation';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
 	let chapters = $derived(data.chapters);
-	let provinces = $derived(data.provinces);
+	let total = $derived(data.total);
+	let hasSearch = $derived(data.hasSearch);
+	let totalPages = $derived(Math.ceil(total / data.perPage));
 
-	let message = $state('');
-	let showAddForm = $state(false);
-	let saving = $state(false);
+	let q = $state(data.filters.q);
+	let typeFilter = $state(data.filters.type);
+	let provinceFilter = $state(data.filters.province);
+	let statusFilter = $state(data.filters.status);
 
-	// New chapter form
-	let newName = $state('');
-	let newGreek = $state('');
-	let newType = $state('undergraduate');
-	let newInstitution = $state('');
-	let newCity = $state('');
-	let newState = $state('');
-	let newProvinceId = $state('');
-	let newCharterDate = $state('');
-
-	async function updateChapterStatus(id: string, status: string) {
-		await supabase.from('chapters').update({ status }).eq('id', id);
-		await invalidateAll();
-		message = 'Chapter status updated.';
-		setTimeout(() => (message = ''), 3000);
+	function search() {
+		const params = new URLSearchParams();
+		if (q) params.set('q', q);
+		if (typeFilter) params.set('type', typeFilter);
+		if (provinceFilter) params.set('province', provinceFilter);
+		if (statusFilter) params.set('status', statusFilter);
+		goto(`/admin/chapters?${params.toString()}`);
 	}
 
-	async function addChapter() {
-		if (!newName.trim()) return;
-		saving = true;
-
-		const payload: Record<string, any> = {
-			name: newName.trim(),
-			greek_designation: newGreek.trim() || null,
-			chapter_type: newType,
-			institution: newInstitution.trim() || null,
-			city: newCity.trim() || null,
-			state: newState.trim() || null,
-			province_id: newProvinceId || null,
-			charter_date: newCharterDate || null,
-			status: 'active'
-		};
-
-		const { error } = await supabase.from('chapters').insert(payload);
-		saving = false;
-
-		if (error) {
-			message = 'Error creating chapter: ' + error.message;
-		} else {
-			message = 'Chapter created successfully.';
-			resetForm();
-			showAddForm = false;
-			await invalidateAll();
-		}
-		setTimeout(() => (message = ''), 4000);
-	}
-
-	function resetForm() {
-		newName = '';
-		newGreek = '';
-		newType = 'undergraduate';
-		newInstitution = '';
-		newCity = '';
-		newState = '';
-		newProvinceId = '';
-		newCharterDate = '';
+	function goToPage(p: number) {
+		const params = new URLSearchParams();
+		if (q) params.set('q', q);
+		if (typeFilter) params.set('type', typeFilter);
+		if (provinceFilter) params.set('province', provinceFilter);
+		if (statusFilter) params.set('status', statusFilter);
+		params.set('page', p.toString());
+		goto(`/admin/chapters?${params.toString()}`);
 	}
 </script>
 
 <svelte:head>
-	<title>Chapter Management — Admin — Kappa Alpha Psi®</title>
+	<title>Chapter Management — Admin</title>
 </svelte:head>
 
-<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; flex-wrap:wrap; gap:12px;">
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
 	<h1 style="font-family:var(--font-serif); font-size:1.6rem; color:var(--crimson);">Chapter Management</h1>
-	<button class="btn btn--primary" style="padding:8px 20px; font-size:0.82rem;" onclick={() => (showAddForm = !showAddForm)}>
-		{showAddForm ? 'Cancel' : 'Add Chapter'}
-	</button>
 </div>
 
-{#if message}
-	<div style="background:#ECFDF5; color:#065F46; padding:10px 16px; border-radius:8px; font-size:0.9rem; margin-bottom:16px;">{message}</div>
-{/if}
+<!-- Search -->
+<form onsubmit={(e) => { e.preventDefault(); search(); }} style="display:flex; gap:10px; margin-bottom:24px; flex-wrap:wrap;">
+	<input type="text" bind:value={q} placeholder="Search by name, Greek designation, city, or institution..." class="form-control" style="flex:1; min-width:240px;" autofocus />
+	<select bind:value={typeFilter} class="form-control" style="width:auto;">
+		<option value="">All Types</option>
+		<option value="undergraduate">Undergraduate</option>
+		<option value="alumni">Alumni</option>
+	</select>
+	<select bind:value={provinceFilter} class="form-control" style="width:auto;">
+		<option value="">All Provinces</option>
+		{#each data.provinces as p}<option value={p.id}>{p.name}</option>{/each}
+	</select>
+	<select bind:value={statusFilter} class="form-control" style="width:auto;">
+		<option value="">All Status</option>
+		<option value="active">Active</option>
+		<option value="inactive">Inactive</option>
+		<option value="suspended">Suspended</option>
+	</select>
+	<button type="submit" class="btn btn--primary" style="padding:10px 20px;">Search</button>
+</form>
 
-<!-- Add Chapter Form -->
-{#if showAddForm}
-	<div style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; padding:20px; margin-bottom:24px;">
-		<h2 style="font-size:1.05rem; margin-bottom:16px; font-family:var(--font-serif); color:var(--crimson);">New Chapter</h2>
-		<form onsubmit={(e) => { e.preventDefault(); addChapter(); }} style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px;">
-			<div>
-				<label style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--gray-400); display:block; margin-bottom:4px;">Chapter Name *</label>
-				<input type="text" bind:value={newName} class="form-control" placeholder="e.g. Alpha Chapter" required />
-			</div>
-			<div>
-				<label style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--gray-400); display:block; margin-bottom:4px;">Greek Designation</label>
-				<input type="text" bind:value={newGreek} class="form-control" placeholder="e.g. Alpha" />
-			</div>
-			<div>
-				<label style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--gray-400); display:block; margin-bottom:4px;">Type</label>
-				<select bind:value={newType} class="form-control">
-					<option value="undergraduate">Undergraduate</option>
-					<option value="alumni">Alumni</option>
-				</select>
-			</div>
-			<div>
-				<label style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--gray-400); display:block; margin-bottom:4px;">Institution</label>
-				<input type="text" bind:value={newInstitution} class="form-control" placeholder="University name" />
-			</div>
-			<div>
-				<label style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--gray-400); display:block; margin-bottom:4px;">City</label>
-				<input type="text" bind:value={newCity} class="form-control" />
-			</div>
-			<div>
-				<label style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--gray-400); display:block; margin-bottom:4px;">State</label>
-				<input type="text" bind:value={newState} class="form-control" maxlength="2" placeholder="e.g. IN" />
-			</div>
-			<div>
-				<label style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--gray-400); display:block; margin-bottom:4px;">Province</label>
-				<select bind:value={newProvinceId} class="form-control">
-					<option value="">— Select Province —</option>
-					{#each provinces as p}
-						<option value={p.id}>{p.name}</option>
-					{/each}
-				</select>
-			</div>
-			<div>
-				<label style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--gray-400); display:block; margin-bottom:4px;">Charter Date</label>
-				<input type="date" bind:value={newCharterDate} class="form-control" />
-			</div>
-			<div style="grid-column:1/-1; display:flex; gap:8px; margin-top:8px;">
-				<button type="submit" class="btn btn--primary" style="padding:10px 24px;" disabled={saving}>
-					{saving ? 'Saving...' : 'Create Chapter'}
-				</button>
-				<button type="button" class="btn btn--outline" style="padding:10px 24px;" onclick={() => { showAddForm = false; resetForm(); }}>Cancel</button>
-			</div>
-		</form>
+{#if !hasSearch}
+	<div style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; padding:60px 24px; text-align:center;">
+		<svg width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="var(--gray-300)" stroke-width="1.5" style="margin:0 auto 16px;"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21"/></svg>
+		<p style="font-size:1rem; font-weight:600; color:var(--gray-600); margin-bottom:4px;">Search for chapters</p>
+		<p style="font-size:0.85rem; color:var(--gray-400);">Enter a name, Greek designation, city, or filter by type/province.</p>
 	</div>
-{/if}
+{:else}
+	<p style="font-size:0.82rem; color:var(--gray-600); margin-bottom:12px;">{total} chapter{total !== 1 ? 's' : ''}</p>
 
-<p style="font-size:0.82rem; color:var(--gray-600); margin-bottom:12px;">{chapters.length} chapter{chapters.length !== 1 ? 's' : ''}</p>
-
-<!-- Table -->
-<div style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; overflow-x:auto;">
-	<table style="width:100%; border-collapse:collapse; font-size:0.85rem; min-width:800px;">
-		<thead>
-			<tr>
-				{#each ['Name', 'Greek Designation', 'Type', 'City/State', 'Province', 'Status'] as header}
-					<th style="text-align:left; padding:10px 14px; font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--white); background:var(--crimson-dark);">{header}</th>
+	<div style="background:var(--white); border:1px solid var(--gray-100); border-radius:12px; overflow-x:auto;">
+		<table style="width:100%; border-collapse:collapse; font-size:0.85rem; min-width:800px;">
+			<thead>
+				<tr>
+					{#each ['Name', 'Greek', 'Type', 'City/State', 'Province', 'Status', 'Actions'] as h}
+						<th style="text-align:left; padding:10px 14px; font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--white); background:var(--crimson-dark);">{h}</th>
+					{/each}
+				</tr>
+			</thead>
+			<tbody>
+				{#each chapters as ch}
+					<tr>
+						<td style="padding:10px 14px; border-bottom:1px solid var(--gray-50); font-weight:600;">
+							<a href="/admin/chapters/{ch.id}" style="color:var(--crimson); text-decoration:none;">{ch.name}</a>
+						</td>
+						<td style="padding:10px 14px; border-bottom:1px solid var(--gray-50); color:var(--gray-600);">{ch.greek_designation ?? '—'}</td>
+						<td style="padding:10px 14px; border-bottom:1px solid var(--gray-50); text-transform:capitalize;">{ch.chapter_type ?? '—'}</td>
+						<td style="padding:10px 14px; border-bottom:1px solid var(--gray-50); color:var(--gray-600);">{[ch.city, ch.state].filter(Boolean).join(', ') || '—'}</td>
+						<td style="padding:10px 14px; border-bottom:1px solid var(--gray-50); color:var(--gray-600);">{ch.provinces?.name ?? '—'}</td>
+						<td style="padding:10px 14px; border-bottom:1px solid var(--gray-50);">
+							<span style="font-size:0.7rem; font-weight:600; padding:2px 8px; border-radius:10px; text-transform:capitalize; background:{ch.status === 'active' ? '#ecfdf5' : '#f3f4f6'}; color:{ch.status === 'active' ? '#065f46' : '#6b7280'};">{ch.status}</span>
+						</td>
+						<td style="padding:10px 14px; border-bottom:1px solid var(--gray-50);">
+							<a href="/admin/chapters/{ch.id}" style="font-size:0.78rem; color:var(--crimson); font-weight:600;">Edit</a>
+						</td>
+					</tr>
+				{:else}
+					<tr><td colspan="7" style="padding:32px; text-align:center; color:var(--gray-400);">No chapters found.</td></tr>
 				{/each}
-			</tr>
-		</thead>
-		<tbody>
-			{#each chapters as ch}
-				<tr>
-					<td style="padding:10px 14px; border-bottom:1px solid var(--gray-50); font-weight:600;">{ch.name}</td>
-					<td style="padding:10px 14px; border-bottom:1px solid var(--gray-50); color:var(--gray-600);">{ch.greek_designation ?? '—'}</td>
-					<td style="padding:10px 14px; border-bottom:1px solid var(--gray-50); color:var(--gray-600); text-transform:capitalize;">{ch.chapter_type ?? '—'}</td>
-					<td style="padding:10px 14px; border-bottom:1px solid var(--gray-50); color:var(--gray-600);">
-						{[ch.city, ch.state].filter(Boolean).join(', ') || '—'}
-					</td>
-					<td style="padding:10px 14px; border-bottom:1px solid var(--gray-50); color:var(--gray-600);">{ch.provinces?.name ?? '—'}</td>
-					<td style="padding:10px 14px; border-bottom:1px solid var(--gray-50);">
-						<select
-							value={ch.status}
-							onchange={(e) => updateChapterStatus(ch.id, (e.target as HTMLSelectElement).value)}
-							style="padding:4px 8px; border:1px solid var(--gray-200); border-radius:4px; font-size:0.78rem; background:var(--white); cursor:pointer;"
-						>
-							<option value="active">Active</option>
-							<option value="inactive">Inactive</option>
-							<option value="suspended">Suspended</option>
-						</select>
-					</td>
-				</tr>
-			{/each}
-			{#if chapters.length === 0}
-				<tr>
-					<td colspan="6" style="padding:32px; text-align:center; color:var(--gray-400);">No chapters found.</td>
-				</tr>
-			{/if}
-		</tbody>
-	</table>
-</div>
+			</tbody>
+		</table>
+	</div>
+
+	{#if totalPages > 1}
+		<div style="display:flex; justify-content:center; gap:8px; margin-top:24px;">
+			{#if data.page > 1}<button class="btn btn--outline" style="padding:6px 14px; font-size:0.82rem;" onclick={() => goToPage(data.page - 1)}>Prev</button>{/if}
+			<span style="padding:6px 14px; font-size:0.82rem; color:var(--gray-600);">Page {data.page} of {totalPages}</span>
+			{#if data.page < totalPages}<button class="btn btn--outline" style="padding:6px 14px; font-size:0.82rem;" onclick={() => goToPage(data.page + 1)}>Next</button>{/if}
+		</div>
+	{/if}
+{/if}

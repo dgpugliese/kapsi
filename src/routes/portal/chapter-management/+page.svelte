@@ -32,7 +32,14 @@
 	const igsCount = $derived(rosterMembers.filter((m: any) => m.status === 'In Good Standing').length);
 
 	const rosterReportStatus = $derived(reportStatus?.rosterReport?.status ?? 'draft');
+	const rosterConfirmedAt = $derived(reportStatus?.rosterReport?.confirmed_at ?? null);
 	const officerReportStatus = $derived(reportStatus?.officerReport?.status ?? 'draft');
+	const officerConfirmedAt = $derived(reportStatus?.officerReport?.confirmed_at ?? null);
+
+	function fmtShortDate(val: string | null) {
+		if (!val) return '';
+		return new Date(val).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+	}
 
 	const tabs = [
 		{ id: 'details', label: 'Details' },
@@ -182,11 +189,14 @@
 						<div class="compliance-status">
 							{#if rosterReportStatus === 'approved'}Approved
 							{:else if rosterReportStatus === 'submitted'}Submitted
-							{:else if rosterReportStatus === 'confirmed'}Confirmed — Awaiting Signatures
+							{:else if rosterReportStatus === 'confirmed'}Confirmed
 							{:else if rosterReportStatus === 'returned'}Returned — Action Required
 							{:else}Not Started
 							{/if}
 						</div>
+						{#if rosterConfirmedAt}
+							<div style="font-size:0.68rem; color:var(--gray-400); margin-top:2px;">Last confirmed: {fmtShortDate(rosterConfirmedAt)}</div>
+						{/if}
 					</div>
 				</button>
 
@@ -207,11 +217,14 @@
 						<div class="compliance-status">
 							{#if officerReportStatus === 'approved'}Approved
 							{:else if officerReportStatus === 'submitted'}Submitted
-							{:else if officerReportStatus === 'confirmed'}Confirmed — Awaiting Signatures
+							{:else if officerReportStatus === 'confirmed'}Awaiting Signatures (4 required)
 							{:else if officerReportStatus === 'returned'}Returned — Action Required
 							{:else}Not Started
 							{/if}
 						</div>
+						{#if officerConfirmedAt}
+							<div style="font-size:0.68rem; color:var(--gray-400); margin-top:2px;">Last confirmed: {fmtShortDate(officerConfirmedAt)}</div>
+						{/if}
 					</div>
 				</button>
 

@@ -27,6 +27,17 @@
 	const hasChapterAccess = $derived(data.hasChapterAccess ?? false);
 	const impersonating = $derived((data as any).impersonating ?? false);
 	const impersonatingName = $derived((data as any).impersonatingName ?? '');
+	const pendingItems = $derived((data as any).pendingItems ?? []);
+
+	// Group pending items by type
+	const groupedPending = $derived(() => {
+		const groups: Record<string, { type: string; items: any[] }> = {};
+		for (const item of pendingItems) {
+			if (!groups[item.type]) groups[item.type] = { type: item.type, items: [] };
+			groups[item.type].items.push(item);
+		}
+		return Object.values(groups);
+	});
 
 	async function stopImpersonating() {
 		await fetch('/api/admin/impersonate', { method: 'DELETE' });
@@ -215,6 +226,22 @@
 				{/if}
 			</div>
 
+			<!-- Pending Items -->
+			{#if pendingItems.length > 0}
+				<div class="pending-section">
+					<p class="pending-header">Action Required</p>
+					{#each groupedPending() as group}
+						<p class="pending-group-label">{group.type}</p>
+						{#each group.items as item}
+							<a href={item.href} class="pending-item">
+								<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126z"/></svg>
+								{item.label}
+							</a>
+						{/each}
+					{/each}
+				</div>
+			{/if}
+
 			<!-- Nav sections -->
 			<nav class="sidebar-nav">
 				{#each navSections as section, si}
@@ -351,6 +378,17 @@
 		font-family: inherit; transition: background 0.2s;
 	}
 	.impersonate-exit:hover { background: #78350f; }
+
+	/* ===== Pending Items ===== */
+	.pending-section { padding: 12px 16px; border-bottom: 1px solid var(--gray-200, #e5e7eb); background: #fef3c7; }
+	.pending-header { font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #92400e; margin-bottom: 6px; }
+	.pending-group-label { font-size: 0.6rem; font-weight: 700; color: #b45309; margin: 6px 0 2px; text-transform: uppercase; letter-spacing: 0.05em; }
+	.pending-item {
+		display: flex; align-items: center; gap: 6px; padding: 5px 0;
+		font-size: 0.78rem; color: #92400e; text-decoration: none; font-weight: 500;
+		transition: color 0.15s;
+	}
+	.pending-item:hover { color: #78350f; text-decoration: underline; }
 
 	/* ===== Shell ===== */
 	.portal-shell { min-height: 100vh; min-height: 100dvh; background: var(--gray-50, #f8f8f7); }

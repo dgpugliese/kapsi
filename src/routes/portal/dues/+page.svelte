@@ -155,7 +155,12 @@
 			</div>
 			<h2 class="success-title">Payment Successful</h2>
 			<p class="success-msg">Your Grand Chapter dues have been paid for {fyDisplay}. Your membership status has been updated to In Good Standing.</p>
-			<button class="btn btn--primary" onclick={reset}>Back to Dues</button>
+			<div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
+				{#if currentOrderId}
+					<a href="/api/receipt/{currentOrderId}" target="_blank" class="btn btn--outline">View Receipt</a>
+				{/if}
+				<button class="btn btn--primary" onclick={reset}>Back to Dues</button>
+			</div>
 		</div>
 
 	{:else if isExempt}
@@ -210,7 +215,12 @@
 								<div class="history-desc">{p.description || 'Dues Payment'}</div>
 								<div class="history-date">{new Date(p.paid_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
 							</div>
-							<div class="history-amount">${p.total.toFixed(2)}</div>
+							<div style="display:flex; align-items:center; gap:12px;">
+								<div class="history-amount">${p.total.toFixed(2)}</div>
+								{#if p.order_id}
+									<a href="/api/receipt/{p.order_id}" target="_blank" style="font-size:0.75rem; color:var(--crimson); font-weight:600; text-decoration:none;">Receipt</a>
+								{/if}
+							</div>
 						</div>
 					{/each}
 				</div>

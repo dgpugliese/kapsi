@@ -73,6 +73,23 @@
 			.slice(0, 5)
 	);
 	const maxTypeCount = $derived(topTypes.length > 0 ? topTypes[0][1] : 1);
+
+	// Extended chapter sync (charter date, EIN, ritual, etc.)
+	let extChapterSyncing = $state(false);
+	let extChapterResult = $state('');
+
+	async function triggerExtendedChapterSync() {
+		extChapterSyncing = true; extChapterResult = '';
+		try {
+			const res = await fetch('/api/admin/sync-chapters', { method: 'POST' });
+			const data = await res.json();
+			if (!res.ok) throw new Error(data.message || 'Sync failed');
+			extChapterResult = `${data.message} (discovered fields: ${data.discoveredFields?.length ?? 0})`;
+		} catch (err: any) {
+			extChapterResult = `Error: ${err.message}`;
+		}
+		extChapterSyncing = false;
+	}
 </script>
 
 <svelte:head>
@@ -287,6 +304,14 @@
 				{#if chapterSyncResult}<p style="font-size:0.78rem; margin-top:4px; color:{chapterSyncResult.startsWith('Error') ? '#991b1b' : '#065f46'}; font-weight:600;">{chapterSyncResult}</p>{/if}
 			</div>
 			<button class="btn btn--primary btn--sm" disabled={chapterSyncing} onclick={triggerChapterSync}>{chapterSyncing ? 'Syncing...' : 'Sync Chapters'}</button>
+		</div>
+		<div style="display:flex; justify-content:space-between; align-items:center; padding:14px 16px; background:var(--gray-50); border-radius:10px;">
+			<div>
+				<p style="font-weight:600; font-size:0.88rem;">Chapter Extended Data</p>
+				<p style="font-size:0.78rem; color:var(--gray-500);">Pull charter date, EIN, ritual serial numbers, contact info from Salesforce into chapters table.</p>
+				{#if extChapterResult}<p style="font-size:0.78rem; margin-top:4px; color:{extChapterResult.startsWith('Error') ? '#991b1b' : '#065f46'}; font-weight:600;">{extChapterResult}</p>{/if}
+			</div>
+			<button class="btn btn--primary btn--sm" disabled={extChapterSyncing} onclick={triggerExtendedChapterSync}>{extChapterSyncing ? 'Syncing...' : 'Sync Extended Data'}</button>
 		</div>
 	</div>
 </details>

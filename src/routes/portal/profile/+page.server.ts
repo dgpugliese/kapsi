@@ -9,8 +9,10 @@ export const load: PageServerLoad = async ({ locals, parent }) => {
 	let militaryRes: any = { data: null };
 	let badgesRes: any = { data: [] };
 
+	let ordersRes: any = { data: [] };
+
 	try {
-		[educationRes, militaryRes, badgesRes] = await Promise.all([
+		[educationRes, militaryRes, badgesRes, ordersRes] = await Promise.all([
 			locals.supabase
 				.from('member_education')
 				.select('*')
@@ -25,7 +27,14 @@ export const load: PageServerLoad = async ({ locals, parent }) => {
 				.from('member_badges')
 				.select('badges(name, category)')
 				.eq('member_id', member.id)
-				.eq('is_active', true)
+				.eq('is_active', true),
+			locals.supabase
+				.from('orders')
+				.select('id, order_number, status, total, payment_method, paid_at, created_at, order_lines(name, quantity, total)')
+				.eq('member_id', member.id)
+				.in('status', ['paid', 'refunded', 'partially_refunded'])
+				.order('created_at', { ascending: false })
+				.limit(10)
 		]);
 	} catch (err) {
 		console.error('Profile data fetch error:', err);
@@ -121,7 +130,7 @@ export const load: PageServerLoad = async ({ locals, parent }) => {
 		.map((mb: any) => mb.badges)
 		.filter(Boolean);
 
-	return { sfContact, education, badges: badgesList };
+	return { sfContact, education, badges: badgesList, receipts: ordersRes.data ?? [] };
 };
 
 function formatStatus(status: string | null): string {

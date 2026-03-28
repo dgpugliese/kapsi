@@ -9,6 +9,7 @@
 	let sf = $derived(data.sfContact);
 	let education = $derived(data.education ?? []);
 	let badges = $derived(data.badges ?? []);
+	let receipts = $derived((data as any).receipts ?? []);
 
 	let editing = $state(false);
 	let saving = $state(false);
@@ -774,6 +775,34 @@
 				{/each}
 			</div>
 		</div>
+
+		<!-- Receipts -->
+		{#if receipts.length > 0}
+			<div class="card">
+				<h2 class="section-header">Receipts</h2>
+				<div style="display:flex; flex-direction:column; gap:10px;">
+					{#each receipts as r}
+						<div style="display:flex; justify-content:space-between; align-items:center; padding:14px 16px; background:var(--gray-50); border-radius:10px;">
+							<div>
+								<div style="font-weight:600; font-size:0.9rem;">
+									{r.order_lines?.map((l: any) => l.name).join(', ') || 'Order'}
+								</div>
+								<div style="font-size:0.78rem; color:var(--gray-400); margin-top:2px;">
+									{new Date(r.paid_at || r.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+									&middot; {(r.payment_method || '').replace(/_/g, ' ')}
+								</div>
+							</div>
+							<div style="display:flex; align-items:center; gap:14px;">
+								<span style="font-weight:700; font-size:1rem;">${Number(r.total).toFixed(2)}</span>
+								<a href="/api/receipt/{r.id}" target="_blank" style="padding:6px 14px; background:var(--crimson); color:white; border-radius:8px; font-size:0.78rem; font-weight:600; text-decoration:none;">
+									Receipt
+								</a>
+							</div>
+						</div>
+					{/each}
+				</div>
+			</div>
+		{/if}
 	{/if}
 </div>
 

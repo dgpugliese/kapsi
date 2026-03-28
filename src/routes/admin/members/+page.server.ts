@@ -16,7 +16,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 	if (hasSearch) {
 		let dbQuery = locals.supabase
 			.from('members')
-			.select('id, first_name, last_name, email, phone, city, state, membership_status, membership_type, role, is_staff, chapters:chapter_id(name), created_at', { count: 'exact' });
+			.select('id, first_name, last_name, email, phone, city, state, membership_status, membership_type, membership_number, role, is_staff, initiation_year, initiation_chapter, chapters:chapter_id(name), created_at', { count: 'exact' });
 
 		if (query) {
 			dbQuery = dbQuery.or(`first_name.ilike.%${query}%,last_name.ilike.%${query}%,email.ilike.%${query}%,membership_number.ilike.%${query}%`);

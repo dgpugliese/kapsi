@@ -118,7 +118,7 @@
 		<table style="width:100%; border-collapse:collapse; font-size:0.85rem; min-width:700px;">
 			<thead>
 				<tr>
-					{#each ['Name', 'Email', 'Chapter', 'Status', 'Type', 'Actions'] as header}
+					{#each ['Name', 'Email', 'Member #', 'Chapter', 'Initiation', 'Status', 'Type', 'Actions'] as header}
 						<th style="text-align:left; padding:10px 14px; font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--white); background:var(--crimson-dark);">{header}</th>
 					{/each}
 				</tr>
@@ -133,7 +133,13 @@
 							{/if}
 						</td>
 						<td style="padding:10px 14px; border-bottom:1px solid var(--gray-50); color:var(--gray-600);">{m.email || '—'}</td>
+						<td style="padding:10px 14px; border-bottom:1px solid var(--gray-50); color:var(--gray-600); font-size:0.82rem; font-family:var(--font-mono, monospace);">{m.membership_number || '—'}</td>
 						<td style="padding:10px 14px; border-bottom:1px solid var(--gray-50); color:var(--gray-600); font-size:0.82rem;">{m.chapters?.name ?? '—'}</td>
+						<td style="padding:10px 14px; border-bottom:1px solid var(--gray-50); color:var(--gray-600); font-size:0.82rem; white-space:nowrap;">
+							{#if m.initiation_chapter || m.initiation_year}
+								{m.initiation_chapter || '—'}{#if m.initiation_year} ({m.initiation_year}){/if}
+							{:else}—{/if}
+						</td>
 						<td style="padding:10px 14px; border-bottom:1px solid var(--gray-50);">
 							<span style="font-size:0.7rem; font-weight:600; padding:2px 8px; border-radius:10px; text-transform:capitalize; white-space:nowrap; background:{m.membership_status === 'active' ? '#ecfdf5' : '#f3f4f6'}; color:{m.membership_status === 'active' ? '#065f46' : '#6b7280'};">
 								{(m.membership_status || '—').replace(/_/g, ' ')}
@@ -146,7 +152,7 @@
 						</td>
 					</tr>
 				{:else}
-					<tr><td colspan="6" style="padding:32px; text-align:center; color:var(--gray-400);">No members found.</td></tr>
+					<tr><td colspan="8" style="padding:32px; text-align:center; color:var(--gray-400);">No members found.</td></tr>
 				{/each}
 			</tbody>
 		</table>

@@ -15,6 +15,8 @@
 	let methodFilter = $state(data.filters.method);
 
 	// Sell form
+	let sellItemSearch = $state('');
+	let sellClassFilter = $state('');
 	let sellMemberSearch = $state('');
 	let sellMemberResults = $state<any[]>([]);
 	let sellSelectedMember = $state<any>(null);
@@ -85,6 +87,25 @@
 	}
 
 	function removeSellItem(id: string) { sellItems = sellItems.filter(i => i.id !== id); }
+
+	let filteredProducts = $derived(
+		data.products.filter((p: any) => {
+			if (sellClassFilter && p.item_class !== sellClassFilter) return false;
+			if (sellItemSearch && !p.name.toLowerCase().includes(sellItemSearch.toLowerCase())) return false;
+			return true;
+		})
+	);
+
+	// Group by item class
+	let groupedProducts = $derived(() => {
+		const groups: Record<string, any[]> = {};
+		for (const p of filteredProducts) {
+			const cls = p.item_class || 'Other';
+			if (!groups[cls]) groups[cls] = [];
+			groups[cls].push(p);
+		}
+		return Object.entries(groups).sort((a, b) => a[0].localeCompare(b[0]));
+	});
 
 	let sellTotal = $derived(sellItems.reduce((sum, i) => sum + i.price * i.qty, 0));
 
@@ -396,7 +417,18 @@
 		<div>
 			<h2 class="section-title">Select Items</h2>
 
-			{#if data.duesConfig.length > 0}
+			<!-- Search + Class filter -->
+			<div style="display:flex; gap:10px; margin-bottom:16px;">
+				<input type="text" bind:value={sellItemSearch} placeholder="Search items..." class="form-control" style="flex:1; padding:8px 14px; font-size:0.85rem;" />
+				<select bind:value={sellClassFilter} class="form-control" style="width:auto; padding:8px 14px; font-size:0.85rem;">
+					<option value="">All Classes</option>
+					{#each (data as any).itemClasses ?? [] as cls}
+						<option value={cls}>{cls}</option>
+					{/each}
+				</select>
+			</div>
+
+			{#if data.duesConfig.length > 0 && !sellClassFilter && !sellItemSearch}
 				<p style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--gray-400); margin-bottom:8px;">Dues</p>
 				<div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:20px;">
 					{#each data.duesConfig as dc}
@@ -409,18 +441,28 @@
 				</div>
 			{/if}
 
-			{#if data.products.length > 0}
-				<p style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--gray-400); margin-bottom:8px;">Products</p>
-				<div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-					{#each data.products as p}
+			<!-- Items grouped by class -->
+			{#each groupedProducts() as [className, items]}
+				<p style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--gray-400); margin:12px 0 8px;">{className}</p>
+				<div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;">
+					{#each items as p}
 						<button onclick={() => addSellItem({ id: p.id, name: p.name, price: p.price })}
 							class="item-card">
-							<span style="font-weight:600;">{p.name}</span>
-							<span style="color:var(--crimson); font-weight:700;">{fmtMoney(p.price)}</span>
+							<div>
+								<span style="font-weight:600; display:block;">{p.name}</span>
+								{#if p.item_class}
+									<span style="font-size:0.68rem; color:var(--gray-400);">{p.item_class}</span>
+								{/if}
+							</div>
+							<span style="color:var(--crimson); font-weight:700; white-space:nowrap;">{fmtMoney(p.price)}</span>
 						</button>
 					{/each}
 				</div>
-			{/if}
+			{:else}
+				{#if sellItemSearch || sellClassFilter}
+					<p style="font-size:0.85rem; color:var(--gray-400); padding:20px 0;">No items match your search.</p>
+				{/if}
+			{/each}
 		</div>
 
 		<!-- Right: Cart / checkout -->

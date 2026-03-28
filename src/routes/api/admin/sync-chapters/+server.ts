@@ -23,24 +23,43 @@ export const POST: RequestHandler = async ({ locals }) => {
 	}
 
 	try {
-		// Explicit SF fields — confirmed from Salesforce Account object
+		// Step 1: Describe Account to find actual field names
+		const { sfDescribe } = await import('$lib/salesforce');
+		const desc = await sfDescribe('Account');
+		const allFieldNames = desc.fields.map((f: any) => f.name);
+
+		// Find fields by keyword (case-insensitive search of API names)
+		function findField(...keywords: string[]): string | null {
+			return allFieldNames.find((f: string) => {
+				const lower = f.toLowerCase();
+				return keywords.every(k => lower.includes(k.toLowerCase()));
+			}) ?? null;
+		}
+
+		// Discover actual field names
+		const fieldMap: Record<string, string | null> = {
+			ein: findField('ein'),
+			ritual: findField('ritual'),
+			charter: findField('charter') || findField('date_chapter'),
+			foundation: findField('foundation'),
+			contact_email: findField('contact', 'email') || findField('chapter', 'email'),
+			num_members: findField('number', 'member'),
+			school: findField('school') || findField('university'),
+			meeting_day: findField('meeting', 'day'),
+			meeting_location: findField('meeting', 'location'),
+			meeting_time: findField('meeting', 'time'),
+			meeting_week: findField('meeting', 'week'),
+			meeting_schedule: findField('meeting', 'schedule'),
+		};
+
+		// Build select with only fields that actually exist
+		const customFields = Object.values(fieldMap).filter(Boolean) as string[];
 		const safeFields = [
 			'Id', 'Name', 'AccountNumber',
 			'BillingStreet', 'BillingCity', 'BillingState', 'BillingPostalCode', 'BillingCountry',
 			'ShippingStreet', 'ShippingCity', 'ShippingState',
 			'Phone', 'Website',
-			'EIN_Number_c__c',
-			'Ritual_Numbers__c',
-			'FON_Date_Chapter_Chartered__c',
-			'FON_Foundation_Name__c',
-			'FON_Contact_Email__c',
-			'FON_Number_Of_Members__c',
-			'FON_School_University__c',
-			'FON_Chapter_Meeting_Day__c',
-			'FON_Chapter_Meeting_Location__c',
-			'FON_Chapter_Meeting_Time__c',
-			'FON_Chapter_Meeting_Week__c',
-			'FON_Chapter_Meeting_Schedule__c'
+			...customFields
 		].join(', ');
 
 		// Get all chapter sf_account_ids we have
@@ -95,18 +114,26 @@ export const POST: RequestHandler = async ({ locals }) => {
 			if (acct.Phone) updateFields.contact_phone = acct.Phone;
 			if (acct.Website) updateFields.website_url = acct.Website;
 
-			// Explicit field mapping (confirmed SF API names)
-			if (acct.EIN_Number_c__c) updateFields.ein_number = acct.EIN_Number_c__c;
-			if (acct.Ritual_Numbers__c) updateFields.ritual_serial_numbers = acct.Ritual_Numbers__c;
-			if (acct.FON_Date_Chapter_Chartered__c) updateFields.charter_date = acct.FON_Date_Chapter_Chartered__c;
-			if (acct.FON_Foundation_Name__c) updateFields.foundation_name = acct.FON_Foundation_Name__c;
-			if (acct.FON_Contact_Email__c) updateFields.contact_email = acct.FON_Contact_Email__c;
-			if (acct.FON_School_University__c) updateFields.school_university = acct.FON_School_University__c;
-			if (acct.FON_Chapter_Meeting_Day__c) updateFields.meeting_day = acct.FON_Chapter_Meeting_Day__c;
-			if (acct.FON_Chapter_Meeting_Location__c) updateFields.meeting_location = acct.FON_Chapter_Meeting_Location__c;
-			if (acct.FON_Chapter_Meeting_Time__c) updateFields.meeting_time = acct.FON_Chapter_Meeting_Time__c;
-			if (acct.FON_Chapter_Meeting_Week__c) updateFields.meeting_week = acct.FON_Chapter_Meeting_Week__c;
-			if (acct.FON_Chapter_Meeting_Schedule__c) updateFields.meeting_schedule = acct.FON_Chapter_Meeting_Schedule__c;
+			// Map discovered fields to DB columns
+			const dbMap: Record<string, string> = {
+				ein: 'ein_number',
+				ritual: 'ritual_serial_numbers',
+				charter: 'charter_date',
+				foundation: 'foundation_name',
+				contact_email: 'contact_email',
+				school: 'school_university',
+				meeting_day: 'meeting_day',
+				meeting_location: 'meeting_location',
+				meeting_time: 'meeting_time',
+				meeting_week: 'meeting_week',
+				meeting_schedule: 'meeting_schedule'
+			};
+
+			for (const [key, sfField] of Object.entries(fieldMap)) {
+				if (sfField && acct[sfField] && dbMap[key]) {
+					updateFields[dbMap[key]] = acct[sfField];
+				}
+			}
 
 			// Also populate city/state from billing address if empty
 			if (acct.BillingCity && !updateFields.city) updateFields.city = acct.BillingCity;
@@ -126,6 +153,7 @@ export const POST: RequestHandler = async ({ locals }) => {
 			total: accounts.length,
 			updated,
 			notFound,
+			discoveredFields: Object.fromEntries(Object.entries(fieldMap).filter(([,v]) => v)),
 			message: `Synced ${updated} chapters from ${accounts.length} SF accounts`
 		});
 	} catch (err: any) {

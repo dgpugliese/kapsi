@@ -28,11 +28,13 @@ export const load: PageServerLoad = async ({ locals, parent }) => {
 			.from('members')
 			.select('id', { count: 'exact', head: true })
 			.eq('chapter_id', member.chapter_id)
-			.eq('membership_status', 'active'),
+			.eq('membership_status', 'active')
+			.eq('is_staff', false),
 		locals.supabase
 			.from('members')
 			.select('id', { count: 'exact', head: true })
 			.eq('chapter_id', member.chapter_id)
+			.eq('is_staff', false)
 	]);
 
 	return {

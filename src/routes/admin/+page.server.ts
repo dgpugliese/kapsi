@@ -3,15 +3,18 @@ import type { PageServerLoad } from './$types';
 export const load: PageServerLoad = async ({ locals }) => {
 	const { data: memberStats } = await locals.supabase
 		.from('members')
-		.select('membership_status', { count: 'exact' });
+		.select('membership_status', { count: 'exact' })
+		.eq('is_staff', false);
 
 	const { count: totalMembers } = await locals.supabase
 		.from('members')
-		.select('*', { count: 'exact', head: true });
+		.select('*', { count: 'exact', head: true })
+		.eq('is_staff', false);
 
 	const { count: activeMembers } = await locals.supabase
 		.from('members')
 		.select('*', { count: 'exact', head: true })
+		.eq('is_staff', false)
 		.eq('membership_status', 'active');
 
 	const { count: totalChapters } = await locals.supabase
@@ -30,6 +33,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 	const { data: recentMembers } = await locals.supabase
 		.from('members')
 		.select('id, first_name, last_name, email, membership_status, created_at')
+		.eq('is_staff', false)
 		.order('created_at', { ascending: false })
 		.limit(10);
 

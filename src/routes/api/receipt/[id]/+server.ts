@@ -19,11 +19,11 @@ export const GET: RequestHandler = async ({ params, locals }) => {
 	// Verify access: must be the member OR an admin
 	const { data: caller } = await locals.supabase
 		.from('members')
-		.select('id, role')
+		.select('id, role, is_super_admin')
 		.eq('auth_user_id', user.id)
 		.single();
 
-	const isAdmin = caller && ['super_admin', 'ihq_staff', 'national_officer'].includes(caller.role);
+	const isAdmin = caller && (caller.is_super_admin === true || caller.role === 'ihq_staff');
 	const isOwner = caller && caller.id === order.member_id;
 
 	if (!isAdmin && !isOwner) throw error(403, 'Access denied');

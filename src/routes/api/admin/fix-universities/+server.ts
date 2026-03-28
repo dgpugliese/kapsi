@@ -15,11 +15,11 @@ export const POST: RequestHandler = async ({ locals }) => {
 
 	const { data: member } = await locals.supabase
 		.from('members')
-		.select('role')
+		.select('role, is_super_admin')
 		.eq('auth_user_id', user.id)
 		.single();
 
-	if (!member || !['super_admin', 'ihq_staff'].includes(member.role)) {
+	if (!member || !(member.is_super_admin === true || member.role === 'ihq_staff')) {
 		throw error(403, 'Admin access required');
 	}
 

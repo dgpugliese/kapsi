@@ -2,7 +2,7 @@
 	"name": "KAΨ Connect",
 	"short_name": "KAΨ Connect",
 	"description": "Member portal for Kappa Alpha Psi Fraternity, Inc.",
-	"start_url": "/",
+	"start_url": "/portal",
 	"scope": "/",
 	"display": "standalone",
 	"background_color": "#1a1a1a",

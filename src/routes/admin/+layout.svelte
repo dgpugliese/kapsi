@@ -22,6 +22,7 @@
 				<button style="display:none; background:none; border:none; color:white; cursor:pointer; padding:8px;" class="admin-menu-toggle" onclick={() => (sidebarOpen = !sidebarOpen)}>
 					<svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
 				</button>
+				<img src="/images/trademarks/coatofarms_large.png" alt="" style="width:36px; height:auto; opacity:0.9;" />
 				<div>
 					<strong style="font-family:var(--font-serif); font-size:1.05rem;">INTERNATIONAL HEADQUARTERS</strong>
 					<span style="font-size:0.7rem; opacity:0.6; text-transform:uppercase; letter-spacing:1px; display:block;">KAPPA ALPHA PSI FRATERNITY, INC.</span>
